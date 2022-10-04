@@ -1,0 +1,97 @@
+include "ffmatlib.idp"
+
+// Parameters
+real ratioL=7500., ratioH=4000., ratioR=100;
+real r=1., L=r*ratioL, H=r*ratioH;
+real DT=40, gradRock = 0.1;
+
+int Cside=99, Ctop=98, Cbottom=97, Ctube=96, CtubeExt=95, CtubeInt=94;
+int pointsH=30, pointsCircle=100;
+int pointsL = pointsH*L/H;
+
+// external mesh boundary
+border C1(t=L, -L){x=t; y=H; label=Ctop;}
+border C2(t=H, -H){x=-L; y=t; label=Cside;}
+border C3(t=-L, L){x=t; y=-H; label=Cbottom;}
+border C4(t=-H, H){x=L; y=t; label=Cside;}
+border C10(t=0, 2*pi){x=ratioR*r*sin(t); y=ratioR*r*cos(t); label=Ctube;}
+
+// internal mesh boundary
+border C0(t=0, 2*pi){x=r*sin(t); y=r*cos(t); label=CtubeInt;}
+border C01(t=2*pi, 0){x=ratioR*r*sin(t); y=ratioR*r*cos(t); label=CtubeExt;}
+
+// The triangulated domain Th is on the left side of its boundary
+mesh ThInt = buildmesh(C0(pointsCircle)+C01(pointsCircle));
+mesh ThExt = buildmesh(C10(pointsCircle)+C1(pointsL)+C2(pointsH)+C3(pointsL)+C4(pointsH));
+
+// The finite element space defined over ThInt is called here VhInt
+fespace VhInt(ThInt, P1);
+VhInt uInt, uIntOld, vInt;	// Define uInt and vInt as piecewise-P1 continuous functions
+
+// The finite element space defined over ThInt is called here VhInt
+fespace VhExt(ThExt, P1);
+VhExt uExt, vExt;	// Define uInt and vInt as piecewise-P1 continuous functions
+	
+// DEFINE INTERNAL PROBLEM
+problem thermalInt(uInt, vInt, solver=LU)
+
+	= int2d(ThInt)(    // The bilinear part
+		
+		dx(uInt)*dx(vInt)	
+		+ dy(uInt)*dy(vInt)
+		
+	) 
+	+ on(CtubeInt, uInt=-DT) 
+	+ on(CtubeExt, uInt=uExt);	// The Dirichlet boundary condition
+
+// DEFINE EXTERNAL PROBLEM
+problem thermalExt(uExt, vExt, solver=LU)
+
+	= int2d(ThExt)(    // The bilinear part
+		
+		dx(uExt)*dx(vExt)	
+		+ dy(uExt)*dy(vExt)
+		
+	) - int1d(ThExt, Ctube)(
+    
+		-(dx(uInt)*x/(ratioR*r)+ dy(uInt)*y/(ratioR*r))*vExt
+	
+	)
+	+ on(Ctop, uExt=-gradRock*H)
+	+ on(Cbottom, uExt=gradRock*H);	// The Dirichlet boundary condition
+
+func real error() {
+
+	real t, fnet, sum=0, sumExt=0;
+
+	for (int i = 0; i < 500; i++){
+	
+		x = ratioR*r*sin(t);
+		y = ratioR*r*cos(t);
+		sum = sum + abs(uInt - uExt);
+		sumExt = sumExt + abs(uExt);
+	}
+	
+	return(sum / sumExt);
+
+}
+
+int n=0;
+real alpha=0.5;
+while(n < 50){
+	
+	uIntOld = uInt;
+	
+	thermalInt;
+	uInt = alpha*uIntOld + (1-alpha)*uInt;
+	thermalExt;
+	
+	cout << error() << endl;
+	if (error() < 1E-5) break;
+	
+	//plot(uInt, wait=true, value=true, grey=true, fill=true);
+
+}
+
+plot(uExt, wait=true, value=true, grey=true, fill=true);
+	

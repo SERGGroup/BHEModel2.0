@@ -1,0 +1,271 @@
+-- FreeFem++ v4.11 (Thu, Apr 07, 2022  2:25:37 PM - git v4.11)
+   file : C:\Users\Utente\PycharmProjects\BHEModel\resources\FreeFEM_files\File Prova\Temperature Distribution - Double
+Mesh.edp
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : include "ffmatlib.idp"/*ffmatlib.idp Export Macros (Plot Solutions for Matlab and Octave)
+    2 :  *
+    3 :  * Author: Chloros2 <chloros2@gmx.de>
+    4 :  * Created: 2018-12-21
+    5 :  *
+    6 :  *   This file is part of the ffmatlib which is hosted at
+    7 :  *   https://github.com/samplemaker/freefem_matlab_octave_plot
+    8 :  *
+    9 :  * Copyright (C) 2018 Chloros2 <chloros2@gmx.de>
+   10 :  *
+   11 :  * This program is free software: you can redistribute it and/or modify it
+   12 :  * under the terms of the GNU General Public License as published by
+   13 :  * the Free Software Foundation, either version 3 of the License, or
+   14 :  * (at your option) any later version.
+   15 :  *
+   16 :  * This program is distributed in the hope that it will be useful, but
+   17 :  * WITHOUT ANY WARRANTY; without even the implied warranty of
+   18 :  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   19 :  * GNU General Public License for more details.
+   20 :  *
+   21 :  * You should have received a copy of the GNU General Public License
+   22 :  * along with this program.  If not, see
+   23 :  * <https://www.gnu.org/licenses/>.
+   24 :  *
+   25 :  */
+   26 :
+   27 : //Save finite element connectivity (j-th degree of freedom for i-th element)
+   38 # }  )  //EOM<< Vh(i,j) << "\n";j++){
+   39 :
+   40 : //Save FE Space data
+   49 # }  )  //EOM u[][j] << endl;+){
+   50 :
+   64 # }  )  //EOM u1[][j] << " " << u2[][j] << endl;ize" << endl;
+   65 :
+   79 # }  )  //EOM u1[][j] << " " << u2[][j] << " " << u3[][j] << endl;
+   80 :
+   94 # }  )  //EOMÿu1[][j] << " " << u2[][j] << " " << u3[][j] << " " << u4[][j] << endl;
+    2 :
+    3 : // Parameters
+    4 : real ratioL=75000., ratioH=5200., ratioR=100;
+    5 : real r=1., L=r*ratioL, H=r*ratioH;
+    6 : real DT=40, gradRock = 0.1;
+    7 :
+    8 : int Cside=99, Ctop=98, Cbottom=97, Ctube=96, CtubeExt=95, CtubeInt=94;
+    9 : int pointsH=30, pointsCircle=100;
+   10 : int pointsL = pointsH*L/H;
+   11 :
+   12 : // external mesh boundary
+   13 : border C1(t=L, -L){x=t; y=H; label=Ctop;}
+   14 : border C2(t=H, -H){x=-L; y=t; label=Cside;}
+   15 : border C3(t=-L, L){x=t; y=-H; label=Cbottom;}
+   16 : border C4(t=-H, H){x=L; y=t; label=Cside;}
+   17 : border C10(t=0, 2*pi){x=ratioR*r*sin(t); y=ratioR*r*cos(t); label=Ctube;}
+   18 :
+   19 : // internal mesh boundary
+   20 : border C0(t=0, 2*pi){x=r*sin(t); y=r*cos(t); label=CtubeInt;}
+   21 : border C01(t=2*pi, 0){x=ratioR*r*sin(t); y=ratioR*r*cos(t); label=CtubeExt;}
+   22 :
+   23 : // The triangulated domain Th is on the left side of its boundary
+   24 : mesh ThInt = buildmesh(C0(pointsCircle)+C01(pointsCircle));
+   25 : mesh ThExt = buildmesh(C10(pointsCircle)+C1(pointsL)+C2(pointsH)+C3(pointsL)+C4(pointsH));
+   26 :
+   27 : // The finite element space defined over ThInt is called here VhInt
+   28 : fespace VhInt(ThInt, P1);
+   29 : VhInt uInt, uIntOld, vInt;      // Define uInt and vInt as piecewise-P1 continuous functions
+   30 :
+   31 : // The finite element space defined over ThInt is called here VhInt
+   32 : fespace VhExt(ThExt, P1);
+   33 : VhExt uExt, vExt;       // Define uInt and vInt as piecewise-P1 continuous functions
+   34 :
+   35 : // DEFINE INTERNAL PROBLEM
+   36 : problem thermalInt(uInt, vInt, solver=LU)
+   37 :
+   38 :         = int2d(ThInt)(    // The bilinear part
+   39 :
+   40 :                 dx(uInt)*dx(vInt)
+   41 :                 + dy(uInt)*dy(vInt)
+   42 :
+   43 :         )
+   44 :         + on(CtubeInt, uInt=-DT)
+   45 :         + on(CtubeExt, uInt=uExt);      // The Dirichlet boundary condition
+   46 :
+   47 : // DEFINE EXTERNAL PROBLEM
+   48 : problem thermalExt(uExt, vExt, solver=LU)
+   49 :
+   50 :         = int2d(ThExt)(    // The bilinear part
+   51 :
+   52 :                 dx(uExt)*dx(vExt)
+   53 :                 + dy(uExt)*dy(vExt)
+   54 :
+   55 :         ) - int1d(ThExt, Ctube)(
+   56 :
+   57 :                 -(dx(uInt)*x/(ratioR*r)+ dy(uInt)*y/(ratioR*r))*vExt
+   58 :
+   59 :         )
+   60 :         + on(Ctop, uExt=-gradRock*H)
+   61 :         + on(Cbottom, uExt=gradRock*H); // The Dirichlet boundary condition
+   62 :
+   63 : func real error() {
+   64 :
+   65 :         real t, fnet, sum=0, sumExt=0;
+   66 :
+   67 :         for (int i = 0; i < 500; i++){
+   68 :
+   69 :                 x = ratioR*r*sin(t);
+   70 :                 y = ratioR*r*cos(t);
+   71 :                 sum = sum + abs(uInt - uExt);
+   72 :                 sumExt = sumExt + abs(uExt);
+   73 :         }
+   74 :
+   75 :         return(sum / sumExt);
+   76 :
+   77 : }
+   78 :
+   79 : int n=0;
+   80 : real alpha=0.5;
+   81 : while(n < 50){
+   82 :
+   83 :         uIntOld = uInt;
+   84 :
+   85 :         thermalInt;
+   86 :         uInt = alpha*uIntOld + (1-alpha)*uInt;
+   87 :         thermalExt;
+   88 :
+   89 :         cout << error() << endl;
+   90 :         if (error() < 1E-5) break;
+   91 :
+   92 :         //plot(uInt, wait=true, value=true, grey=true, fill=true);
+   93 :
+   94 : }
+   95 :
+   96 : plot(uExt, wait=true, value=true, grey=true, fill=true);
+   97 :          sizestack + 1024 =3216  ( 2192 )
+ 
+  --  mesh:  Nb of Triangles =  10688, Nb of Vertices 5444
+  --  mesh:  Nb of Triangles =  41298, Nb of Vertices 21161
+  SkyLineMatrix: size pL/pU: 5444 518692 518692 moy=95.2777
+  -- Solve :
+          min -40  max -5.03493e-31
+  SkyLineMatrix: size pL/pU: 21161 1712307 1712307 moy=80.9181
+  -- Solve :
+          min -520  max 520
+1
+  SkyLineMatrix: size pL/pU: 5444 518692 518692 moy=95.2777
+  -- Solve :
+          min -40  max 0.923661
+  SkyLineMatrix: size pL/pU: 21161 1712307 1712307 moy=80.9181
+  -- Solve :
+          min -520  max 520
+0.338716
+  SkyLineMatrix: size pL/pU: 5444 518692 518692 moy=95.2777
+  -- Solve :
+          min -40  max -9.43878
+  SkyLineMatrix: size pL/pU: 21161 1712307 1712307 moy=80.9181
+  -- Solve :
+          min -520  max 520
+0.169163
+  SkyLineMatrix: size pL/pU: 5444 518692 518692 moy=95.2777
+  -- Solve :
+          min -40  max -9.46853
+  SkyLineMatrix: size pL/pU: 21161 1712307 1712307 moy=80.9181
+  -- Solve :
+          min -520  max 520
+0.0846215
+  SkyLineMatrix: size pL/pU: 5444 518692 518692 moy=95.2777
+  -- Solve :
+          min -40  max -9.47024
+  SkyLineMatrix: size pL/pU: 21161 1712307 1712307 moy=80.9181
+  -- Solve :
+          min -520  max 520
+0.042326
+  SkyLineMatrix: size pL/pU: 5444 518692 518692 moy=95.2777
+  -- Solve :
+          min -40  max -9.47084
+  SkyLineMatrix: size pL/pU: 21161 1712307 1712307 moy=80.9181
+  -- Solve :
+          min -520  max 520
+0.0211691
+  SkyLineMatrix: size pL/pU: 5444 518692 518692 moy=95.2777
+  -- Solve :
+          min -40  max -9.47108
+  SkyLineMatrix: size pL/pU: 21161 1712307 1712307 moy=80.9181
+  -- Solve :
+          min -520  max 520
+0.0105869
+  SkyLineMatrix: size pL/pU: 5444 518692 518692 moy=95.2777
+  -- Solve :
+          min -40  max -9.47117
+  SkyLineMatrix: size pL/pU: 21161 1712307 1712307 moy=80.9181
+  -- Solve :
+          min -520  max 520
+0.00529441
+  SkyLineMatrix: size pL/pU: 5444 518692 518692 moy=95.2777
+  -- Solve :
+          min -40  max -9.47121
+  SkyLineMatrix: size pL/pU: 21161 1712307 1712307 moy=80.9181
+  -- Solve :
+          min -520  max 520
+0.00264758
+  SkyLineMatrix: size pL/pU: 5444 518692 518692 moy=95.2777
+  -- Solve :
+          min -40  max -9.47123
+  SkyLineMatrix: size pL/pU: 21161 1712307 1712307 moy=80.9181
+  -- Solve :
+          min -520  max 520
+0.00132394
+  SkyLineMatrix: size pL/pU: 5444 518692 518692 moy=95.2777
+  -- Solve :
+          min -40  max -9.47123
+  SkyLineMatrix: size pL/pU: 21161 1712307 1712307 moy=80.9181
+  -- Solve :
+          min -520  max 520
+0.000662027
+  SkyLineMatrix: size pL/pU: 5444 518692 518692 moy=95.2777
+  -- Solve :
+          min -40  max -9.47124
+  SkyLineMatrix: size pL/pU: 21161 1712307 1712307 moy=80.9181
+  -- Solve :
+          min -520  max 520
+0.000331037
+  SkyLineMatrix: size pL/pU: 5444 518692 518692 moy=95.2777
+  -- Solve :
+          min -40  max -9.47124
+  SkyLineMatrix: size pL/pU: 21161 1712307 1712307 moy=80.9181
+  -- Solve :
+          min -520  max 520
+0.000165528
+  SkyLineMatrix: size pL/pU: 5444 518692 518692 moy=95.2777
+  -- Solve :
+          min -40  max -9.47124
+  SkyLineMatrix: size pL/pU: 21161 1712307 1712307 moy=80.9181
+  -- Solve :
+          min -520  max 520
+8.27676e-05
+  SkyLineMatrix: size pL/pU: 5444 518692 518692 moy=95.2777
+  -- Solve :
+          min -40  max -9.47124
+  SkyLineMatrix: size pL/pU: 21161 1712307 1712307 moy=80.9181
+  -- Solve :
+          min -520  max 520
+4.13853e-05
+  SkyLineMatrix: size pL/pU: 5444 518692 518692 moy=95.2777
+  -- Solve :
+          min -40  max -9.47124
+  SkyLineMatrix: size pL/pU: 21161 1712307 1712307 moy=80.9181
+  -- Solve :
+          min -520  max 520
+2.06933e-05
+  SkyLineMatrix: size pL/pU: 5444 518692 518692 moy=95.2777
+  -- Solve :
+          min -40  max -9.47124
+  SkyLineMatrix: size pL/pU: 21161 1712307 1712307 moy=80.9181
+  -- Solve :
+          min -520  max 520
+1.03469e-05
+  SkyLineMatrix: size pL/pU: 5444 518692 518692 moy=95.2777
+  -- Solve :
+          min -40  max -9.47124
+  SkyLineMatrix: size pL/pU: 21161 1712307 1712307 moy=80.9181
+  -- Solve :
+          min -520  max 520
+5.17354e-06
+times: compile 0.132s, execution 5.647s,  mpirank:0
+ ######## We forget of deleting   2395437 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
+ CodeAlloc : nb ptr  4185,  size :522616 mpirank: 0
+Ok: Normal End
+ try getConsole C:\Users\Utente\PycharmProjects\BHEModel\resources\FreeFEM_files\File Prova\Temperature Distribution - Double Mesh.edp

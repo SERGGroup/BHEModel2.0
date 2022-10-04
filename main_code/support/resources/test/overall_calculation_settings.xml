@@ -1,0 +1,7 @@
+<settings
+
+        steady_state="True"
+        dt = "0.1"
+        t_max = "10"
+
+/>

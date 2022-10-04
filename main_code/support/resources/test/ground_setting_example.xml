@@ -1,0 +1,61 @@
+<BHEGround>
+
+    <NumericalSettings
+
+        r_max = "10000"
+        dr_start = "0.01"
+        l_max_ratio = "2"
+
+        dr_increase="1.05"
+        dl_increase="1.05"
+
+    />
+
+    <PhysicalProperty
+
+            T_amb = "20"
+            heat_flux = "0.11"
+
+    >
+
+        <Layers>
+
+            <Layer
+
+                    name = "dusty sand"
+                    length = "1000"
+
+                    k = "1.55"
+                    rho = "1800"
+                    cp = "2"
+
+            />
+
+            <Layer
+
+                    name = "limestone"
+                    length = "1000"
+
+                    k = "1.3"
+                    rho = "2500"
+                    cp = "0.9"
+
+            />
+
+            <Layer
+
+                    name = "granite"
+                    length = "100"
+
+                    k = "2"
+                    rho = "2660"
+                    cp = "1.5"
+
+            />
+
+        </Layers>
+
+    </PhysicalProperty>
+
+
+</BHEGround>

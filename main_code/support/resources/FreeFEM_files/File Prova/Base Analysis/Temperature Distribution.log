@@ -1,0 +1,109 @@
+-- FreeFem++ v4.11 (Thu, Apr 07, 2022  2:25:37 PM - git v4.11)
+   file : C:\Users\Utente\PycharmProjects\BHEModel\resources\FreeFEM_files\File Prova\Temperature Distribution.edp
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 :
+    2 :
+    3 : include "ffmatlib.idp"/*ffmatlib.idp Export Macros (Plot Solutions for Matlab and Octave)
+    2 :  *
+    3 :  * Author: Chloros2 <chloros2@gmx.de>
+    4 :  * Created: 2018-12-21
+    5 :  *
+    6 :  *   This file is part of the ffmatlib which is hosted at
+    7 :  *   https://github.com/samplemaker/freefem_matlab_octave_plot
+    8 :  *
+    9 :  * Copyright (C) 2018 Chloros2 <chloros2@gmx.de>
+   10 :  *
+   11 :  * This program is free software: you can redistribute it and/or modify it
+   12 :  * under the terms of the GNU General Public License as published by
+   13 :  * the Free Software Foundation, either version 3 of the License, or
+   14 :  * (at your option) any later version.
+   15 :  *
+   16 :  * This program is distributed in the hope that it will be useful, but
+   17 :  * WITHOUT ANY WARRANTY; without even the implied warranty of
+   18 :  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   19 :  * GNU General Public License for more details.
+   20 :  *
+   21 :  * You should have received a copy of the GNU General Public License
+   22 :  * along with this program.  If not, see
+   23 :  * <https://www.gnu.org/licenses/>.
+   24 :  *
+   25 :  */
+   26 :
+   27 : //Save finite element connectivity (j-th degree of freedom for i-th element)
+   38 # }  )  //EOM<< Vh(i,j) << "\n";j++){
+   39 :
+   40 : //Save FE Space data
+   49 # }  )  //EOM u[][j] << endl;+){
+   50 :
+   64 # }  )  //EOM u1[][j] << " " << u2[][j] << endl;ize" << endl;
+   65 :
+   79 # }  )  //EOM u1[][j] << " " << u2[][j] << " " << u3[][j] << endl;
+   80 :
+   94 # }  )  //EOMÿu1[][j] << " " << u2[][j] << " " << u3[][j] << " " << u4[][j] << endl;
+    4 :
+    5 : // Parameters
+    6 :
+    7 : int pointsH=7, pointsCircle=20;
+    8 : real ratioL=2000, ratioH=1000;
+    9 : real r=1., L=r*ratioL, H=r*ratioH;
+   10 : int pointsL = pointsH*L/H;
+   11 :
+   12 : real T=630720000, nT=100, DTincr=1.01;
+   13 : real dt= T*(1-DTincr)/(1-(1-pow(DTincr, nT + 1)));
+   14 :
+   15 : real gradRock=0.01, DT=1;
+   16 :
+   17 : int Cside=99, Ctop=98, Cbottom=97,CMeshExt=96, CMeshInt=95, Ctube=94;
+   18 : real ratioR=100;
+   19 :
+   20 : // external mesh boundary
+   21 : border C1(t=L, -L){x=t; y=H; label=Ctop;}
+   22 : border C2(t=H, -H){x=-L; y=t; label=Cside;}
+   23 : border C3(t=-L, L){x=t; y=-H; label=Cbottom;}
+   24 : border C4(t=-H, H){x=L; y=t; label=Cside;}
+   25 : border C10(t=0, 2*pi){x=ratioR*r*sin(t); y=ratioR*r*cos(t); label=CMeshExt;}
+   26 :
+   27 : // internal mesh boundary
+   28 : border C0(t=0, 2*pi){x=r*sin(t); y=r*cos(t); label=Ctube;}
+   29 : border C01(t=2*pi, 0){x=ratioR*r*sin(t); y=ratioR*r*cos(t); label=CMeshInt;}
+   30 :
+   31 : // The triangulated domain Th is on the left side of its boundary
+   32 : mesh ThInt = buildmesh(C0(pointsCircle)+C01(pointsCircle));
+   33 : mesh ThExt = buildmesh(C10(pointsCircle)+C1(pointsL)+C2(pointsH)+C3(pointsL)+C4(pointsH));
+   34 :
+   35 : // field initializer
+   36 : func u0 = -gradRock*y;
+   37 :
+   38 : // The finite element space defined over ThInt is called here VhInt
+   39 : fespace VhInt(ThInt, P1);
+   40 : VhInt uInt, uIntOld, uIntPrev=u0, vInt; // Define uInt and vInt as piecewise-P1 continuous functions
+   41 :
+   42 : // The finite element space defined over ThInt is called here VhInt
+   43 : fespace VhExt(ThExt, P1);
+   44 : VhExt uExt, vExt, uExtPrev=u0, g=gradRock;      // Define uInt and vInt as piecewise-P1 continuous functions
+   45 :
+   46 : // DEFINE INTERNAL PROBLEM
+   47 : problem thermalInt(uInt, vInt, solver=LU)
+   48 :
+   49 :         = int2d(ThInt)(
+   50 :
+   51 :         uInt*vInt/dt
+   52 :                 + dx(uInt)*dx(vInt)
+   53 :                 + dy(uInt)*dy(vInt)
+   54 :
+   55 :         )
+   56 :         - int2d(vInt) error operator (  <10LinearCombI6MDroit4C_F0E>
+ List of choices
+         (        <20CDomainOfIntegration> :   <N5Fem2D4MeshE>... )
+         (        <20CDomainOfIntegration> :   <N5Fem2D5MeshSE>... )
+         (        <20CDomainOfIntegration> :   <N5Fem2D5Mesh3E>... )
+ 
+ Error line number 56, in file C:\Users\Utente\PycharmProjects\BHEModel\resources\FreeFEM_files\File Prova\Temperature D@ä‰,;istribution.edp, before  token )
+ 
+  current line = 56
+Compile error :
+        line number :56, )
+error Compile error :
+        line number :56, )
+ code = 1 mpirank: 0
+ try getConsole C:\Users\Utente\PycharmProjects\BHEModel\resources\FreeFEM_files\File Prova\Temperature Distribution.edp@ä‰,;

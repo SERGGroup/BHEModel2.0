@@ -1,0 +1,203 @@
+-- FreeFem++ v4.11 (Thu, Apr 07, 2022  2:25:37 PM - git v4.11)
+   file : C:\Users\Utente\PycharmProjects\BHEModel\resources\FreeFEM_files\File Prova\Temperature Distribution - Overall.edp
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : include "ffmatlib.idp"/*ffmatlib.idp Export Macros (Plot Solutions for Matlab and Octave)
+    2 :  *
+    3 :  * Author: Chloros2 <chloros2@gmx.de>
+    4 :  * Created: 2018-12-21
+    5 :  *
+    6 :  *   This file is part of the ffmatlib which is hosted at
+    7 :  *   https://github.com/samplemaker/freefem_matlab_octave_plot
+    8 :  *
+    9 :  * Copyright (C) 2018 Chloros2 <chloros2@gmx.de>
+   10 :  *
+   11 :  * This program is free software: you can redistribute it and/or modify it
+   12 :  * under the terms of the GNU General Public License as published by
+   13 :  * the Free Software Foundation, either version 3 of the License, or
+   14 :  * (at your option) any later version.
+   15 :  *
+   16 :  * This program is distributed in the hope that it will be useful, but
+   17 :  * WITHOUT ANY WARRANTY; without even the implied warranty of
+   18 :  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   19 :  * GNU General Public License for more details.
+   20 :  *
+   21 :  * You should have received a copy of the GNU General Public License
+   22 :  * along with this program.  If not, see
+   23 :  * <https://www.gnu.org/licenses/>.
+   24 :  *
+   25 :  */
+   26 :
+   27 : //Save finite element connectivity (j-th degree of freedom for i-th element)
+   38 # }  )  //EOM<< Vh(i,j) << "\n";j++){
+   39 :
+   40 : //Save FE Space data
+   49 # }  )  //EOM u[][j] << endl;+){
+   50 :
+   64 # }  )  //EOM u1[][j] << " " << u2[][j] << endl;ize" << endl;
+   65 :
+   79 # }  )  //EOM u1[][j] << " " << u2[][j] << " " << u3[][j] << endl;
+   80 :
+   94 # }  )  //EOMÿu1[][j] << " " << u2[][j] << " " << u3[][j] << " " << u4[][j] << endl;
+    2 :
+    3 : // Parameters
+    4 : real ratioL = 1000., ratioH = 800.;
+    5 : real r=1., L=r*ratioL, H=r*ratioH;
+    6 : real DT=20, gradRock = 0.1;
+    7 :
+    8 : int Cside=99, Ctop=98, Cbottom=97, Ctube=96;
+    9 : int pointsH=7, pointsCircle=20, refIndex=5;
+   10 : int pointsL = pointsH*L/H;
+   11 :
+   12 : // Define mesh boundary
+   13 : border C1(t=L, -L){x=t; y=H; label=Ctop;}
+   14 : border C2(t=H, -H){x=-L; y=t; label=Cside;}
+   15 : border C3(t=-L, L){x=t; y=-H; label=Cbottom;}
+   16 : border C4(t=-H, H){x=L; y=t; label=Cside;}
+   17 :
+   18 : border C0(t=0, 2*pi){x=r*sin(t); y=r*cos(t); label=Ctube;}
+   19 :
+   20 : // The triangulated domain Th is on the left side of its boundary
+   21 : mesh Th = buildmesh(C0(pointsCircle)+C1(pointsL)+C2(pointsH)+C3(pointsL)+C4(pointsH));
+   22 : Th = splitmesh(Th, 2 + int(refIndex * r / sqrt(x*x + y*y)));
+   23 :
+   24 : // The finite element space defined over Th is called here Vh
+   25 : fespace Vh(Th, P1);
+   26 : Vh u, v, f=-100*gradRock;       // Define u and v as piecewise-P1 continuous functions
+   27 :
+   28 : // Define the PDE
+   29 : solve thermal(u, v, solver=LU)
+   30 :
+   31 :         = int2d(Th)(    // The bilinear part
+   32 :
+   33 :                 dx(u)*dx(v)
+   34 :                 + dy(u)*dy(v)
+   35 :
+   36 :         ) - int1d(Th, Ctube)(
+   37 :
+   38 :                 f*v
+   39 :
+   40 :         )
+   41 :         + on(Ctop, u=-gradRock*H)
+   42 :         + on(Cbottom, u=gradRock*H);    // The Dirichlet boundary condition
+   43 :
+   44 :
+   45 : // Evaluate the mean gradient on the internal circle
+   46 : Vh fx, fy;
+   47 : fx = dx(u);
+   48 : fy = dy(u);
+   49 :
+   50 : int K = 500;
+   51 : real t, fnet, sum=0;
+   52 :
+   53 : for (int i = 0; i < K + 1; i++){
+   54 :
+   55 :         t = pi * i / K;
+   56 :     x = r*sin(t);
+   57 :         y = r*cos(t);
+   58 :         fnet = fx * sin(t) + fy * cos(t);
+   59 :
+   60 :     // xx[i] = t;
+   61 :     // yy[i] = u; //value of u at point t
+   62 :         sum = sum + fnet;
+   63 :
+   64 : }
+   65 :
+   66 : cout << "Mean Gradient = " << sum / (K + 1) << " [K/m]" << endl;
+   67 :
+   68 : savemesh(Th,"well.msh");
+   69 : ffSaveVh(Th,Vh,"well_vh.txt")
+   29 @
+   30 @
+   31 @
+   32 @
+   33 @
+   34 @
+   35 @
+   36 @
+   37 @
+   38 @  {
+   29 @   {
+   30 @   ofstream file("well_vh.txt");
+   31 @   file.precision(10);
+   32 @   for (int i=0; i<Th.nt; i++){
+   33 @     for (int j=0; j<Vh.ndofK; j++){
+   34 @       file << Vh(i,j) << "\n";
+   35 @     }
+   36 @   }
+   37 @   }
+   38 @ } ;
+   70 : ffSaveData(u,"temperature_field.txt")
+   42 @
+   43 @
+   44 @
+   45 @
+   46 @
+   47 @
+   48 @
+   49 @  {
+   42 @   {
+   43 @   ofstream file("temperature_field.txt");
+   44 @   file.precision(10);
+   45 @   for (int j=0; j<u[].n; j++){
+   46 @     file << u[][j] << endl;
+   47 @   }
+   48 @   }
+   49 @ } ;
+   71 : ffSaveData2(fx, fy, "temperature_gradient.txt")
+   52 @
+   53 @
+   54 @
+   55 @
+   56 @
+   57 @
+   58 @
+   59 @
+   60 @
+   61 @
+   62 @
+   63 @
+   64 @  {
+   52 @   {
+   53 @   ofstream file( "temperature_gradient.txt");
+   54 @   int datalen=fx[].n;
+   55 @   if ( fy[].n!=datalen){
+   56 @     cout << "error: arguments must have same size" << endl;
+   57 @     exit(1);
+   58 @   }
+   59 @   file.precision(10);
+   60 @   for (int j=0; j<datalen; j++){
+   61 @     file << fx[][j] << " " <<  fy[][j] << endl;
+   62 @   }
+   63 @   }
+   64 @ } ;
+   72 :
+   73 : ofstream file("mean_gradient.txt");
+   74 : file.precision(10);
+   75 : file << sum / (K + 1) << "\n";
+   76 :
+   77 : // Plot the result
+   78 : // plot(Th);
+   79 : plot(u, wait=true, value=true, grey=true, fill=true); sizestack + 1024 =3576  ( 2552 )
+ 
+Warning LengthInterpole: ( i = 208 l = 30.4959 sss 0.5 ) 0.1
+Warning LengthInterpole: ( i = 213 l = 30.4956 sss 0.5 ) 0.1
+Warning LengthInterpole: ( i = 213 l = 30.4956 sss 0.5 ) 0.1
+Warning LengthInterpole: ( i = 213 l = 30.4956 sss 0.5 ) 0.1
+Warning LengthInterpole: ( i = 213 l = 30.4956 sss 0.5 ) 0.1
+Warning LengthInterpole: ( i = 213 l = 30.4956 sss 0.5 ) 0.1
+Warning LengthInterpole: ( i = 213 l = 30.4956 sss 0.5 ) 0.1
+Warning LengthInterpole: ( i = 213 l = 30.4956 sss 0.5 ) 0.1
+Warning LengthInterpole: ( i = 213 l = 30.4956 sss 0.5 ) 0.1
+Warning LengthInterpole: ( i = 213 l = 30.4956 sss 0.5 ) 0.1
+  --  mesh:  Nb of Triangles =   1336, Nb of Vertices 693
+  -- Splitmesh 0x1d2fa337b50 split  min: 2 max: 6
+  SkyLineMatrix: size pL/pU: 4544 6464313 6464313 moy=1422.6
+  -- Solve :
+          min -80  max 80
+Mean Gradient = 9.67949 [K/m]
+  number of required edges : 0
+times: compile 0.137s, execution 10.987s,  mpirank:0
+ ######## We forget of deleting   103555 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
+ CodeAlloc : nb ptr  4212,  size :520168 mpirank: 0
+Ok: Normal End
+ try getConsole C:\Users\Utente\PycharmProjects\BHEModel\resources\FreeFEM_files\File Prova\Temperature Distribution - Overall.edp

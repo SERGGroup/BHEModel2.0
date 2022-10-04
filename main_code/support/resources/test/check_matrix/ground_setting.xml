@@ -1,0 +1,65 @@
+<BHEGround>
+
+    <NumericalSettings
+
+        r_max = "10200"
+        l_max = "5000"
+
+        dr_start = "1"
+        dr_increase="1.05"
+        dl_increase="1"
+
+    >
+
+        <BoundaryConditions>
+
+            <Boundary
+
+                    position = "Surface"
+                    type = "Temperature"
+                    value = "15"
+
+            />
+            <Boundary
+
+                    position = "Bottom"
+                    type = "Heat Flux"
+                    value = "0.16"
+
+            />
+            <Boundary
+
+                    position = "External"
+                    type = "Heat Flux"
+                    value = "0"
+
+            />
+
+        </BoundaryConditions>
+
+    </NumericalSettings>
+    <PhysicalProperty
+
+            T_amb = "20"
+            heat_flux = "0.11"
+
+    >
+
+        <Layers>
+
+            <Layer
+
+                    name = "rock"
+                    length = "1000"
+
+                    k = "2"
+                    rho = "1800"
+                    cp = "2"
+
+            />
+
+        </Layers>
+
+    </PhysicalProperty>
+
+</BHEGround>
