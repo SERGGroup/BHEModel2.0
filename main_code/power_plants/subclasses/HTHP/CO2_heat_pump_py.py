@@ -291,7 +291,7 @@ class sCO2HeatPumpThermo(AbstractPythonHTHP):
         self.PEC += self.c_HTHE
 
         # Gas Cooler Cost
-        UA_GC = self.__calculate_UA_GC()
+        UA_GC = self.calculate_UA_GC()
         self.c_GC = 32.88 * np.power(UA_GC, 0.75)
         self.PEC += self.c_GC
 
@@ -311,7 +311,7 @@ class sCO2HeatPumpThermo(AbstractPythonHTHP):
 
     def calculate_c_fuel(self):
 
-        W_net = self.W_comp - self.W_turb
+        W_net = self.W_comp + self.W_pump - self.W_turb
         eta_fuel = W_net / self.m_steam  # in kJ/kg
 
         return eta_fuel * self.c_elet
@@ -321,7 +321,7 @@ class sCO2HeatPumpThermo(AbstractPythonHTHP):
         LMTD = self.dT_SG_pinch
         return self.Q_HTHE * 1000 / LMTD  # in W/K
 
-    def __calculate_UA_GC(self):
+    def calculate_UA_GC(self):
 
         DT_A = self.points[3].get_variable("T") - self.ambient.get_variable("T")
         DT_B = self.points[4].get_variable("T") - self.ambient.get_variable("T")
@@ -727,3 +727,135 @@ class sCO2HeatPumpThermoRegeneration(AbstractPythonHTHP):
     def LCA_analysis(self):
         pass
 
+
+class StandaloneCO2HeatPump(sCO2HeatPumpThermo):
+
+    # <------------------------------------------------------------------------->
+    # <------------------------------------------------------------------------->
+    # <------------------   INITIALIZATION METHODS   --------------------------->
+    # <------------------------------------------------------------------------->
+    # <------------------------------------------------------------------------->
+
+    def __append_other_points(self):
+
+        # Point 0-9 - Standard sCO2 HTHP
+        # Point 10 - Turbine Outlet
+        # Point 11 - Mixer before GC
+
+        self.points.append(PlantThermoPoint(["water"], [1]))
+        self.points.append(PlantThermoPoint(["water"], [1]))
+
+    # <------------------------------------------------------------------------->
+    # <------------------------------------------------------------------------->
+    # <------------------   THERMO ANALYSIS METHODS   -------------------------->
+    # <------------------------------------------------------------------------->
+    # <------------------------------------------------------------------------->
+
+    def thermo_analysis(self):
+
+        self.__append_other_points()
+
+        # STEP - 1
+        # Calculate standard HTHP
+        super(StandaloneCO2HeatPump, self).thermo_analysis()
+
+        # STEP - 2
+        # Evaluate Turbine output state
+        self.points[10].set_to_expansion_result(self.points[4].get_variable("P"), self.eta_turb, self.points[0])
+
+        # STEP - 3
+        # Update flow rates
+        self.__update_flow_rates()
+
+        # STEP - 4
+        # Evaluate GC input state
+        h_GC_in = (self.m_dot_HTHP * self.points[3].get_variable("h") + self.m_dot_turb_LP * self.points[10].get_variable("h")) / self.m_BHE
+        self.points[11].set_variable("P", self.points[4].get_variable("P"))
+        self.points[11].set_variable("h", h_GC_in)
+
+        # STEP - 5
+        # Update Power calculations
+        self.__update_power()
+
+    def __update_flow_rates(self):
+
+        self.W_net_HTHP = self.W_comp + self.W_pump - self.W_turb
+
+        if self.W_net_HTHP > 0:
+
+            dh_turb_LP = self.points[0].get_variable("h") - self.points[10].get_variable("h")
+            self.m_dot_turb_LP = self.W_net_HTHP / dh_turb_LP
+
+        else:
+
+            self.m_dot_turb_LP = 0.
+
+        self.m_dot_ratio_HTHP = self.m_dot_ratio
+        self.m_dot_HTHP = self.m_BHE
+
+        self.m_BHE = self.m_dot_HTHP + self.m_dot_turb_LP
+        self.m_dot_ratio = self.m_steam / self.m_BHE
+
+        # set flow rates to points
+
+        # BHE points
+        self.points[0].m_dot = self.m_BHE
+        self.points[4].m_dot = self.m_BHE
+        self.points[11].m_dot = self.m_BHE
+
+        # LP Turbine points
+        self.points[10].m_dot = self.m_dot_turb_LP
+
+    def __update_power(self):
+
+        # Gas Cooler
+        dh_GC = self.points[11].get_variable("h") - self.points[4].get_variable("h")
+        self.Q_GC = dh_GC * self.m_BHE
+
+        # BHE
+        dh_BHE = self.BHE_output.get_variable("h") - self.BHE_input.get_variable("h")
+        self.Q_BHE = self.m_BHE * dh_BHE
+
+        # TURB_LP
+        dh_turb_LP = self.points[0].get_variable("h") - self.points[10].get_variable("h")
+        self.W_turb_LP = self.m_dot_turb_LP * dh_turb_LP
+
+        self.Q_ratio = self.Q_HTHE / self.Q_BHE
+        self.COP = 0
+
+    # <------------------------------------------------------------------------->
+    # <------------------------------------------------------------------------->
+    # <----------------   ECONOMIC ANALYSIS METHODS   -------------------------->
+    # <------------------------------------------------------------------------->
+    # <------------------------------------------------------------------------->
+
+    def calculate_PEC(self):
+
+        super(StandaloneCO2HeatPump, self).calculate_PEC()
+
+        # Turbine LP Cost
+        self.c_turb_LP = 406200 * np.power(self.W_turb_LP / 1000, 0.8)  # in MW
+        self.PEC += self.c_turb_LP
+
+        return self.PEC
+
+    def calculate_c_fuel(self):
+
+        return 0.
+
+    def calculate_UA_GC(self):
+
+        DT_A = self.points[11].get_variable("T") - self.ambient.get_variable("T")
+        DT_B = self.points[4].get_variable("T") - self.ambient.get_variable("T")
+
+        LMTD = (DT_A - DT_B) / np.log(DT_A / DT_B)
+        return self.Q_GC * 1000 / LMTD  # in W/K
+
+    # <------------------------------------------------------------------------->
+    # <------------------------------------------------------------------------->
+    # <-----------------------   LCA METHODS   --------------------------------->
+    # <------------------------------------------------------------------------->
+    # <------------------------------------------------------------------------->
+
+    def LCA_analysis(self):
+        pass
