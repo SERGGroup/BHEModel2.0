@@ -8,11 +8,3 @@ GROUND_MESH_FOLDER = os.path.join(RES_FOLDER, "GroundMesh")
 FORTRAN_CODE_FOLDER = os.path.join(RES_FOLDER, "fortran_code")
 FREE_FEM_FOLDER = os.path.join(RES_FOLDER, "FreeFEM_files")
 OTHER_FOLDER = os.path.join(RES_FOLDER, "other")
-
-def in2m(value_in):
-    """
-    convert inches to meter
-    :param value_in:
-    :return: float
-    """
-    return float(value_in) * 0.0254

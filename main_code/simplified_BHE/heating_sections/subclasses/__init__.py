@@ -1,2 +1,2 @@
-from BHEOther.BHESimplifiedAnalysis.new_analysis.code.simplified_BHE.heating_sections.sub_classes.BHE_heating_section import BHEHeatingSection
-from BHEOther.BHESimplifiedAnalysis.new_analysis.code.simplified_BHE.heating_sections.sub_classes.default_class import DefaultHeatingSection
+from main_code.simplified_BHE.heating_sections.subclasses.BHE_heating_section import BHEHeatingSection
+from main_code.simplified_BHE.heating_sections.subclasses.default_class import DefaultHeatingSection

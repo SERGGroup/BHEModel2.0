@@ -742,8 +742,8 @@ class StandaloneCO2HeatPump(sCO2HeatPumpThermo):
         # Point 10 - Turbine Outlet
         # Point 11 - Mixer before GC
 
-        self.points.append(PlantThermoPoint(["water"], [1]))
-        self.points.append(PlantThermoPoint(["water"], [1]))
+        self.points.append(PlantThermoPoint(["CarbonDioxide"], [1]))
+        self.points.append(PlantThermoPoint(["CarbonDioxide"], [1]))
 
     # <------------------------------------------------------------------------->
     # <------------------------------------------------------------------------->
