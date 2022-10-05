@@ -36,6 +36,7 @@ class SimplifiedBHE:
         self.q_dot_down = q_up_down
 
         self.c_well = 0.
+        self.C0 = [0., 0.]
 
         self.__init_points(input_thermo_point)
         self.__init_heating_section(heating_section)
@@ -177,9 +178,9 @@ class SimplifiedBHE:
 
     def __evaluate_points(self):
 
-        self.__update_DP_vertical(self.points[0], is_upward=False)
+        self.C0[0] = self.__update_DP_vertical(self.points[0], is_upward=False)
         self.heating_section.update()
-        self.__update_DP_vertical(self.points[2], is_upward=True)
+        self.C0[1] = self.__update_DP_vertical(self.points[2], is_upward=True)
 
     def __evaluate_parameters(self):
 
@@ -310,6 +311,8 @@ class SimplifiedBHE:
             else:
 
                 counter += 1
+
+        return CO
 
     @staticmethod
     def __calculate_C0(thermo_point: PlantThermoPoint, dh_dp_stream):
