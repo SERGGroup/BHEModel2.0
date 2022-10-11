@@ -1,4 +1,4 @@
-from main_code.power_plants.subclasses.HTHP.CO2_heat_pump_py import StandaloneCO2HeatPump
+from main_code.power_plants.HTHP.subclasses.HTHP import StandaloneCO2HeatPump
 from main_code.support.other.support_functions import get_np_array
 from matplotlib.ticker import MultipleLocator
 from main_code import constants
@@ -11,7 +11,7 @@ import os
 
 hthp = StandaloneCO2HeatPump(
 
-    BHE_depth=3000,
+    BHE_depth=2500,
     T_rock=130,
     P_steam=1,
     T_ambient=15,
@@ -69,7 +69,7 @@ print("DONE!")
 # %% 2 - Data Plot
 
 # Figure initialization
-fig, (ax_1, ax_2) = plt.subplots(1, 2, dpi=500)
+fig, (ax_1, ax_2) = plt.subplots(1, 2, dpi=150)
 fig.set_size_inches(12, 5)
 
 # Color Map Definition
@@ -122,6 +122,7 @@ y_labels = [
 i = 0
 
 for ax in [ax_1, ax_2]:
+
     # Axes Title
     ax.set_xlabel(
 
@@ -149,7 +150,7 @@ for ax in [ax_1, ax_2]:
     ax.minorticks_on()
     ax.xaxis.set_major_locator(MultipleLocator(xticks_int))
     ax.xaxis.set_minor_locator(MultipleLocator(xticks_int/10))
-    ax.grid(which='major', linewidth=0.65)
+    ax.grid(which='major', linewidth=0.8)
     ax.grid(which='minor', linewidth=0.2)
 
     # Border Removal

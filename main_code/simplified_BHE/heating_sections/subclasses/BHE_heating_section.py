@@ -176,7 +176,7 @@ class BHEHeatingSection(AbstractHeatingSection):
 
         # Nusselt correlation from Chengel "Heat Transfer model practical approach" pg.444. Values have been interpolated
         # from table 8-4 (Nusselt Number for fully developed -laminar- flow in an annulus with one surface isothermal
-        # and the other -adiabatic-).
+        # and the support -adiabatic-).
         #
         # Interpolation has been performed in an excel file that could be seen at this link:
         # https://firebasestorage.googleapis.com/v0/b/serg-group-repository.appspot.com/o/BHEModel%2Fannular%20flow%20correlation%20interpolation.xlsx?alt=media&token=5d644cf2-7aab-4878-9ead-506a38d49d19

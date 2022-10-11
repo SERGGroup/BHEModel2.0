@@ -3,8 +3,8 @@ from main_code.support import PlantThermoPoint
 from abc import ABC, abstractmethod
 from scipy.optimize import Bounds
 import scipy.optimize
-from sty import ef
 import numpy as np
+from sty import ef
 
 
 class AbstractSurfacePlant(ABC):
@@ -40,6 +40,7 @@ class AbstractSurfacePlant(ABC):
     def calculate_thermo(self):
 
         if self.calculation_ready:
+
             self.thermo_analysis()
             self.__thermo_calculated = True
 
@@ -273,7 +274,7 @@ class AbstractPythonHTHP(AbstractSurfacePlant, ABC):
 
         """
 
-            This function can be overwritten in sub-classes and used to initialize other parameter without overwriting
+            This function can be overwritten in sub-classes and used to initialize support parameter without overwriting
             the __init__ function (it has a lot of parameters and the code will look cleaner)
 
         """
@@ -427,7 +428,7 @@ class AbstractPythonHTHP(AbstractSurfacePlant, ABC):
 
         """
 
-            This method can be overwritten in sub-classes and can be used to add other auxiliary cost to the plant
+            This method can be overwritten in sub-classes and can be used to add support auxiliary cost to the plant
             For example the cost the solar fields installed to feed the system
 
         """

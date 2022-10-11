@@ -1,4 +1,4 @@
-from main_code.power_plants.abstract_power_plant import AbstractPythonHTHP
+from main_code.power_plants.HTHP.abstract_hthp import AbstractPythonHTHP
 from main_code.support import PlantThermoPoint
 from scipy.optimize import Bounds
 import numpy as np
@@ -59,7 +59,7 @@ class sCO2HeatPumpThermo(AbstractPythonHTHP):
 
         self.points.append(self.BHE_output)
 
-        # Points 1-3 - CO2 BHE HTHP internal points:
+        # Points 1-3 - CO2 BHE 2022-10-04 - HTHP internal points:
         #
         #   1 - CO2 Compressor Output
         #   2 - CO2 Main HE Output
@@ -399,7 +399,7 @@ class sCO2HeatPumpThermoRegeneration(AbstractPythonHTHP):
 
         self.points.append(self.BHE_output)
 
-        # Points 1-5 - CO2 BHE HTHP internal points:
+        # Points 1-5 - CO2 BHE 2022-10-04 - HTHP internal points:
         #
         #   1 - CO2 Cold RH Output
         #   2 - CO2 Compressor Output
@@ -739,7 +739,7 @@ class StandaloneCO2HeatPump(sCO2HeatPumpThermo):
 
     def __append_other_points(self):
 
-        # Point 0-9 - Standard sCO2 HTHP
+        # Point 0-9 - Standard sCO2 2022-10-04 - HTHP
         # Point 10 - Turbine Outlet
         # Point 11 - Mixer before GC
 
@@ -757,7 +757,7 @@ class StandaloneCO2HeatPump(sCO2HeatPumpThermo):
         self.__append_other_points()
 
         # STEP - 1
-        # Calculate standard HTHP
+        # Calculate standard 2022-10-04 - HTHP
         super(StandaloneCO2HeatPump, self).thermo_analysis()
 
         # STEP - 2
@@ -775,7 +775,7 @@ class StandaloneCO2HeatPump(sCO2HeatPumpThermo):
         self.points[11].set_variable("h", h_GC_in)
 
         # STEP - 5
-        # Update Power calculations
+        # Update Power calculation
         self.__update_power()
 
     def __update_flow_rates(self):

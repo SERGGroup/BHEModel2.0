@@ -162,6 +162,10 @@ class SimplifiedBHE:
 
         self.__reset_control_elements()
 
+    def update_simplified(self):
+
+        self.__evaluate_points()
+
     def __set_reference_state(self, ambient_condition):
 
         self.__ambient_condition = ambient_condition
