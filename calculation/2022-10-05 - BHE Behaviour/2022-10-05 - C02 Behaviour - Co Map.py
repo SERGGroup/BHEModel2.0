@@ -19,7 +19,7 @@ bhe = SimplifiedBHE(
 
 )
 
-n_points = 500
+n_points = 200
 p_points = get_np_array(4, 50, n_points, log_scale=True)  # in MPa
 h_points = get_np_array(200, 450, n_points, log_scale=False)  # in kJ/kg
 res_points = get_np_array(0, 0, n_points)
@@ -28,7 +28,7 @@ h_mesh, p_mesh = np.meshgrid(h_points, p_points, indexing='ij')
 
 # %%-------------------------------------   CALCULATION                         -------------------------------------> #
 
-pbar = tqdm(desc="loop", total=n_points * n_points)
+pbar = tqdm(desc="C0 map calculation", total=n_points * n_points)
 res, b = np.meshgrid(res_points, h_points, indexing='ij')
 
 for i in range(n_points):
@@ -145,6 +145,8 @@ for T in T_range:
 
         })
 
+pbar_iso_t.close()
+
 # %%-------------------------------------   GET ISO-RHO LINES                   -------------------------------------> #
 
 rho_range = get_np_array(150, 1000, 18)  # in kg/m^3
@@ -184,17 +186,19 @@ for rho in rho_range:
 
         })
 
-# %%-------------------------------------   CALCULATE STANDARD BHE              -------------------------------------> #
+pbar_iso_h.close()
 
+# %%-------------------------------------   CALCULATE STANDARD BHE              -------------------------------------> #
+depth = 1750
 real_bhe = SimplifiedBHE(
 
     input_thermo_point=PlantThermoPoint(["CarbonDioxide"], [1]),
-    dz_well=1750, T_rocks=110
+    dz_well=depth, T_rocks=110, use_rk=True
 
 )
 
-real_bhe.points[0].set_variable("T", 45)
-real_bhe.points[0].set_variable("rho", 800)
+real_bhe.points[0].set_variable("T", 35)
+real_bhe.points[0].set_variable("rho", 700)
 
 real_bhe.update()
 
@@ -205,7 +209,57 @@ for point in real_bhe.points:
     real_bhe_h.append(point.get_variable("h"))
     real_bhe_P.append(point.get_variable("P"))
 
+print(real_bhe)
+
+# %%-------------------------------------   COMPARE WITH DISCRETIZATION         -------------------------------------> #
+
+n_points = 1000
+depth_list = np.linspace(0, depth, n_points, endpoint=True)
+dz = depth_list[1] - depth_list[0]
+
+down_point = real_bhe.points[0].duplicate()
+up_point = real_bhe.points[2].duplicate()
+
+p_up_list = list()
+h_up_list = list()
+rho_up_list = list()
+p_down_list = list()
+h_down_list = list()
+rho_down_list = list()
+
+for depth in depth_list[1:]:
+
+    p_down = down_point.get_variable("P")
+    h_down = down_point.get_variable("h")
+    rho_down = down_point.get_variable("rho")
+
+    p_up = up_point.get_variable("P")
+    h_up = up_point.get_variable("h")
+    rho_up = up_point.get_variable("rho")
+
+    p_up_list.append(p_up)
+    h_up_list.append(h_up)
+    rho_up_list.append(rho_up)
+    p_down_list.append(p_down)
+    h_down_list.append(h_down)
+    rho_down_list.append(rho_down)
+
+    down_point.set_variable("P", p_down + rho_down * 9.81 * dz / 1e6)
+    down_point.set_variable("h", h_down + 9.81 * dz / 1e3)
+
+    up_point.set_variable("P", p_up - rho_up * 9.81 * dz / 1e6)
+    up_point.set_variable("h", h_up - 9.81 * dz / 1e3)
+
+disc_p_list = p_down_list + p_up_list
+disc_h_list = h_down_list + h_up_list
+disc_rho_list = rho_down_list + rho_up_list
+
+
 # %%-------------------------------------   PLOT RESULTS                        -------------------------------------> #
+
+highlight_isolines = False
+plot_well_behaviour = True
+plot_disc_well = True
 
 fig, (ax_1) = plt.subplots(1, 1, dpi=200)
 fig.set_size_inches(10, 5)
@@ -219,6 +273,7 @@ isoline_styles = {
     "rho": "-."
 
 }
+
 for line_key in isolines.keys():
 
     for key in isolines[line_key].keys():
@@ -227,23 +282,25 @@ for line_key in isolines.keys():
         width = 0.4
         style = isoline_styles[line_key]
 
-        if " C" in key:
+        if highlight_isolines:
 
-            T_iso = float(key.strip(" C"))
-            if T_iso == real_bhe.points[0].get_variable("T") or T_iso == real_bhe.points[2].get_variable("T"):
+            if " C" in key:
 
-                color = "white"
-                width = 0.8
-                style = "-"
+                T_iso = float(key.strip(" C"))
+                if T_iso == real_bhe.points[0].get_variable("T") or T_iso == real_bhe.points[2].get_variable("T"):
 
-        if " kg/m^3" in key:
+                    color = "white"
+                    width = 0.8
+                    style = "-"
 
-            rho_iso = float(key.strip(" kg/m^3"))
-            if rho_iso == real_bhe.points[0].get_variable("rho"):
+            if " kg/m^3" in key:
 
-                color = "white"
-                width = 0.8
-                style = "-"
+                rho_iso = float(key.strip(" kg/m^3"))
+                if rho_iso == real_bhe.points[0].get_variable("rho"):
+
+                    color = "white"
+                    width = 0.8
+                    style = "-"
 
         lines.append(ax_1.plot(
 
@@ -253,7 +310,19 @@ for line_key in isolines.keys():
 
         )[0])
 
-ax_1.plot(real_bhe_h, real_bhe_P, linewidth=2, color="white")
+
+if plot_well_behaviour:
+
+    ax_1.plot(real_bhe_h, real_bhe_P, "o", linewidth=2, markerfacecolor='none', markeredgecolor="white")
+
+    if plot_disc_well:
+
+        ax_1.plot(disc_h_list, disc_p_list, linewidth=2, color="white")
+
+    else:
+
+        ax_1.plot(real_bhe_h, real_bhe_P, linewidth=2, color="white")
+
 contour = ax_1.contourf(h_mesh, p_mesh, res, n_points * 2)
 
 ax_1.set_yscale("log")

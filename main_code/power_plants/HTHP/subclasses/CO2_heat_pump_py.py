@@ -4,7 +4,7 @@ from scipy.optimize import Bounds
 import numpy as np
 
 
-class sCO2HeatPumpThermo(AbstractPythonHTHP):
+class CO2HeatPumpThermo(AbstractPythonHTHP):
 
     # <------------------------------------------------------------------------->
     # <------------------------------------------------------------------------->
@@ -340,7 +340,7 @@ class sCO2HeatPumpThermo(AbstractPythonHTHP):
         pass
 
 
-class sCO2HeatPumpThermoRegeneration(AbstractPythonHTHP):
+class CO2HeatPumpThermoRegeneration(AbstractPythonHTHP):
 
     # TODO
 
@@ -729,7 +729,7 @@ class sCO2HeatPumpThermoRegeneration(AbstractPythonHTHP):
         pass
 
 
-class StandaloneCO2HeatPump(sCO2HeatPumpThermo):
+class StandaloneCO2HeatPump(CO2HeatPumpThermo):
 
     # <------------------------------------------------------------------------->
     # <------------------------------------------------------------------------->

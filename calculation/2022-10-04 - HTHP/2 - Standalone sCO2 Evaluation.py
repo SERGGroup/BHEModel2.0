@@ -1,13 +1,15 @@
-from main_code.power_plants.HTHP.subclasses.HTHP import StandaloneCO2HeatPump
+# %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
+from main_code.power_plants.HTHP.subclasses.CO2_heat_pump_py import StandaloneCO2HeatPump
 from main_code.support.other.support_functions import get_np_array
+from main_code.support.other.matplolib_stiles import ColorFader
 from matplotlib.ticker import MultipleLocator
 from main_code import constants
 import matplotlib.pyplot as plt
-from matplotlib import cm
+from tqdm import tqdm
 import numpy as np
 import os
 
-# %%-------------------------------------     INITIALIZATION AND FIRST TEST     -------------------------------------> #
+# %%------------   INITIALIZATION AND FIRST TESTS         -----------------------------------------------------------> #
 
 hthp = StandaloneCO2HeatPump(
 
@@ -21,13 +23,13 @@ hthp = StandaloneCO2HeatPump(
 hthp.thermo_analysis()
 print(hthp)
 
-# %%-------------------------------------    OPTIMIZATION PARAMETER ANALYSIS    -------------------------------------> #
-# %% 1 - Calculations
+# %%------------   CALCULATIONS                           -----------------------------------------------------------> #
 
 T_SG_perc_list = get_np_array(0.2, 1, 5)
 rho_in_list = get_np_array(500, 800, 20)
 
 hthp_list = list()
+pbar = tqdm(desc="calculation", total=len(T_SG_perc_list) * len(rho_in_list))
 
 for T_SG_perc in T_SG_perc_list:
 
@@ -52,7 +54,7 @@ for T_SG_perc in T_SG_perc_list:
 
             hthp.thermo_analysis()
 
-            print("{:.2f} - {:.2f}".format(T_SG_perc, rho_in))
+            pbar.update(1)
 
         except Exception as error:
 
@@ -64,16 +66,13 @@ for T_SG_perc in T_SG_perc_list:
 
     hthp_list.append(hthp_sublist)
 
-print("DONE!")
+pbar.close()
 
-# %% 2 - Data Plot
+# %%------------   DATA PLOT                              -----------------------------------------------------------> #
 
 # Figure initialization
 fig, (ax_1, ax_2) = plt.subplots(1, 2, dpi=150)
 fig.set_size_inches(12, 5)
-
-# Color Map Definition
-cmap = cm.get_cmap("Oranges")
 
 # Math Test Font Definition
 plt.rcParams.update({'mathtext.fontset': 'dejavuserif'})
@@ -81,6 +80,12 @@ plt.rcParams.update({'mathtext.fontset': 'dejavuserif'})
 # Font Calculation
 T_SG_min = np.min(T_SG_perc_list)
 T_SG_max = np.max(T_SG_perc_list)
+cf = ColorFader(
+
+    from_value=T_SG_min,
+    to_value=T_SG_max
+
+)
 
 for hthp_sublist in hthp_list:
 
@@ -98,7 +103,7 @@ for hthp_sublist in hthp_list:
 
         x_list, y_list,
         label=r'$T_{{SG\%}}={:.2f}$'.format(hthp.T_SG_perc),
-        color=cmap(hthp.T_SG_perc)
+        color=cf.get_color(hthp.T_SG_perc)
 
     )
 
@@ -106,7 +111,7 @@ for hthp_sublist in hthp_list:
 
         x_list, y_2_list,
         label=r'$T_{{SG\%}}={:.2f}$'.format(hthp.T_SG_perc),
-        color=cmap(hthp.T_SG_perc)
+        color=cf.get_color(hthp.T_SG_perc)
 
     )
 
@@ -144,24 +149,24 @@ for ax in [ax_1, ax_2]:
 
     # Axis Styling
     ax.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2))
+    ax.tick_params(axis=u'both', which=u'minor', length=0)
 
     # Grid Definition
+    ax.set_xlim([500, 800])
+
     xticks_int = 100
     ax.minorticks_on()
     ax.xaxis.set_major_locator(MultipleLocator(xticks_int))
-    ax.xaxis.set_minor_locator(MultipleLocator(xticks_int/10))
+    ax.xaxis.set_minor_locator(MultipleLocator(xticks_int/5))
     ax.grid(which='major', linewidth=0.8)
-    ax.grid(which='minor', linewidth=0.2)
-
-    # Border Removal
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
+    ax.grid(which='minor', linewidth=0.2, alpha=0.75)
 
 plt.show()
 
-# %% 3 - Save Image
+# %%------------   SAVE IMAGE                             -----------------------------------------------------------> #
 
-output_directory = os.path.join(constants.RES_FOLDER, "outputs")
+current_folder = os.path.join(os.path.dirname(constants.RES_FOLDER), "2022-10-04 - HTHP")
+output_directory = os.path.join(current_folder, "outputs")
 
 if not os.path.isdir(output_directory):
 
