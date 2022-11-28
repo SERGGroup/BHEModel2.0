@@ -77,6 +77,7 @@ def evaluate_turbine_power(
         discrete_losses=False
 
 ):
+
     tmp_co2_input = co2_in.duplicate()
     T_rock = t_amb + t_grad * dz_well / 1e3
 
