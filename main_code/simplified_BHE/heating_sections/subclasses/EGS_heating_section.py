@@ -6,7 +6,7 @@ from scipy.optimize import Bounds
 
 class EGSHeatingSection(AbstractHeatingSection):
 
-    def __init__(self, main_BHE, S_res=1.14e-12, k_res=5e-14):
+    def __init__(self, main_BHE, S_res=1.18e-12, k_res=5e-14):
 
         """
 
@@ -22,7 +22,9 @@ class EGSHeatingSection(AbstractHeatingSection):
 
         self.S_res = S_res              # [m/s]     Average Specific Kinematic Viscosity
         self.k_res = k_res              # [m^2]     Horizontal Permeability
-        self.R_res = S_res / k_res      # [1/(m*s)] Average Specific Inverse Mobility
+        # self.R_res = S_res / k_res      # [1/(m*s)] Average Specific Inverse Mobility
+
+        self.R_res = 25
 
         self.dp_res = 0.
 

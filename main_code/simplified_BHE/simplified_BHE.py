@@ -383,7 +383,7 @@ class SimplifiedBHE:
 
         return c0, dp_loss
 
-    def __evaluate_pressure_losses(self, input_point, output_point, C0=None, dz=None):
+    def __evaluate_pressure_losses(self, input_point, output_point, c0=None, dz=None):
 
         m_dot = input_point.m_dot
         g = 9.81
@@ -392,21 +392,22 @@ class SimplifiedBHE:
             dz = abs(self.dz_well)
 
         if input_point.get_variable("P") > output_point.get_variable("P"):
-
             d = self.d_prod
 
         else:
-
             d = self.d_inj
 
         if d is not None:
 
-            f = self.__calculate_friction_factor(d)
+            mu = (input_point.get_variable("mu") + output_point.get_variable("mu")) / 2
+            re = 4 * m_dot / (np.pi * d * mu / 1e6)
 
-            if C0 is not None:
+            f = self.__calculate_friction_factor(d, re)
+
+            if c0 is not None:
 
                 rho0 = max(input_point.get_variable("rho"), output_point.get_variable("rho"))
-                l_mod = (np.exp(C0 / 1e6 * g * dz) - 1) / (g * C0 / 1e6)
+                l_mod = (np.exp(c0 / 1e6 * g * dz) - 1) / (g * c0 / 1e6)
                 dp = 8 * (f * m_dot ** 2) / (d ** 5 * np.pi ** 2 * rho0) * l_mod
 
             else:
@@ -421,13 +422,12 @@ class SimplifiedBHE:
         return dp / 1e6
 
     @staticmethod
-    def __calculate_friction_factor(d):
+    def __calculate_friction_factor(d, re):
 
         if d is not None:
 
             rough = 55 * 1e-6       # [m] surface roughness
             rel_rough = rough / d
-            re = 1e8
 
             A = (2.457 * np.log(1. / ((7. / re) ** 0.9 + 0.27 * rel_rough))) ** 16
             B = (37530. / re) ** 16

@@ -151,7 +151,7 @@ dp_turb, dh_turb, W_turb, Q_res, bhe_out = evaluate_turbine_power(CO2_input, T_a
 
 depth = 2500  # [m]
 T_grad = 35  # [°C/km]
-m_dot_list = np.linspace(1, 200, 100)
+m_dot_list = np.linspace(40, 180, 100)
 results = dict()
 
 keys = ["no losses", "res losses", "all losses", "discrete losses"]
@@ -221,11 +221,11 @@ pbar.close()
 x_list = "m_dot"
 x_label = r'$m_{dot}\ [kg/s]$'
 
-# y_list = "dp_list"
-# y_label = r'$dP_{turb}\ [MPa]$'
+y_list = "dp_list"
+y_label = r'$dP_{turb}\ [MPa]$'
 
-y_list = "dh_list"
-y_label = r'$dh_{turb}\ [kJ/kg]$'
+# y_list = "dh_list"
+# y_label = r'$dh_{turb}\ [kJ/kg]$'
 
 fig, (ax_1) = plt.subplots(1, 1, dpi=200)
 fig.set_size_inches(10, 5)
@@ -263,10 +263,10 @@ ax_1.set_ylabel(
 )
 
 ax_1.set_ylim(bottom=0)
-ax_1.set_xlim(left=0, right=200)
+ax_1.set_xlim(left=40, right=180)
 
 
-ax_1.xaxis.set_major_locator(MultipleLocator(25))
+ax_1.xaxis.set_major_locator(MultipleLocator(20))
 ax_1.xaxis.set_minor_locator(MultipleLocator(5))
 ax_1.xaxis.set_major_formatter(ticker.FormatStrFormatter('%0.0f'))
 

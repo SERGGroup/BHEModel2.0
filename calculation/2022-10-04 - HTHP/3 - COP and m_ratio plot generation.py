@@ -111,7 +111,7 @@ result_dict.update({
         "x": t_sg_perc_list,
         "COP": COP_list,
         "m_ratio": m_ratio_list,
-        "x_label": r'$T_{{SG\ \%}}\ [-]$',
+        "x_label": r'$T_{{HE\ \%}}\ [-]$',
         "x_lim": t_perc_lim,
 
     }
