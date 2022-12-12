@@ -6,7 +6,7 @@ from scipy.optimize import Bounds
 
 class EGSHeatingSection(AbstractHeatingSection):
 
-    def __init__(self, main_BHE, S_res=1.18e-12, k_res=5e-14):
+    def __init__(self, main_BHE, S_res=1.18e-12, k_res=5e-14, R_res=None, Q_res=None):
 
         """
 
@@ -22,18 +22,31 @@ class EGSHeatingSection(AbstractHeatingSection):
 
         self.S_res = S_res              # [m/s]     Average Specific Kinematic Viscosity
         self.k_res = k_res              # [m^2]     Horizontal Permeability
-        # self.R_res = S_res / k_res      # [1/(m*s)] Average Specific Inverse Mobility
+        self.R_res = S_res / k_res      # [1/(m*s)] Average Specific Inverse Mobility
 
-        self.R_res = 25
+        if R_res is not None:
 
+            self.R_res = R_res
+
+        self.Q_res = Q_res
         self.dp_res = 0.
 
     def update_HS(self):
 
         self.dp_res = self.R_res * self.input_point.m_dot / 1e3    # Pa -> MPa
-        self.output_point.set_variable("P", self.input_point.get_variable("P") - self.dp_res)
-        self.output_point.set_variable("T", self.main_BHE.T_rocks)
         self.output_point.m_dot = self.input_point.m_dot
+
+        if self.Q_res is None:
+
+            self.output_point.set_variable("P", self.input_point.get_variable("P") - self.dp_res)
+            self.output_point.set_variable("T", self.main_BHE.T_rocks)
+
+        else:
+
+            h_out = self.input_point.get_variable("h") + self.Q_res / self.input_point.m_dot
+
+            self.output_point.set_variable("P", self.input_point.get_variable("P") - self.dp_res)
+            self.output_point.set_variable("h", h_out)
 
     def get_c_well(self):
 
