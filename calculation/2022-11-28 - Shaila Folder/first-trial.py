@@ -1,7 +1,7 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
 from main_code.simplified_BHE.simplified_BHE import SimplifiedBHE
-from main_code.power_plants.HTHP.subclasses import CO2_heat_pump_py
+
 
 # %%------------   INIT INPUT CONDITION                   -----------------------------------------------------------> #
 T_amb = 15 # [°C]
