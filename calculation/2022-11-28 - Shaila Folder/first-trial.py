@@ -4,20 +4,32 @@ from main_code.simplified_BHE.simplified_BHE import SimplifiedBHE
 
 
 # %%------------   INIT INPUT CONDITION                   -----------------------------------------------------------> #
-T_amb = 15 # [°C]
+T_amb = 23 # [°C]
 dT_appr = 7  # [°C]
+Y_id = 5213221
+
 CO2_input = PlantThermoPoint(["CarbonDioxide"], [1])
 CO2_input.set_variable("T", T_amb + dT_appr)
-CO2_input.set_variable("Q", 0.)
 
-p_in = CO2_input.get_variable("P")
-print("BH input pressure",p_in)
+if T_amb + dT_appr < 31.1:
+
+    CO2_input.set_variable("Q", 0.)
+    p_in = CO2_input.get_variable("P")
+
+else:
+
+    CO2_input.set_variable("rho", 700)
+    p_in = CO2_input.get_variable("P")
+
+CO2_input.set_variable("T", T_amb + dT_appr)
+CO2_input.set_variable("P", p_in*1.0001)
+
+print("BH input pressure", p_in)
 print(CO2_input.get_unit("D"))
 
 # %%------------   INIT BHE WELL                          -----------------------------------------------------------> #
 dz_well = 1500  # [m] Depth of the reservoir
 T_rock = 125    # [°C] Temperature of the reservoir
-
 
 bhe_in = SimplifiedBHE(
 
@@ -30,7 +42,6 @@ bhe_in = SimplifiedBHE(
 bhe_in.update()
 print(bhe_in)
 
-
 output_condition = bhe_in.points[-1]
 p_out = output_condition.get_variable("P")
 t_out = output_condition.get_variable("T")
@@ -39,7 +50,7 @@ s_out = output_condition.get_variable("s")
 unit_p = output_condition.get_unit("P")
 
 
- # %%------------   TURBINE EXPANSION                      -----------------------------------------------------------> #
+# %%------------   TURBINE EXPANSION                      -----------------------------------------------------------> #
 
 P_t_out=p_in
 
@@ -82,10 +93,21 @@ condenser_output_condition.set_variable("T", T_amb + dT_appr)
 
 t_c_out= condenser_output_condition.get_variable("t")
 
- # %%------------   Pump work                      ----------------------------------------------------------->
+# %%------------   Pump work                      ----------------------------------------------------------->
 
 pump_input_condition=bhe_in.points[0]
 print(pump_input_condition)
 
 pump_output_condition=bhe_in.points[1]
 print(pump_output_condition)
+
+# %%------------   evaluate off design                     ----------------------------------------------------------->
+
+def calc_function(t_amb, opt_parm):
+
+    # Set the input condition for the BHE well
+    bhe_in.update()
+
+    # evaluate the turbine off_desing
+
+    # evauate and return the power
