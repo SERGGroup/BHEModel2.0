@@ -7,6 +7,7 @@ from main_code.simplified_BHE.simplified_BHE import SimplifiedBHE
 #let's assume a 0.7Mpa of pump pressure rise
 delta_pump_p=0.7
 
+
 #Pump input condition
 T_amb = 15 # [°C]
 dT_appr = 7  # [°C]
@@ -123,5 +124,20 @@ eta_cycle=100*(h_t_in-h_t_out)/(h_out_BH-h_in_BH)
 print("eta_cycle:",eta_cycle)
 
 # %%------------ Off design Analisys----------------------------------------------------------->
+def massflow_coefficient(T,P,m=m_dot):
+    Fi = m* (T**0.5)/P
+    return Fi
 
-n_S= 3      #Number of stages
+def Y(P,Fi,B):
+    Y= (P** 2 - B** 2) / ((P ** 2) * (Fi ** 2))
+    return Y
+
+
+Fi_d=massflow_coefficient(t_t_in,p_t_in,m_dot)
+print("flow coefficient", Fi_d)
+
+Y_id=Y(p_t_in,Fi_d,p_c)
+print("Y_id",Y_id)
+
+
+
