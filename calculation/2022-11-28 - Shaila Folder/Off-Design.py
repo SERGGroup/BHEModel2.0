@@ -1,6 +1,7 @@
 # %%------------   IMPORT MODULES                     -----------------------------------------------------------> #
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
 from main_code.simplified_BHE.simplified_BHE import SimplifiedBHE
+from tabulate import tabulate
 
 # %%------------   BH input condition                   -----------------------------------------------------------> #
 
