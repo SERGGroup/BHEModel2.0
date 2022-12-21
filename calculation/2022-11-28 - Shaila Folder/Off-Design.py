@@ -29,7 +29,7 @@ CO2_input.set_variable("T", T_c_out)
             CO2_input.set_variable("rho", 700)
             p_c = CO2_input.get_variable("P")
         p_c = CO2_input.get_variable("P")
-        print(p_c)
+        print("condenser pressure",p_c)
 
 
 
@@ -94,8 +94,8 @@ h_t_out=h_t_in-(eta*(h_t_in-h_out_iso))
 print("h_t_out",h_t_out)
 print("h_t_in",h_t_in)
 delta_h_t=h_t_in-h_t_out
-P_t= 1000  # kW Fixing as desiered power output
-m_dot= P_t/delta_h_t   #kg/s
+P_t= 1000                               # kW Fixing as desiered power output
+m_dot= P_t/delta_h_t                    #kg/s
 print("mass flow rate:Design",m_dot,"kg/s")
 
 Turbine_output_condition_real = PlantThermoPoint(["CarbonDioxide"], [1])
@@ -140,5 +140,14 @@ print("flow coefficient", Fi_d)
 Y_id=Y(p_t_in,Fi_d,p_c)
 print("Y_id",Y_id)
 
+# %% ------------ Number of Stages ----------------------------------------------------------->
+n=3 #just
+delta_h_t_i=delta_h_t/n
+P_3=p_t_in
+h_3=h_t_in
+s_3=s_t_in
 
-
+h_2=h_3-delta_h_t_i
+s_2
+point_2=PlantThermoPoint(["CarbonDioxide"], [1])
+point_2.set_variable("h",h_2)
