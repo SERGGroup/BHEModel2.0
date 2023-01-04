@@ -1,5 +1,5 @@
 from main_code.power_plants.abstract_surface_plant import AbstractSurfacePlant
-from main_code.simplified_BHE.simplified_BHE import SimplifiedBHE
+from main_code.simplified_well.simplified_well import SimplifiedBHE
 from main_code.support import PlantThermoPoint
 from abc import ABC, abstractmethod
 from scipy.optimize import Bounds

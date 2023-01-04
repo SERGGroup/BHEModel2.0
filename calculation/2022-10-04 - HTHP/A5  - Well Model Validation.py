@@ -1,8 +1,8 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
-from main_code.simplified_BHE.heating_sections.subclasses.EGS_heating_section import EGSHeatingSection
-from main_code.simplified_BHE.heating_sections.subclasses.default_class import DefaultHeatingSection
+from main_code.simplified_well.heating_sections.subclasses.EGS_heating_section import EGSHeatingSection
+from main_code.simplified_well.heating_sections.subclasses.default_class import DefaultHeatingSection
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
-from main_code.simplified_BHE.simplified_BHE import SimplifiedBHE
+from main_code.simplified_well.simplified_well import SimplifiedCPG
 from main_code.support.other.matplolib_stiles import ColorFader
 from openpyxl import load_workbook
 from main_code import constants
@@ -67,7 +67,7 @@ def evaluate_turbine_power(
         d_inj = None
         d_prod = None
 
-    bhe_in = SimplifiedBHE(
+    bhe_in = SimplifiedCPG(
 
         input_thermo_point=tmp_co2_input,
         dz_well=dz_well, T_rocks=T_rock, use_rk=True,

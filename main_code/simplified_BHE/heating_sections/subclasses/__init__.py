@@ -1,2 +1,0 @@
-from main_code.simplified_BHE.heating_sections.subclasses.BHE_heating_section import BHEHeatingSection
-from main_code.simplified_BHE.heating_sections.subclasses.default_class import DefaultHeatingSection
