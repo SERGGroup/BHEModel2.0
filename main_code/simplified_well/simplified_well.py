@@ -732,7 +732,7 @@ class SimplifiedCPG(SimplifiedWell):
             else:
 
                 counter += 1
-                self.points[0].set_variable("P", self.points[0].get_variable("P") + dp)
+                self.points[0].set_variable("P", self.points[0].get_variable("P") - dp)
                 self.points[0].set_variable("T", surface_temperature)
 
         self.C0[1], self.P_loss[1] = self.update_DP_vertical(self.points[2], is_upward=True)
