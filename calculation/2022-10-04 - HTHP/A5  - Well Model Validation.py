@@ -132,8 +132,16 @@ for row in range(7, 17):
 
         )
 
-        sheet[row][col_w_turb+j].value = W_turb
-        sheet[row][col_dp_turb+j].value = dp_turb
+        try:
+
+            sheet[row][col_w_turb+j].value = W_turb
+            sheet[row][col_dp_turb+j].value = dp_turb
+
+        except:
+
+            sheet[row][col_w_turb+j].value = 0.
+            sheet[row][col_dp_turb+j].value = 0.
+
         results[j + 1].append(sheet[row][col_w_turb+j].value)
         j += 1
 

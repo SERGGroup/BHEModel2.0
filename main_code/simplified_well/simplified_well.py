@@ -280,7 +280,7 @@ class SimplifiedWell(ABC):
         self.comp_results = result["Comp Out"]
         self.eta_II = array_handler.overall_efficiency
 
-    def __update_DP_vertical(self, input_point: PlantThermoPoint, is_upward=True):
+    def update_DP_vertical(self, input_point: PlantThermoPoint, is_upward=True):
 
         if input_point == self.points[-1]:
 
@@ -677,9 +677,9 @@ class SimplifiedBHE(SimplifiedWell):
 
     def evaluate_points(self):
 
-        self.C0[0], self.P_loss[0] = self.__update_DP_vertical(self.points[0], is_upward=False)
+        self.C0[0], self.P_loss[0] = self.update_DP_vertical(self.points[0], is_upward=False)
         self.heating_section.update()
-        self.C0[1], self.P_loss[1] = self.__update_DP_vertical(self.points[2], is_upward=True)
+        self.C0[1], self.P_loss[1] = self.update_DP_vertical(self.points[2], is_upward=True)
 
 
 class SimplifiedCPG(SimplifiedWell):
@@ -721,7 +721,7 @@ class SimplifiedCPG(SimplifiedWell):
 
         while True:
 
-            self.C0[0], self.P_loss[0] = self.__update_DP_vertical(self.points[0], is_upward=False)
+            self.C0[0], self.P_loss[0] = self.update_DP_vertical(self.points[0], is_upward=False)
             self.heating_section.update()
             dp = self.points[2].get_variable("P") - self.p_res
 
@@ -735,4 +735,4 @@ class SimplifiedCPG(SimplifiedWell):
                 self.points[0].set_variable("P", self.points[0].get_variable("P") + dp)
                 self.points[0].set_variable("T", surface_temperature)
 
-        self.C0[1], self.P_loss[1] = self.__update_DP_vertical(self.points[2], is_upward=True)
+        self.C0[1], self.P_loss[1] = self.update_DP_vertical(self.points[2], is_upward=True)
