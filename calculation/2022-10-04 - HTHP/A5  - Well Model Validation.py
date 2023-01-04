@@ -38,23 +38,6 @@ def evaluate_turbine_power(
 ):
 
     tmp_co2_input = co2_in.duplicate()
-
-    if not pump_power == 0.:
-
-        h_out = tmp_co2_input.get_variable("h") + pump_power / tmp_co2_input.m_dot
-
-        w_iso = pump_power / eta_pump
-        h_iso = tmp_co2_input.get_variable("h") + w_iso / tmp_co2_input.m_dot
-        s_iso = tmp_co2_input.get_variable("s")
-
-        tmp_co2_input.set_variable("s", s_iso)
-        tmp_co2_input.set_variable("h", h_iso)
-
-        p_out = tmp_co2_input.get_variable("p")
-
-        tmp_co2_input.set_variable("p", p_out)
-        tmp_co2_input.set_variable("h", h_out)
-
     T_rock = t_amb + t_grad * dz_well / 1e3
 
     if pressure_losses:
@@ -86,10 +69,20 @@ def evaluate_turbine_power(
 
     bhe_in.update()
 
-    turb_output = bhe_in.points[-1].duplicate()
-    turb_output.set_to_expansion_result(p_sat + dp_sat / 1e3, eta_turb, bhe_in.points[-1])
+    if not pump_power == 0.:
 
-    dp_turb = bhe_in.points[-1].get_variable("P") - (p_sat + dp_sat / 1e3)
+        w_iso = pump_power / eta_pump
+        h_cond_iso = tmp_co2_input.get_variable("h") - w_iso / tmp_co2_input.m_dot
+        s_iso = tmp_co2_input.get_variable("s")
+
+        tmp_co2_input.set_variable("s", s_iso)
+        tmp_co2_input.set_variable("h", h_cond_iso)
+
+    p_cond_out = tmp_co2_input.get_variable("P")
+    turb_output = bhe_in.points[-1].duplicate()
+    turb_output.set_to_expansion_result(p_cond_out, eta_turb, bhe_in.points[-1])
+
+    dp_turb = bhe_in.points[-1].get_variable("P") - p_cond_out
     dh_turb = bhe_in.points[-1].get_variable("h") - turb_output.get_variable("h")
     W_turb = dh_turb * turb_output.m_dot
     Q_res = bhe_in.Q_bottom
