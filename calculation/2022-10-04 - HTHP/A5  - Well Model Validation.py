@@ -1,8 +1,8 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
-from main_code.simplified_BHE.heating_sections.subclasses.EGS_heating_section import EGSHeatingSection
-from main_code.simplified_BHE.heating_sections.subclasses.default_class import DefaultHeatingSection
+from main_code.simplified_well.heating_sections.subclasses.EGS_heating_section import EGSHeatingSection
+from main_code.simplified_well.heating_sections.subclasses.default_class import DefaultHeatingSection
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
-from main_code.simplified_BHE.simplified_BHE import SimplifiedBHE
+from main_code.simplified_well.simplified_well import SimplifiedCPG
 from main_code.support.other.matplolib_stiles import ColorFader
 from openpyxl import load_workbook
 from main_code import constants
@@ -38,23 +38,6 @@ def evaluate_turbine_power(
 ):
 
     tmp_co2_input = co2_in.duplicate()
-
-    if not pump_power == 0.:
-
-        h_out = tmp_co2_input.get_variable("h") + pump_power / tmp_co2_input.m_dot
-
-        w_iso = pump_power / eta_pump
-        h_iso = tmp_co2_input.get_variable("h") + w_iso / tmp_co2_input.m_dot
-        s_iso = tmp_co2_input.get_variable("s")
-
-        tmp_co2_input.set_variable("s", s_iso)
-        tmp_co2_input.set_variable("h", h_iso)
-
-        p_out = tmp_co2_input.get_variable("p")
-
-        tmp_co2_input.set_variable("p", p_out)
-        tmp_co2_input.set_variable("h", h_out)
-
     T_rock = t_amb + t_grad * dz_well / 1e3
 
     if pressure_losses:
@@ -67,7 +50,7 @@ def evaluate_turbine_power(
         d_inj = None
         d_prod = None
 
-    bhe_in = SimplifiedBHE(
+    bhe_in = SimplifiedCPG(
 
         input_thermo_point=tmp_co2_input,
         dz_well=dz_well, T_rocks=T_rock, use_rk=True,
@@ -86,10 +69,20 @@ def evaluate_turbine_power(
 
     bhe_in.update()
 
-    turb_output = bhe_in.points[-1].duplicate()
-    turb_output.set_to_expansion_result(p_sat + dp_sat / 1e3, eta_turb, bhe_in.points[-1])
+    if not pump_power == 0.:
 
-    dp_turb = bhe_in.points[-1].get_variable("P") - (p_sat + dp_sat / 1e3)
+        w_iso = pump_power / eta_pump
+        h_cond_iso = tmp_co2_input.get_variable("h") - w_iso / tmp_co2_input.m_dot
+        s_iso = tmp_co2_input.get_variable("s")
+
+        tmp_co2_input.set_variable("s", s_iso)
+        tmp_co2_input.set_variable("h", h_cond_iso)
+
+    p_cond_out = tmp_co2_input.get_variable("P")
+    turb_output = bhe_in.points[-1].duplicate()
+    turb_output.set_to_expansion_result(p_cond_out, eta_turb, bhe_in.points[-1])
+
+    dp_turb = bhe_in.points[-1].get_variable("P") - p_cond_out
     dh_turb = bhe_in.points[-1].get_variable("h") - turb_output.get_variable("h")
     W_turb = dh_turb * turb_output.m_dot
     Q_res = bhe_in.Q_bottom
@@ -132,8 +125,16 @@ for row in range(7, 17):
 
         )
 
-        sheet[row][col_w_turb+j].value = W_turb
-        sheet[row][col_dp_turb+j].value = dp_turb
+        try:
+
+            sheet[row][col_w_turb+j].value = W_turb
+            sheet[row][col_dp_turb+j].value = dp_turb
+
+        except:
+
+            sheet[row][col_w_turb+j].value = 0.
+            sheet[row][col_dp_turb+j].value = 0.
+
         results[j + 1].append(sheet[row][col_w_turb+j].value)
         j += 1
 

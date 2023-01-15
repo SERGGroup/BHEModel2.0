@@ -1,11 +1,12 @@
 import scipy.integrate
 
-from main_code.simplified_BHE.heating_sections import DefaultHeatingSection, AbstractHeatingSection
+from main_code.simplified_well.heating_sections import DefaultHeatingSection, AbstractHeatingSection
 from main_code.support import PlantThermoPoint, retrieve_PPI
 from main_code import constants
 
 from EEETools.Tools.API.ExcelAPI.modules_importer import calculate_excel
 from EEETools.Tools.API.Tools.main_tools import get_result_data_frames
+from abc import ABC, abstractmethod
 from scipy.integrate import RK45
 from scipy.optimize import Bounds
 from scipy.constants import g
@@ -15,7 +16,7 @@ import warnings
 import os
 
 
-class SimplifiedBHE:
+class SimplifiedWell(ABC):
 
     def __init__(
 
@@ -165,7 +166,7 @@ class SimplifiedBHE:
 
         self.__set_reference_state(ambient_condition)
 
-        self.__evaluate_points()
+        self.evaluate_points()
         self.__evaluate_parameters()
         self.__evaluate_performance_parameters()
         self.__perform_exergy_analysis()
@@ -174,7 +175,7 @@ class SimplifiedBHE:
 
     def update_simplified(self):
 
-        self.__evaluate_points()
+        self.evaluate_points()
 
     def __set_reference_state(self, ambient_condition):
 
@@ -190,11 +191,15 @@ class SimplifiedBHE:
 
         self.points[0].reference_state = ref_state
 
-    def __evaluate_points(self):
+    @abstractmethod
+    def evaluate_points(self):
 
-        self.C0[0], self.P_loss[0] = self.__update_DP_vertical(self.points[0], is_upward=False)
-        self.heating_section.update()
-        self.C0[1], self.P_loss[1] = self.__update_DP_vertical(self.points[2], is_upward=True)
+        """
+
+            METHOD TO BE IMPLEMENTED IN SUBCLASSES
+            evaluate the well points according to the reservoir modelling hypotesis
+
+        """
 
     def __evaluate_parameters(self):
 
@@ -275,7 +280,7 @@ class SimplifiedBHE:
         self.comp_results = result["Comp Out"]
         self.eta_II = array_handler.overall_efficiency
 
-    def __update_DP_vertical(self, input_point: PlantThermoPoint, is_upward=True):
+    def update_DP_vertical(self, input_point: PlantThermoPoint, is_upward=True):
 
         if input_point == self.points[-1]:
 
@@ -362,7 +367,6 @@ class SimplifiedBHE:
             integrator = RK45(rk_funct, 0, [p0, rho0], self.dz_well)
 
             while integrator.status == 'running':
-
                 integrator.step()
 
             output = integrator.y
@@ -667,3 +671,68 @@ class SimplifiedBHE:
             rows_str
 
         )
+
+
+class SimplifiedBHE(SimplifiedWell):
+
+    def evaluate_points(self):
+
+        self.C0[0], self.P_loss[0] = self.update_DP_vertical(self.points[0], is_upward=False)
+        self.heating_section.update()
+        self.C0[1], self.P_loss[1] = self.update_DP_vertical(self.points[2], is_upward=True)
+
+
+class SimplifiedCPG(SimplifiedWell):
+
+    def __init__(
+
+        self, input_thermo_point: PlantThermoPoint, dz_well, T_rocks,
+        heating_section=None, k_rocks=0.2, geo_flux=0.1, q_up_down=0.0,
+        PPI=None, use_rk=False, d_inj=None, d_prod=None,
+        discretize_p_losses=False, p_res=None
+
+    ):
+
+        super().__init__(
+
+            input_thermo_point, dz_well, T_rocks,
+            heating_section=heating_section, k_rocks=k_rocks,
+            geo_flux=geo_flux, q_up_down=q_up_down,
+            PPI=PPI, use_rk=use_rk, d_inj=d_inj, d_prod=d_prod,
+            discretize_p_losses=discretize_p_losses
+
+        )
+
+        if p_res is not None:
+
+            self.p_res = p_res
+
+        else:
+
+            self.p_res = 1000 * 9.81 * dz_well / 1e6  # water hydrostatic pressure (in MPa)
+
+    def evaluate_points(self):
+
+        # iterate point 0 in order to get fixed point 1 (production well bottom hole) pressure.
+        # pressure = reservoir pressure - pressure losses in the reservoir)
+
+        counter = 0
+        surface_temperature = self.points[0].get_variable("T")
+
+        while True:
+
+            self.C0[0], self.P_loss[0] = self.update_DP_vertical(self.points[0], is_upward=False)
+            self.heating_section.update()
+            dp = self.points[2].get_variable("P") - self.p_res
+
+            if abs(dp / self.p_res) < 1e-3 or counter > 10:
+
+                break
+
+            else:
+
+                counter += 1
+                self.points[0].set_variable("P", self.points[0].get_variable("P") - dp)
+                self.points[0].set_variable("T", surface_temperature)
+
+        self.C0[1], self.P_loss[1] = self.update_DP_vertical(self.points[2], is_upward=True)

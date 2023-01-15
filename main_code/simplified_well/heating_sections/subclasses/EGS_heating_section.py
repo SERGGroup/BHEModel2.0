@@ -1,6 +1,6 @@
 import numpy as np
 
-from main_code.simplified_BHE.heating_sections.abstract_class import AbstractHeatingSection
+from main_code.simplified_well.heating_sections.abstract_class import AbstractHeatingSection
 from scipy.optimize import Bounds
 
 

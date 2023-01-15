@@ -10,7 +10,7 @@ delta_pump_p = 0.7
 
 
 # Pump input condition
-T_amb = 15 # [°C]
+T_amb = 22 # [°C]
 dT_appr = 7  # [°C]
 T_c_out=T_amb+dT_appr       # condenser Temperature
 
@@ -231,4 +231,4 @@ print("beta",beta_1,beta_2,beta_3,beta_4)
 print("p_t_in=",p_t_in,"p_1=",p_1,"p_2",p_2,"p_3",p_3,"p_4", p_4,"p_c",p_c)
 print(p_levels)
 print("Fi", Fi_1,Fi_2,Fi_3,Fi_4)
-
+print(m_dot)
