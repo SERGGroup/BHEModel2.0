@@ -1,7 +1,6 @@
 # %%------------   IMPORT MODULES                     -----------------------------------------------------------> #
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
-from main_code.simplified_BHE.simplified_BHE import SimplifiedBHE
-import matplotlib.pyplot
+from main_code.simplified_well.simplified_well import SimplifiedBHE
 
 # %%------------   BH input condition                   -----------------------------------------------------------> #
 
@@ -141,6 +140,7 @@ def Y(Fi,B):
 
 
 n=4 #just
+delta_h_t_iso=h_t_in-h_out_iso
 delta_h_t_i=delta_h_t_iso/n
 point_tmp=PlantThermoPoint(["CarbonDioxide"], [1])
 p_levels = list()

@@ -1,16 +1,15 @@
 # %%------------   IMPORT MODULES                     -----------------------------------------------------------> #
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
-from main_code.simplified_BHE.simplified_BHE import SimplifiedBHE
-
+from main_code.simplified_well.simplified_well import SimplifiedBHE
 # %%------------   BH input condition                   -----------------------------------------------------------> #
 
 # let's assume a 0.7Mpa of pump pressure rise
 delta_pump_p = 0.7
 
 # Pump input condition
-T_amb = 15  # [°C]
+T_amb = 22  # [°C]
 dT_appr = 7  # [°C]
-T_c_out = T_amb + dT_appr  # condenser Temperature
+T_c_out = T_amb + dT_appr  # AC Temperature
 
 CO2_input = PlantThermoPoint(["CarbonDioxide"], [1])
 CO2_input.set_variable("T", T_c_out)
@@ -23,7 +22,7 @@ else:
 
     CO2_input.set_variable("rho", 700)
     p_c = CO2_input.get_variable("P")
-    ip_c = CO2_input.get_variable("P")
+
 print("condenser pressure", p_c)
 
 CO2_input.set_variable("T", T_c_out)
@@ -95,48 +94,125 @@ print("turbine outlet temperature", t_t_out, "c")
 beta = p_t_in / P_t_out
 print("beta:", beta)
 
-# %%------------ condenser                      -----------------------------------------------------------> #
+ # %%------------ condenser                      -----------------------------------------------------------> #
 T_c_in = t_t_out
 condenser_output_condition = PlantThermoPoint(["CarbonDioxide"], [1])
-condenser_output_condition.set_variable("Q", 0)
 condenser_output_condition.set_variable("P", p_c)
-
+condenser_output_condition.set_variable("T", T_c_out)
 h_c_out = condenser_output_condition.get_variable("h")
 
-print("h_c_out:", h_c_out)
-Q_out = h_t_out - h_c_out
+
+#print("h_c_out:", h_c_out)
+Q_out = h_t_out -h_c_out
 print("Q_out:", Q_out)
 
 # %%------------   cycle efficiency neglecting pump wor ----------------------------------------------------------->
 eta_cycle = 100 * (h_t_in - h_t_out) / (h_out_BH - h_in_BH)
 print("eta_cycle:", eta_cycle)
-
-
 # %%------------ Off design Analisys----------------------------------------------------------->
-def massflow_coefficient(T, P, m=m_dot):
-    Fi = m * (T ** 0.5) / P
+def fi(rho,p,m=m_dot):
+    Fi = m/((p*rho)**0.5)
     return Fi
 
-
-def Y(P, Fi, B):
-    Y = (P ** 2 - B ** 2) / ((P ** 2) * (Fi ** 2))
+def Y(Fi,B):
+    Y= (1-(1/(B**2)))/Fi**2
     return Y
 
-
-Fi_d = massflow_coefficient(t_t_in, p_t_in, m_dot)
-print("flow coefficient", Fi_d)
-
-Y_id = Y(p_t_in, Fi_d, p_c)
-print("Y_id", Y_id)
-
 # %% ------------ Number of Stages ----------------------------------------------------------->
-n = 3  # just
-delta_h_t_i = delta_h_t / n
-P_3 = p_t_in
-h_3 = h_t_in
-s_3 = s_t_in
+#Assuming constant enthalpy drop accros each stage
 
-h_2 = h_3 - delta_h_t_i
 
-point_2 = PlantThermoPoint(["CarbonDioxide"], [1])
-point_2.set_variable("h", h_2)
+n=4 #just
+delta_h_t_iso=h_t_in-h_out_iso
+delta_h_t_i=delta_h_t_iso/n
+point_tmp=PlantThermoPoint(["CarbonDioxide"], [1])
+p_levels = list()
+
+for i in range(n):
+
+    point_tmp.set_variable("h", h_t_in-delta_h_t_i*(i+1))
+    point_tmp.set_variable("s", s_t_in)
+    p_levels.append(point_tmp.get_variable("P"))
+
+#1st stage
+h_1_is=h_t_in-delta_h_t_i
+
+point_1=PlantThermoPoint(["CarbonDioxide"], [1])
+point_1.set_variable("h",h_1_is)
+point_1.set_variable("s",s_t_in)
+p_1 = point_1.get_variable("P")
+rho_1 = point_1.get_variable("rho")
+
+beta_1=p_t_in/p_1
+
+h_1=h_t_in-(0.7*(h_t_in-h_1_is))
+
+point_1_r=PlantThermoPoint(["CarbonDioxide"], [1])
+point_1_r.set_variable("h",h_1)
+point_1_r.set_variable("P",p_1)
+s_1 = point_1_r.get_variable("s")
+Fi_1= fi(rho_1,p_1,m_dot)
+y_1=Y(Fi_1, beta_1)
+
+#second stage
+
+h_2_is=h_1_is-delta_h_t_i
+point_2=PlantThermoPoint(["CarbonDioxide"], [1])
+point_2.set_variable("h",h_2_is)
+point_2.set_variable("s",s_t_in)
+p_2 = point_2.get_variable("P")
+rho_2 = point_2.get_variable("rho")
+
+h_2=h_1-(0.7*(h_1-h_2_is))
+point_2_r=PlantThermoPoint(["CarbonDioxide"], [1])
+point_2_r.set_variable("h",h_2)
+point_2_r.set_variable("P",p_2)
+s_2 = point_2_r.get_variable("s")
+beta_2=p_1/p_2
+Fi_2= fi(rho_2,p_2,m_dot)
+y_2=Y(Fi_2, beta_2)
+
+
+#Third stage
+
+h_3_is=h_2_is-delta_h_t_i
+point_3=PlantThermoPoint(["CarbonDioxide"], [1])
+point_3.set_variable("h",h_3_is)
+point_3.set_variable("s",s_t_in)
+p_3 = point_3.get_variable("P")
+rho_3 = point_3.get_variable("rho")
+
+h_3=h_2-(0.7*(h_2-h_3_is))
+point_3_r=PlantThermoPoint(["CarbonDioxide"], [1])
+point_3_r.set_variable("h",h_3)
+point_3_r.set_variable("P",p_3)
+s_3 = point_3_r.get_variable("s")
+beta_3=p_2/p_3
+Fi_3= fi(rho_3,p_3,m_dot)
+y_3=Y(Fi_3, beta_3)
+
+#4th stage
+h_4_is=h_3_is-delta_h_t_i
+point_4=PlantThermoPoint(["CarbonDioxide"], [1])
+point_4.set_variable("h",h_4_is)
+point_4.set_variable("s",s_t_in)
+p_4 = point_4.get_variable("P")
+rho_3 = point_3.get_variable("rho")
+
+
+h_4=h_3-(0.7*(h_3-h_4_is))
+point_4_r=PlantThermoPoint(["CarbonDioxide"], [1])
+point_4_r.set_variable("h",h_4)
+point_4_r.set_variable("P",p_4)
+s_4 = point_4_r.get_variable("s")
+rho_4 = point_4.get_variable("rho")
+beta_4=p_3/p_4
+Fi_4= fi(rho_4,p_4,m_dot)
+y_4=Y(Fi_4, beta_4)
+print("y",y_1,y_2,y_3,y_4)
+print("beta",beta_1,beta_2,beta_3,beta_4)
+print("p_t_in=",p_t_in,"p_1=",p_1,"p_2",p_2,"p_3",p_3,"p_4", p_4,"p_c",p_c)
+print(p_levels)
+print("Fi", Fi_1,Fi_2,Fi_3,Fi_4)
+print("h", h_t_in-h_1,h_1-h_2,h_2-h_3,h_3-h_4)
+print(m_dot)
