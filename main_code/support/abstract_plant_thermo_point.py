@@ -4,10 +4,14 @@ from sty import ef
 
 class PlantThermoPoint(ThermodynamicPoint):
 
-    def __init__(self, fluids: list, composition: list, m_dot=1.,
-                 other_variables="all", calculate_on_need="all", unit_system="SI WITH C"):
+    def __init__(
 
-        super().__init__(fluids, composition, other_variables, calculate_on_need, unit_system)
+            self, fluids: list, composition: list, m_dot=1., rp_handler=None,
+            other_variables="all", calculate_on_need="all", unit_system="SI WITH C"
+
+    ):
+
+        super().__init__(fluids, composition, rp_handler, other_variables, calculate_on_need, unit_system)
         self.m_dot = m_dot
 
     def duplicate(self):
@@ -17,6 +21,7 @@ class PlantThermoPoint(ThermodynamicPoint):
             self.RPHandler.fluids,
             self.RPHandler.composition,
             self.m_dot,
+            rp_handler=self.RPHandler,
             unit_system=self.RPHandler.unit_system,
             other_variables=self.inputs["other_variables"],
             calculate_on_need=self.inputs["calculate_on_need"]
@@ -25,6 +30,11 @@ class PlantThermoPoint(ThermodynamicPoint):
 
         self.copy_state_to(tp)
         return tp
+
+    def copy_state_to(self, target_point):
+
+        super().copy_state_to(target_point)
+        target_point.m_dot = self.m_dot
 
     def set_to_compression_result(self, P_out, eta, input_state: ThermodynamicPoint):
 

@@ -1,15 +1,13 @@
-import scipy.integrate
-
 from main_code.simplified_well.heating_sections import DefaultHeatingSection, AbstractHeatingSection
-from main_code.support import PlantThermoPoint, retrieve_PPI
-from main_code import constants
-
 from EEETools.Tools.API.ExcelAPI.modules_importer import calculate_excel
 from EEETools.Tools.API.Tools.main_tools import get_result_data_frames
+from main_code.support import PlantThermoPoint, retrieve_PPI
 from abc import ABC, abstractmethod
 from scipy.integrate import RK45
 from scipy.optimize import Bounds
+from main_code import constants
 from scipy.constants import g
+import scipy.integrate
 import numpy as np
 from sty import ef
 import warnings

@@ -22,6 +22,7 @@ if T_c_out < 30:        # Transcritical
 
     CO2_input.set_variable("Q", 0.)
     p_c = CO2_input.get_variable("P")  # condenser pressure or turbine outlet pressure
+
 else:                   # Supercritical
 
     CO2_input.set_variable("rho", 700)
