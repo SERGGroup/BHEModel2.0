@@ -90,7 +90,7 @@ class TurbineODPlotter:
             dh_perc = 1.2 * (float(n) + 1) / n_points + 0.4
             dh_real = dh_iso_des * dh_perc
 
-            eta = self.turbine.evaluate_eta(dh_real, dh_iso_des)
+            eta = self.turbine.evaluate_eta_stage(dh_real, dh_iso_des)
 
             dh_list.append(dh_real)
             eta_list.append(eta)

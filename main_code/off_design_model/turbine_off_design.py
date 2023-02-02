@@ -25,6 +25,9 @@ class TurbineOD:
         self.points = list()
         self.design_points = list()
 
+        self.power = 0.
+        self.eta_iso = 0.
+
         self.evaluate_design()
 
     def evaluate_design(self):
@@ -59,7 +62,9 @@ class TurbineOD:
             self.y_ids.append((1 - (1 / (beta ** 2))) / fi ** 2)
 
             self.design_points.append(stage_output)
-            self.points.append(self.input_point.duplicate())
+            self.points.append(stage_output.duplicate())
+
+        self.__evaluate_parameters()
 
     def __evaluate_p_levels(self):
 
@@ -83,6 +88,18 @@ class TurbineOD:
 
         return p_levels
 
+    def __evaluate_parameters(self):
+
+        tmp_point = self.points[-1].duplicate()
+        tmp_point.set_variable("P", self.points[-1].get_variable("P"))
+        tmp_point.set_variable("s", self.points[0].get_variable("s"))
+
+        dh = self.points[0].get_variable("h") - self.points[-1].get_variable("h")
+        dh_iso = self.points[0].get_variable("h") - tmp_point.get_variable("h")
+
+        self.power = dh * self.input_point.m_dot
+        self.eta_iso = dh / dh_iso
+
     def update_off_design_output(self, update_output=True):
 
         for n in range(len(self.y_ids)):
@@ -105,7 +122,7 @@ class TurbineOD:
 
             h_iso_curr = stage_output.get_variable("h")
             delta_h_iso = h_in - h_iso_curr
-            eta_curr = self.evaluate_eta(delta_h_iso, self.dh_iso_des[n])
+            eta_curr = self.evaluate_eta_stage(delta_h_iso, self.dh_iso_des[n])
             h_out = h_in - eta_curr * delta_h_iso
 
             stage_output.set_variable("P", p_out)
@@ -114,6 +131,7 @@ class TurbineOD:
         if update_output:
 
             self.points[-1].copy_state_to(self.output_point)
+            self.__evaluate_parameters()
 
     def update_off_design_flow_rate(self):
 
@@ -155,6 +173,7 @@ class TurbineOD:
 
         self.input_point.m_dot = m_dot_guess
         self.update_off_design_output(update_output=False)
+        self.__evaluate_parameters()
 
     def update_input_output_points(self, turbine_in, turbine_out):
 
@@ -187,7 +206,7 @@ class TurbineOD:
 
         return self.evaluate_fi(m_r, self.input_point.get_variable("P"), self.input_point.get_variable("rho"))
 
-    def evaluate_eta(self, delta_h_iso, delta_h_iso_des):
+    def evaluate_eta_stage(self, delta_h_iso, delta_h_iso_des):
 
         a = np.log(delta_h_iso / delta_h_iso_des)
         return self.eta_des * (10 ** ((-0.00817 * (a ** 3)) - (0.03181 * (a ** 2)) + 0.0019 * a))
