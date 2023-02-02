@@ -290,6 +290,7 @@ class TurbineOD:
 
         )
 
+
 class TurbineODPlotter:
 
     def __init__(self, turbine: TurbineOD):
@@ -313,6 +314,15 @@ class TurbineODPlotter:
 
             ax_beta.plot(fi_od, beta_od, "x")
             ax_eta.plot(dh_od, eta_od, "x")
+
+        ax_beta.set_xlabel(r'$\phi$ [-]', fontsize='large', loc='center')
+        ax_beta.set_ylabel(r'$\beta$ [-]', fontsize='large', loc='center')
+        ax_beta.set_title("Stodola Curve", fontsize=20, loc='center')
+
+        ax_eta.set_xlabel(r'$dh_{iso}$ [kJ/kg]', fontsize='large', loc='center')
+        ax_eta.set_ylabel(r'$\eta_{iso}$ [-]', fontsize='large', loc='center')
+        ax_eta.set_title("Efficiency Curve", fontsize=20, loc='center')
+
 
     def __get_off_design_points(self, off_design_conditions):
 
@@ -433,7 +443,7 @@ def evaluate_well():
     return bhe_inside.points[-1].duplicate(), CO2_input.duplicate()
 
 turbine_in, turbine_out = evaluate_well()
-turbine = TurbineOD(turbine_in, turbine_out, n_stages=3)
+turbine = TurbineOD(turbine_in, turbine_out, n_stages=1)
 
 # %% OFF-DESIGN
 T_amb = 15 # [°C]
@@ -445,6 +455,7 @@ Power_OD_list=list()
 m_dot_list=list()
 T_a=list()
 for T in range(0,24):
+
     T_amb=T
     T_a.append(T)
     turbine_in, turbine_out = evaluate_well()
@@ -504,8 +515,9 @@ fig = plt.figure(dpi=150)
 fig.set_size_inches(20, 8)
 turbine_plotter = TurbineODPlotter(turbine)
 turbine_plotter.plot_characteristic_curves(fig, n_points=30, off_design_conditions=conditions)
-plt.tight_layout()
+plt.tight_layout(pad=5)
 plt.show()
+
 # %% PLOT
 fig.set_size_inches(20, 8)
 turbine_plotter = TurbineODPlotter(turbine)
