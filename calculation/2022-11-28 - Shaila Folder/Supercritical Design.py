@@ -74,13 +74,14 @@ h_out_iso = Turbine_output_condition_iso.get_variable("h")
 t_t_out_iso = Turbine_output_condition_iso.get_variable("t")
 print("turbine_out_t_iso:", t_t_out_iso)
 
-eta = 0.8
+eta = 0.7
 
 h_t_out = h_t_in - (eta * (h_t_in - h_out_iso))
 print("h_t_out", h_t_out)
 print("h_t_in", h_t_in)
 delta_h_t = h_t_in - h_t_out
-P_t = 1000  # kW Fixing as desiered power output
+p_r=0.7
+P_t = 1000*p_r  # kW Fixing as desiered power output
 m_dot = P_t / delta_h_t  # kg/s
 print("mass flow rate:Design", m_dot, "kg/s")
 
@@ -216,3 +217,4 @@ print(p_levels)
 print("Fi", Fi_1,Fi_2,Fi_3,Fi_4)
 print("h", h_t_in-h_1,h_1-h_2,h_2-h_3,h_3-h_4)
 print(m_dot)
+# %% ----

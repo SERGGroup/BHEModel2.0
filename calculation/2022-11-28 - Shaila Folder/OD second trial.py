@@ -9,6 +9,7 @@ from main_code.simplified_well.simplified_well import SimplifiedBHE
 m_dot_D=43.85583
 delta_h_i_d=[4.987933577345359, 6.484313650548927, 6.933227672510043 ,7.067901879098372]
 Y_ds=[0.4525192696952781, 0.3582619774594879, 0.27740098563753757, 0.21005967202839923]
+
 #OD condition
 T_amb=29
 delta_T_appr=7
@@ -24,8 +25,8 @@ print("P_AC",P_AC)
 
 # %% ----------------Turbine expansion------------------------------------------------------------------>
 
-#n_e=20
-#m_r=linspace(m_r_low,m_r_high,n_e)      #slicing method
+n_e=20
+m_r=linspace(m_r_low,m_r_high,n_e)      #slicing method
 
 def turbine_expansion(m_r):
 
@@ -85,12 +86,12 @@ def turbine_expansion(m_r):
 
     return points
 
-print(turbine_expansion((0.5)))
-
- # %% ----------------efficincy calculation------------------------------------------------------------------>
+print(turbine_expansion((0.9)))
 for i in m_r:
     turbine_expansion(i)
     print('{}-{}-{}' .format(turbine_expansion(i), P_AC,i))
+ # %% ----------------efficincy calculation------------------------------------------------------------------>
+
 
 def Bisection(m_r_L,m_r_R):
     m_r_M = (m_r_R + m_r_L) / 2

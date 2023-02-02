@@ -14,7 +14,7 @@ class TurbineOD:
 
             self,
             input_point:PlantThermoPoint, output_point:PlantThermoPoint,
-            n_stages=2, eta_des=0.7
+            n_stages=3, eta_des=0.7
 
     ):
 
@@ -433,16 +433,60 @@ def evaluate_well():
     return bhe_inside.points[-1].duplicate(), CO2_input.duplicate()
 
 turbine_in, turbine_out = evaluate_well()
-turbine = TurbineOD(turbine_in, turbine_out, n_stages=1)
+turbine = TurbineOD(turbine_in, turbine_out, n_stages=3)
 
 # %% OFF-DESIGN
 T_amb = 15 # [°C]
 dT_appr = 7  # [°C]
 
-turbine_in, turbine_out = evaluate_well()
-turbine.update_input_output_points(turbine_in, turbine_out)
-turbine.update_off_design_flow_rate()
-print(turbine.input_point.m_dot)
+beta_OD_list=list()
+Fi_OD_list=list()
+Power_OD_list=list()
+m_dot_list=list()
+T_a=list()
+for T in range(0,24):
+    T_amb=T
+    T_a.append(T)
+    turbine_in, turbine_out = evaluate_well()
+    turbine.update_input_output_points(turbine_in, turbine_out)
+    turbine.update_off_design_flow_rate()
+
+    m_dot_od = turbine.input_point.m_dot
+    m_dot_list.append(m_dot_od)
+
+    h_in_od=turbine_in.get_variable("h")
+    h_out_od=turbine_out.get_variable("h")
+    rho_in=turbine_in.get_variable("rho")
+
+    P_in=turbine_in.get_variable("P")
+    P_out=turbine_out.get_variable("P")
+    b=P_in/P_out
+    Pow=(h_in_od-h_out_od)*m_dot_od
+    Power_OD_list.append(Pow)
+    beta_OD_list.append(b)
+    fi=m_dot_od/(np.sqrt(P_in*rho_in))
+    Fi_OD_list.append(fi)
+
+# %% PLOT
+plt.plot(T_a,Fi_OD_list)
+plt.xlabel('T_amb/°c')
+plt.ylabel('Mass Flow')
+plt.show()
+# %% PLOT
+plt.plot(T_a,m_dot_list,'r')
+plt.xlabel('T_amb/°c')
+plt.ylabel('m_dot')
+plt.show()
+# %% PLOT
+plt.plot(T_a,Power_OD_list,'g')
+plt.xlabel('T_amb/°c')
+plt.ylabel('Power/W')
+plt.show()
+# %% PLOT
+plt.plot(T_a,beta_OD_list,'k')
+plt.xlabel('T_amb/°c')
+plt.ylabel('beta')
+plt.show()
 
 # %% INPUT POINTS
 
@@ -462,3 +506,6 @@ turbine_plotter = TurbineODPlotter(turbine)
 turbine_plotter.plot_characteristic_curves(fig, n_points=30, off_design_conditions=conditions)
 plt.tight_layout()
 plt.show()
+# %% PLOT
+fig.set_size_inches(20, 8)
+turbine_plotter = TurbineODPlotter(turbine)

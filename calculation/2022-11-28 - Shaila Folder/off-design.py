@@ -4,7 +4,7 @@ import numpy as np
 
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
 from main_code.simplified_well.simplified_well
-
+import matplotlib.pyplot as plt
 
 # %% ------------ Design parameters ------------------------------------------------------------------->
 Y_1_d=0.3464600658604466
@@ -29,7 +29,8 @@ print(T_c)
 #Turbine inlet conditions
 T_1=[99.98,99.98,99.98,99.98,99.97,99.97,99.97,99.97,99.97,99.98,99.99,100.01,100.1,100.16,100.23,100.31,100.4,100.5,100.61]
 P_1=[13.08,13.09,13.1,13.13,13.15,13.17,13.17,13.17,13.14,13.04,12.87,12.69,14.26,14.48,14.71,14.93,15.17,15.4,15.63]
-
+plt.plot(T_1,P_1 )
+plt.show()
 
 
 AC_pressure=list()
