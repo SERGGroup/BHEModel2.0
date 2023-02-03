@@ -123,8 +123,8 @@ ax_eta = fig.add_subplot(1, 2, 2)
 draw_error_band(ax_pow, p_out_list, power_list, 1, err_fixed=True, alpha=0.4, zorder=5)
 draw_error_band(ax_eta, flow_rate_list, eta_list, 0.025, alpha=0.4, zorder=5)
 
-ax_pow.plot(POWER_DATA["p_out"], POWER_DATA["power"], "x", zorder=10)
-ax_eta.plot(EFFICIENCY_DATA["m_dot"], EFFICIENCY_DATA["eta"], "x", zorder=10)
+ax_pow.scatter(POWER_DATA["p_out"], POWER_DATA["power"], s=80, marker="x", zorder=10, linewidths=1.5)
+ax_eta.scatter(EFFICIENCY_DATA["m_dot"], EFFICIENCY_DATA["eta"], s=80, marker="x", zorder=10, linewidths=1.5)
 
 ax_pow.set_xlim(7, 15)
 ax_pow.set_ylim(0, 18)
