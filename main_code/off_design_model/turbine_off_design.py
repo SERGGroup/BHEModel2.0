@@ -10,7 +10,7 @@ class TurbineOD:
 
             self,
             input_point:PlantThermoPoint, output_point:PlantThermoPoint,
-            n_stages=3, eta_des=0.7
+            n_stages=3, eta_des=0.7, use_simplified_load_factor=True
 
     ):
 
@@ -21,12 +21,14 @@ class TurbineOD:
 
         self.y_ids = list()
         self.dh_iso_des = list()
+        self.lf_des = list()
 
         self.points = list()
         self.design_points = list()
 
         self.power = 0.
         self.eta_iso = 0.
+        self.use_simplified_load_factor = use_simplified_load_factor
 
         self.evaluate_design()
 
@@ -34,6 +36,8 @@ class TurbineOD:
 
         self.y_ids = list()
         self.dh_iso_des = list()
+        self.lf_des = list()
+
         self.points = [self.input_point]
         self.design_points = [self.input_point.duplicate()]
 
@@ -59,6 +63,7 @@ class TurbineOD:
             fi = self.evaluate_fi(self.input_point.m_dot, p_in, rho_in)
 
             self.dh_iso_des.append(dh_is)
+            self.lf_des.append((dh_is * rho_in ** 2)/(self.input_point.m_dot**2))
             self.y_ids.append((1 - (1 / (beta ** 2))) / fi ** 2)
 
             self.design_points.append(stage_output)
@@ -117,12 +122,7 @@ class TurbineOD:
             beta_stage = 1 / np.sqrt(1 - ((fi_stage ** 2) * self.y_ids[n]))
             p_out = p_in / beta_stage
 
-            stage_output.set_variable("P", p_out)
-            stage_output.set_variable("s", stage_input.get_variable("s"))
-
-            h_iso_curr = stage_output.get_variable("h")
-            delta_h_iso = h_in - h_iso_curr
-            eta_curr = self.evaluate_eta_stage(delta_h_iso, self.dh_iso_des[n])
+            eta_curr, delta_h_iso = self.evaluate_eta_stage(n, stage_input, p_out)
             h_out = h_in - eta_curr * delta_h_iso
 
             stage_output.set_variable("P", p_out)
@@ -206,10 +206,27 @@ class TurbineOD:
 
         return self.evaluate_fi(m_r, self.input_point.get_variable("P"), self.input_point.get_variable("rho"))
 
-    def evaluate_eta_stage(self, delta_h_iso, delta_h_iso_des):
+    def evaluate_eta_stage(self, n, stage_input, p_out):
 
-        a = np.log(delta_h_iso / delta_h_iso_des)
-        return self.eta_des * (10 ** ((-0.00817 * (a ** 3)) - (0.03181 * (a ** 2)) + 0.0019 * a))
+        tmp_point= stage_input.duplicate()
+        tmp_point.set_variable("P", p_out)
+        tmp_point.set_variable("s", stage_input.get_variable("s"))
+
+        h_iso_curr = tmp_point.get_variable("h")
+        dh_iso = stage_input.get_variable("h") - h_iso_curr
+
+        if self.use_simplified_load_factor:
+
+            a = np.log(dh_iso / self.dh_iso_des[n])
+
+        else:
+
+            rho_in = stage_input.get_variable("rho")
+            lf = (dh_iso * rho_in ** 2)/(self.input_point.m_dot ** 2)
+            a = np.log(lf / self.lf_des[n])
+
+        eta_stage = self.eta_des * (10 ** ((-0.00817 * (a ** 3)) - (0.03181 * (a ** 2)) + 0.0019 * a))
+        return eta_stage, dh_iso
 
     @staticmethod
     def evaluate_fi(m_dot, p_in, rho_in):

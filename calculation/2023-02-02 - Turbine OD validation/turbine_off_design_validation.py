@@ -32,7 +32,7 @@ turbine_in.set_variable("P", p_in)
 turbine_in.set_variable("T", t_in)
 turbine_out.set_to_expansion_result(p_out, 0.92, turbine_in)
 
-turbine = TurbineOD(turbine_in, turbine_out, n_stages=n_stage, eta_des=0.92)
+turbine = TurbineOD(turbine_in, turbine_out, n_stages=n_stage, eta_des=0.92, use_simplified_load_factor=True)
 print(turbine)
 
 # %%------------   INITIALIZE VALIDATION DATA             -----------------------------------------------------------> #
