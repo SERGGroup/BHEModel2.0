@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SqlDataSourceStorage">
+    <option name="dataSources">
+      <list>
+        <State>
+          <option name="id" value="36d29764-426e-4fbb-83e9-4be056d4a5dc" />
+          <option name="name" value="Florence ERA.csv (DDL)" />
+          <option name="languageId" value="Derby" />
+          <option name="urls">
+            <array />
+          </option>
+        </State>
+        <State>
+          <option name="id" value="46f48019-65a6-4418-9e1e-77f22229f728" />
+          <option name="name" value="Florence ERA.csv (DDL)" />
+          <option name="languageId" value="Derby" />
+          <option name="urls">
+            <array />
+          </option>
+          <option name="outLayout" value="File per object by schema and database.groovy" />
+          <option name="scriptOptions">
+            <map>
+              <entry key="ConstraintContext" value="CONSTRAINT_IN_TABLE" />
+              <entry key="UseCompactDef" value="1" />
+            </map>
+          </option>
+          <option name="scopes">
+            <map>
+              <entry key="$PROJECT_DIR$/resources/meteo data" value="" />
+            </map>
+          </option>
+        </State>
+        <State>
+          <option name="id" value="3740e3e5-d9ca-4f62-8470-ca3d9c236427" />
+          <option name="name" value="Florence ERA.csv (DDL) [2]" />
+          <option name="languageId" value="GenericSQL" />
+          <option name="urls">
+            <array>
+              <option value="file://$PROJECT_DIR$/resources/meteo data" />
+            </array>
+          </option>
+          <option name="outLayout" value="File per object by schema and database.groovy" />
+          <option name="scriptOptions">
+            <map>
+              <entry key="ConstraintContext" value="CONSTRAINT_IN_TABLE" />
+              <entry key="UseCompactDef" value="1" />
+            </map>
+          </option>
+          <option name="scopes">
+            <map>
+              <entry key="$PROJECT_DIR$/resources/meteo data" value="" />
+            </map>
+          </option>
+        </State>
+      </list>
+    </option>
+  </component>
+</project>
