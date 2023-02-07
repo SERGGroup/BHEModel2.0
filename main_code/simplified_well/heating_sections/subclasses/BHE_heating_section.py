@@ -10,7 +10,7 @@ class BHEHeatingSection(AbstractHeatingSection):
     def __init__(
 
             self, main_BHE,
-            DT_rocks=30, n_wells=10, d_well=0.5,
+            dt_rocks=30, n_wells=10, d_well=0.5,
             tkn_annulus=0.05, save_profiles=False,
             consider_pressure_losses=True
 
@@ -18,7 +18,7 @@ class BHEHeatingSection(AbstractHeatingSection):
 
         super().__init__(main_BHE)
 
-        self.DT_rocks = DT_rocks
+        self.dt_rocks = dt_rocks
         self.n_wells = n_wells
         self.d_well = d_well
         self.tkn_annulus = tkn_annulus
@@ -35,12 +35,12 @@ class BHEHeatingSection(AbstractHeatingSection):
     # <------------------------------------------------------------------------->
 
     @property
-    def DT_rocks(self):
+    def dt_rocks(self):
 
         return self.__DT_rocks
 
-    @DT_rocks.setter
-    def DT_rocks(self, DT_rocks_in):
+    @dt_rocks.setter
+    def dt_rocks(self, DT_rocks_in):
         self.__DT_rocks = DT_rocks_in
 
     @property
@@ -90,7 +90,7 @@ class BHEHeatingSection(AbstractHeatingSection):
         tmp_point_next = self.input_point.duplicate()
         tmp_point_old = self.input_point.duplicate()
 
-        T_out = self.main_BHE.T_rocks - self.DT_rocks
+        T_out = self.main_BHE.T_rocks - self.dt_rocks
         T_in = self.input_point.get_variable("T")
 
         self.l_HS = 0.
@@ -268,7 +268,7 @@ class BHEHeatingSection(AbstractHeatingSection):
         """
             Parameters to be optimized are:
 
-                - DT_rocks
+                - dt_rocks
                 - n_wells
                 - d_well
                 - tkn_annulus
@@ -282,7 +282,7 @@ class BHEHeatingSection(AbstractHeatingSection):
         """
             Parameters to be optimized are:
 
-                - DT_rocks
+                - dt_rocks
                 - n_wells
                 - d_well
                 - tkn_annulus
@@ -292,7 +292,7 @@ class BHEHeatingSection(AbstractHeatingSection):
 
     def set_optimization_param(self, optimization_param):
 
-        self.DT_rocks = optimization_param[0]
+        self.dt_rocks = optimization_param[0]
         self.n_wells = int(optimization_param[1])
         self.d_well = optimization_param[2]
         self.tkn_annulus = optimization_param[3]

@@ -10,7 +10,7 @@ class TurbineOD:
 
             self,
             input_point:PlantThermoPoint, output_point:PlantThermoPoint,
-            n_stages=3, eta_des=0.7, use_simplified_load_factor=True
+            n_stages=3, eta_des=0.7
 
     ):
 
@@ -21,14 +21,12 @@ class TurbineOD:
 
         self.y_ids = list()
         self.dh_iso_des = list()
-        self.lf_des = list()
 
         self.points = list()
         self.design_points = list()
 
         self.power = 0.
         self.eta_iso = 0.
-        self.use_simplified_load_factor = use_simplified_load_factor
 
         self.evaluate_design()
 
@@ -63,7 +61,6 @@ class TurbineOD:
             fi = self.evaluate_fi(self.input_point.m_dot, p_in, rho_in)
 
             self.dh_iso_des.append(dh_is)
-            self.lf_des.append((dh_is * rho_in ** 2)/(self.input_point.m_dot**2))
             self.y_ids.append((1 - (1 / (beta ** 2))) / fi ** 2)
 
             self.design_points.append(stage_output)
@@ -215,17 +212,9 @@ class TurbineOD:
         h_iso_curr = tmp_point.get_variable("h")
         dh_iso = stage_input.get_variable("h") - h_iso_curr
 
-        if self.use_simplified_load_factor:
-
-            a = np.log(dh_iso / self.dh_iso_des[n])
-
-        else:
-
-            rho_in = stage_input.get_variable("rho")
-            lf = (dh_iso * rho_in ** 2)/(self.input_point.m_dot ** 2)
-            a = np.log(lf / self.lf_des[n])
-
+        a = np.log(dh_iso / self.dh_iso_des[n])
         eta_stage = self.eta_des * (10 ** ((-0.00817 * (a ** 3)) - (0.03181 * (a ** 2)) + 0.0019 * a))
+
         return eta_stage, dh_iso
 
     @staticmethod

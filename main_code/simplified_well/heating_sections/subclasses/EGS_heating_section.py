@@ -90,7 +90,7 @@ class EGSHeatingSection(AbstractHeatingSection):
         """
             Parameters to be optimized are:
 
-                - DT_rocks
+                - dt_rocks
                 - n_wells
                 - d_well
                 - tkn_annulus

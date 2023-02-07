@@ -19,7 +19,7 @@ turbine_out = PlantThermoPoint(["Carbon Dioxide"], [1])
 #       "Aerodynamic Design and Off-design Performance Analysis of a Multi-Stage
 #       S-CO2 Axial Turbine Based on Solar Power Generation System."
 #       doi: https://doi.org/10.3390/app9040714
-#       (in res folder)
+#       (in 0 - Resources folder)
 
 p_in = 15
 t_in = 500
@@ -32,7 +32,7 @@ turbine_in.set_variable("P", p_in)
 turbine_in.set_variable("T", t_in)
 turbine_out.set_to_expansion_result(p_out, 0.92, turbine_in)
 
-turbine = TurbineOD(turbine_in, turbine_out, n_stages=n_stage, eta_des=0.92, use_simplified_load_factor=True)
+turbine = TurbineOD(turbine_in, turbine_out, n_stages=n_stage, eta_des=0.92)
 print(turbine)
 
 # %%------------   INITIALIZE VALIDATION DATA             -----------------------------------------------------------> #
@@ -43,7 +43,7 @@ print(turbine)
 #       "Aerodynamic Design and Off-design Performance Analysis of a Multi-Stage
 #       S-CO2 Axial Turbine Based on Solar Power Generation System."
 #       doi: https://doi.org/10.3390/app9040714
-#       (in res folder)
+#       (in 0 - Resources folder)
 #
 #   Data extracted from plot using:
 #
@@ -126,10 +126,10 @@ draw_error_band(ax_eta, flow_rate_list, eta_list, 0.025, alpha=0.4, zorder=5)
 ax_pow.scatter(POWER_DATA["p_out"], POWER_DATA["power"], s=80, marker="x", zorder=10, linewidths=1.5)
 ax_eta.scatter(EFFICIENCY_DATA["m_dot"], EFFICIENCY_DATA["eta"], s=80, marker="x", zorder=10, linewidths=1.5)
 
-ax_pow.set_xlim(7, 15)
+ax_pow.set_xlim(7, 14.5)
 ax_pow.set_ylim(0, 18)
 
-ax_eta.set_xlim(90, 210)
+ax_eta.set_xlim(90, 200)
 ax_eta.set_ylim(0.4, 1)
 
 ax_pow.set_xlabel(r'$P_{out}$ [MPa]', fontsize='large', loc='center')

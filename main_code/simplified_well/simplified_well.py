@@ -7,7 +7,6 @@ from scipy.integrate import RK45
 from scipy.optimize import Bounds
 from main_code import constants
 from scipy.constants import g
-import scipy.integrate
 import numpy as np
 from sty import ef
 import warnings
@@ -19,8 +18,8 @@ class SimplifiedWell(ABC):
     def __init__(
 
             self, input_thermo_point: PlantThermoPoint, dz_well, T_rocks,
-            heating_section=None, k_rocks=0.2, geo_flux=0.1, q_up_down=0.0,
-            PPI=None, use_rk=False, d_inj=None, d_prod=None,
+            heating_section=None, k_rocks=0.2, c_rocks=1, rho_rocks=2500,
+            geo_flux=0.1, q_up_down=0.0, PPI=None, use_rk=False, d_inj=None, d_prod=None,
             discretize_p_losses=False
 
     ):
@@ -29,11 +28,18 @@ class SimplifiedWell(ABC):
 
         self.dz_well = dz_well      # unit: m .............. default: NONE (REQUIRED)
         self.T_rocks = T_rocks      # unit: °C ............. default: NONE (REQUIRED)
-        self.k_rocks = k_rocks      # unit: W / (m K) ...... default: 0.2 W / (m K)
         self.geo_flux = geo_flux    # unit: W / m^2 ........ default: 0.1 W / m^2
+
+        self.k_rocks = k_rocks      # unit: W / (m K) ...... default: 0.2 W / (m K)
+        self.c_rocks = c_rocks      # unit: kJ / (kg K) .... default: 1 kJ / (kg K)
+        self.rho_rocks = rho_rocks  # unit: kg / m^3 ....... default: 2500 kg / m^3
 
         self.d_inj = d_inj          # unit: m .............. default: NONE (PRESSURE LOSSES IGNORED)
         self.d_prod = d_prod        # unit: m .............. default: NONE (PRESSURE LOSSES IGNORED)
+
+        #   alpha_rocks -> rock thermal diffusivity in [m^2/s]
+        #   (1e3 conversion factor c_rocks [kJ / (kg K)] -> [J / (kg K)])
+        self.alpha_rocks = k_rocks / (rho_rocks * c_rocks * 1e3)
 
         self.geo_gradient = None
         self.depth_optimization = False
@@ -195,7 +201,7 @@ class SimplifiedWell(ABC):
         """
 
             METHOD TO BE IMPLEMENTED IN SUBCLASSES
-            evaluate the well points according to the reservoir modelling hypotesis
+            evaluate the well points according to the reservoir modelling hypothesis
 
         """
 
@@ -712,7 +718,7 @@ class SimplifiedCPG(SimplifiedWell):
     def evaluate_points(self):
 
         # iterate point 0 in order to get fixed point 1 (production well bottom hole) pressure.
-        # pressure = reservoir pressure - pressure losses in the reservoir)
+        # pressure = reservoir pressure - pressure losses in the reservoir
 
         counter = 0
         surface_temperature = self.points[0].get_variable("T")

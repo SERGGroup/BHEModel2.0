@@ -93,7 +93,7 @@ def evaluate_turbine_power(
 
 # %%------------   CHECK ADAMS FROM EXCEL                 -----------------------------------------------------------> #
 
-file_directory = os.path.join(os.path.dirname(constants.RES_FOLDER), "2022-11-21 - Model Validation", "res")
+file_directory = os.path.join(os.path.dirname(constants.RES_FOLDER), "2022-11-21 - Model Validation", "0 - Resources")
 file_name = os.path.join(file_directory, "1-s2.0-S0306261914012124-mmc2.xlsx")
 wb = load_workbook(filename=file_name)
 sheet = wb.worksheets[0]

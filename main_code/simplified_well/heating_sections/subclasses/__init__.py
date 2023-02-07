@@ -1,2 +1,7 @@
 from main_code.simplified_well.heating_sections.subclasses.BHE_heating_section import BHEHeatingSection
 from main_code.simplified_well.heating_sections.subclasses.default_class import DefaultHeatingSection
+from main_code.simplified_well.heating_sections.subclasses.REELWELL_heating_section import (
+
+    REELWELLHeatingSection, REELWELLGeometry
+
+)

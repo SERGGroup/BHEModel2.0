@@ -296,7 +296,7 @@ T_grad = 35  # [°C/km]
 m_dot_list = np.linspace(40, 180, 100)
 results = dict()
 
-keys = ["no losses", "res losses", "all losses", "discrete losses"]
+keys = ["no losses", "0 - Resources losses", "all losses", "discrete losses"]
 pbar = tqdm(desc="profile calculation", total=len(m_dot_list) * len(keys))
 
 for key in keys:
@@ -305,7 +305,7 @@ for key in keys:
     pressure_losses = False
     res_losses = False
 
-    if key == "res losses":
+    if key == "0 - Resources losses":
         res_losses = True
 
     if key == "all losses":
