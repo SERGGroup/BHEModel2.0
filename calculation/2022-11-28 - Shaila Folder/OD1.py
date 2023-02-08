@@ -1,6 +1,6 @@
 # %%------------   IMPORT MODULES                     -----------------------------------------------------------> #
+from main_code.simplified_well.simplified_well import SimplifiedBHE
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
-from main_code.simplified_BHE.simplified_BHE import SimplifiedBHE
 
 # %% ------------ Design parameters ------------------------------------------------------------------->
 Y_1_d=0.4285451346283881
@@ -22,7 +22,7 @@ for element in T_amb:
     value = int(element)+delta_T_appr
     T_c.append(value)
 print(T_c)
-#Turbine inlet conditions
+#Turbine inlet conditions/ well output condition
 T_1=[99.98,99.98,99.98,99.98,99.97,99.97,99.97,99.97,99.97,99.98,99.99,100.01,100.1,100.16,100.23,100.31,100.4,100.5,100.61]
 P_1=[13.08,13.09,13.1,13.13,13.15,13.17,13.17,13.17,13.14,13.04,12.87,12.69,14.26,14.48,14.71,14.93,15.17,15.4,15.63]
 
