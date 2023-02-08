@@ -19,7 +19,7 @@ class SimplifiedWell(ABC):
 
             self, input_thermo_point: PlantThermoPoint, dz_well, T_rocks,
             heating_section=None, k_rocks=0.2, c_rocks=1, rho_rocks=2500,
-            geo_flux=0.1, q_up_down=0.0, PPI=None, use_rk=False, d_inj=None, d_prod=None,
+            geo_flux=0.1, q_up_down=0.0, PPI=None, use_rk=True, d_inj=None, d_prod=None,
             discretize_p_losses=False
 
     ):
