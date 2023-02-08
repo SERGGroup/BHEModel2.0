@@ -4,7 +4,7 @@ from matplotlib.patches import PathPatch
 
 # Function modified from: https://matplotlib.org/stable/gallery/lines_bars_and_markers/curve_error_band.html
 # using: https://www.geeksforgeeks.org/matplotlib-pyplot-fill_between-in-python/
-def draw_error_band(ax, x, y, err, err_fixed=False, alpha=0., color=None, **kwargs):
+def draw_error_band(ax, x, y, err, err_fixed=False, alpha=0., **kwargs):
 
     if err_fixed:
 
@@ -16,12 +16,7 @@ def draw_error_band(ax, x, y, err, err_fixed=False, alpha=0., color=None, **kwar
         y_plus = y*(1 + err)
         y_minus = y * (1 - err)
 
-    if color is None:
+    line = ax.plot(x, y,  **kwargs)
+    ax.fill_between(x, y_plus, y_minus, alpha=alpha, color=line[0].get_color(), **kwargs)
 
-        ax.plot(x, y,  **kwargs)
-        ax.fill_between(x, y_plus, y_minus, alpha=alpha, **kwargs)
-
-    else:
-
-        ax.plot(x, y, color=color, **kwargs)
-        ax.fill_between(x, y_plus, y_minus, alpha=alpha, color=color, **kwargs)
+    return line[0]

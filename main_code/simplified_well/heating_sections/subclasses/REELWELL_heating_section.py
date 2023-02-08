@@ -481,8 +481,8 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
             self.__tmp_ann.set_variable("P", x[0])
             self.__tmp_ann.set_variable("h", x[1])
-            self.__tmp_tub.set_variable("P", x[3])
-            self.__tmp_tub.set_variable("h", x[4])
+            self.__tmp_tub.set_variable("P", x[2])
+            self.__tmp_tub.set_variable("h", x[3])
 
             dpdl_ann = self.geom.dp_dl(self.__tmp_ann, is_annulus=True)
             dpdl_tub = self.geom.dp_dl(self.__tmp_tub, is_annulus=False)
