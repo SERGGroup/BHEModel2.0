@@ -101,6 +101,7 @@ def BH_in_points(City):
         BH_in_point.append(tmp_point)
 
     return BH_in_point
+# %%-
 
 def Turbine_in(City,dz_well,T_rock):
     BH_out_points=list()
@@ -108,14 +109,24 @@ def Turbine_in(City,dz_well,T_rock):
     T_rock = 125  # [°C] Temperature of the reservoir
     BH_in_point=BH_in_points(City)
     for i in BH_in_point:
-            bhe_in = SimplifiedBHE(
+        bhe_in = SimplifiedBHE(
 
-            input_thermo_point=i,
-            dz_well=dz_well, T_rocks=T_rock, use_rk=True
+        input_thermo_point=i,
+        dz_well=dz_well, T_rocks=T_rock, use_rk=True
 
-            )
+        )
 
-            bhe_in.update()
-            output_condition = bhe_in.points[-1]
-    BH_out_points.append(output_condition)
-    print(len(BH_out_points))
+        bhe_in.update()
+        output_condition = bhe_in.points[-1]
+        BH_out_points.append(output_condition)
+    return BH_out_points
+
+# %%-
+def Turbine_out(City):
+    T=Sort_data(City)
+    Turbine_out_T=list()
+    for i in T:
+        T_out=i*1.1
+        Turbine_out_T.append(T_out)
+    return Turbine_out_T
+
