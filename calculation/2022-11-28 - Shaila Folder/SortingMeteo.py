@@ -11,13 +11,13 @@ import matplotlib.pyplot as plt
 import calendar
 # %%--
 #Florence
-#meteo_data=r'C:\Users\af_sh\PycharmProjects\BHEModel2.0\resources\meteo data\Florence ERA.csv'
+Florence=r'C:\Users\af_sh\PycharmProjects\BHEModel2.0\resources\meteo data\Florence ERA.csv'
 
 #Munich
-meteo_data=r'C:\Users\af_sh\PycharmProjects\BHEModel2.0\resources\meteo data\Munich ERA.csv'
+Munich=r'C:\Users\af_sh\PycharmProjects\BHEModel2.0\resources\meteo data\Munich ERA.csv'
 
 
-Ambient_Temperature = pd.read_csv(meteo_data,usecols=['time','temperature'])
+Ambient_Temperature = pd.read_csv(Munich,usecols=['time','temperature'])
 Ambient_Temperature['time']=pd.to_datetime(Ambient_Temperature['time'])
 print(Ambient_Temperature.shape)
 
@@ -26,10 +26,11 @@ Monthly_df["month"] = Monthly_df['time'].dt.month
 Monthly_df["date"] = Monthly_df['time'].dt.date
 Monthly_df["hour"] = Monthly_df['time'].dt.hour
 print(Monthly_df)
-T_amb_avg=Monthly_df.groupby([Monthly_df['time'].dt.month, Monthly_df['time'].dt.hour]).temperature.mean()
-T_daily_avg=pd.DataFrame(T_amb_avg)
+T_amb_avg=(Monthly_df.groupby([Monthly_df['time'].dt.month, Monthly_df['time'].dt.hour]).temperature.mean())
+pd.DataFrame(T_amb_avg)
+print(T_amb_avg)
 
-print(T_daily_avg)
+
 # %%-----------------------------------listing-----------------------------------------------------
 T_amb_list=list(T_amb_avg)
 print(len(T_amb_list))
