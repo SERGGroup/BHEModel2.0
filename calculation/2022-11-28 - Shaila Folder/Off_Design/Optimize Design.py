@@ -51,7 +51,7 @@ def Sort_by_month(City):
     Nov=monthly_av_list[10]
     Dec=monthly_av_list[11]
     return monthly_av_list #Jan,Feb, Mar, Apr, May, Jun , Jul, Aug, Set, Oct, Nov, Dec
-Sort_by_month(Munich)
+
 def plot_T_mean(City):
     h = linspace(0, 23, 24)
     for i in range(0, 12):
@@ -95,8 +95,6 @@ def Condenser_P(City):
             tmp_point.set_variable("rho", 700)
         AC_pressure.append(tmp_point.get_variable("P"))
     return AC_pressure
-Condenser_P(Munich)
-# %%-
 
 def BH_in_points(City):
                                #BH input Pressure list
@@ -114,13 +112,12 @@ def BH_in_points(City):
         BH_in_point.append(tmp_point)
 
     return BH_in_point
-BH_in_points(Munich)
-# %%-
 
 def Turbine_in_points(City,dz_well,T_rock):
     BH_out_points=list()
     dz_well = 1500  # [m] Depth of the reservoir                    #BH output T and P
     T_rock = 125  # [°C] Temperature of the reservoir
+    BH_points=PlantThermoPoint(["Carbon Dioxide"], [1])
     BH_in_point=BH_in_points(City)
     for i in BH_in_point:
         bhe_in = SimplifiedBHE(
@@ -132,10 +129,11 @@ def Turbine_in_points(City,dz_well,T_rock):
 
         bhe_in.update()
         output_condition = bhe_in.points[-1]
-        BH_out_points.append(output_condition)
+        bhe_in.points[-1].copy_state_to(BH_points)
+        BH_out_points.append(BH_points)
     return BH_out_points
-len(Turbine_in_points(Munich,1500,125))
-# %%-
+
+
 def Turbine_out_points(City):
     T=Condenser_T(City)
     P=Condenser_T(City)
@@ -151,16 +149,22 @@ def Turbine_out_points(City):
         Turbine_out_points.append(tmp_point)
 
     return Turbine_out_points
-# %%-
+
 def Turbine_Power(City,Turbine_des_m_dot):
+    dz_well = 1500  # [m] Depth of the reservoir                    #BH output T and P
+    T_rock = 125
+    a=Turbine_in_points(City,dz_well, T_rock)
+    b=Turbine_out_points(City)
     Turbine_Power=list()
-    Turbine_des_m_dot = 10
-    ip=list()
-    op=list()
-    for i in
-    a=Turbine_in_points(City,dz_well=1500,T_rock=125)
-    b
-    turbine = TurbineOD(input_point=a, output_point=b)
+
+    for i in range(len(Turbine_out_points(City))):
+        k = a[i]
+        l = b[i]
+        turbine = TurbineOD(input_point=k, output_point=l)
+        turbine.update_input_output_points(k, l)
+        turbine.update_off_design_flow_rate()
+        Turbine_Power.append(turbine.power)
+    return Turbine_Power
 
 
 
