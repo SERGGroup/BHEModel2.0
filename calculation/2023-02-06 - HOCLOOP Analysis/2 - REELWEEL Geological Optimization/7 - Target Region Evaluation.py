@@ -8,19 +8,18 @@ from main_code import constants
 import numpy as np
 import os
 
-# %%------------   INPUT DATA DEFINITION                  -----------------------------------------------------------> #
+# %%------------   INIT CALCULATION PARAMETER             -----------------------------------------------------------> #
 
-h_try = 375
+h_fixed = 375
 p_list = np.linspace(10, 50, 50)
 
-t_pure_list = list()
-t_mix_list = list()
 
+# %%------------   PURE CO2 CALCULATION                   -----------------------------------------------------------> #
+
+t_pure_list = list()
 t_h_pure_list = list()
-t_h_mix_list = list()
 
 tmp_point = PlantThermoPoint(["Carbon Dioxide"], [1])
-tmp_point_mix = PlantThermoPoint(["Carbon Dioxide", "Nitrogen"], [0.9, 0.1])
 
 for p in p_list:
 
@@ -39,11 +38,16 @@ for p in p_list:
     t_pure_list.append(tmp_point.get_variable("T"))
 
     tmp_point.set_variable("P", p)
-    tmp_point.set_variable("h", h_try)
+    tmp_point.set_variable("h", h_fixed)
     t_h_pure_list.append(tmp_point.get_variable("T"))
 
 
-# %%------------   INPUT DATA DEFINITION                  -----------------------------------------------------------> #
+# %%------------   CO2-N2 MIXTURE CALCULATION             -----------------------------------------------------------> #
+
+t_mix_list = list()
+t_h_mix_list = list()
+
+tmp_point_mix = PlantThermoPoint(["Carbon Dioxide", "Nitrogen"], [0.9, 0.1])
 
 for p in p_list:
     def opt_function(h):
@@ -61,7 +65,7 @@ for p in p_list:
     t_mix_list.append(tmp_point_mix.get_variable("T"))
 
     tmp_point_mix.set_variable("P", p)
-    tmp_point_mix.set_variable("h", h_try)
+    tmp_point_mix.set_variable("h", h_fixed)
     t_h_mix_list.append(tmp_point_mix.get_variable("T"))
 
 
