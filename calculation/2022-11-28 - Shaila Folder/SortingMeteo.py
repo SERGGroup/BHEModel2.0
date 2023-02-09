@@ -169,7 +169,7 @@ for i in T_c:
 for i in range(len(BH_in_point)):
 
     k = BH_in_point[i]
-    l = bh_out_list[i]
+    l = bh_out_point_list[i]
 
     turbine.update_input_output_points(l, k)
     turbine.update_off_design_flow_rate()

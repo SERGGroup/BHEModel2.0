@@ -33,29 +33,15 @@ Sort_data(Munich)
 def Sort_by_month(City):
     monthly_av_list = list()
     b=Sort_data(City)
-    for i in range(0, len(b), 24):
-        monthly_av_list.append(b[i:i + 24])
+    for o in range(0, len(b), 24):
+        monthly_av_list.append(b[o:o + 24])
     monthly_av_list
-                                #list maming
 
-    Jan=monthly_av_list[0]
-    Feb=monthly_av_list[1]
-    Mar=monthly_av_list[2]
-    Apr=monthly_av_list[3]
-    May=monthly_av_list[4]
-    Jun=monthly_av_list[5]
-    Jul=monthly_av_list[6]
-    Aug=monthly_av_list[7]
-    Set=monthly_av_list[8]
-    Oct=monthly_av_list[9]
-    Nov=monthly_av_list[10]
-    Dec=monthly_av_list[11]
-    return monthly_av_list #Jan,Feb, Mar, Apr, May, Jun , Jul, Aug, Set, Oct, Nov, Dec
-
+    return monthly_av_list
 def plot_T_mean(City):
     h = linspace(0, 23, 24)
-    for i in range(0, 12):
-        month = Sort_by_month(City)[i]
+    for z in range(0, 12):
+        month = Sort_by_month(City)[z]
         plt.plot(h, month)
     plt.ylabel("T_amb")
     plt.xlabel("hour")
@@ -77,8 +63,8 @@ def Condenser_T(City):
     T_Cond_annual=list()
     delta_T_appr=5
     annual_T_list=Sort_data(City)
-    for i in annual_T_list:
-        T_mean=float(i)+delta_T_appr
+    for s in annual_T_list:
+        T_mean=float(s)+delta_T_appr
         T_Cond_annual.append(T_mean)
     return T_Cond_annual
 Condenser_T(Munich)
@@ -86,10 +72,10 @@ def Condenser_P(City):
     AC_pressure = list()
     C_point = PlantThermoPoint(["Carbon Dioxide"], [1])
     T_annual = Condenser_T(City)
-    for i in T_annual:
+    for u in T_annual:
         tmp_point = C_point.duplicate()
-        tmp_point.set_variable("T", i)
-        if i < 30:
+        tmp_point.set_variable("T", u)
+        if u < 30:
             tmp_point.set_variable("Q", 0)
         else:
             tmp_point.set_variable("rho", 700)
@@ -101,10 +87,10 @@ def BH_in_points(City):
     BH_in_point = list()
     BH_point = PlantThermoPoint(["Carbon Dioxide"], [1])
     T_annual=Condenser_T(City)
-    for i in T_annual:
+    for ele in T_annual:
         tmp_point = BH_point.duplicate()
-        tmp_point.set_variable("T", i)
-        if i < 30:
+        tmp_point.set_variable("T", ele)
+        if ele < 30:
             tmp_point.set_variable("Q", 0)
         else:
             tmp_point.set_variable("rho", 700)
@@ -113,16 +99,16 @@ def BH_in_points(City):
 
     return BH_in_point
 
-def Turbine_in_points(City,dz_well,T_rock):
+def Turbine_in_points(City):
     BH_out_points=list()
     dz_well = 1500  # [m] Depth of the reservoir                    #BH output T and P
     T_rock = 125  # [°C] Temperature of the reservoir
     BH_points=PlantThermoPoint(["Carbon Dioxide"], [1])
     BH_in_point=BH_in_points(City)
-    for i in BH_in_point:
+    for element in BH_in_point:
         bhe_in = SimplifiedBHE(
 
-        input_thermo_point=i,
+        input_thermo_point=element,
         dz_well=dz_well, T_rocks=T_rock, use_rk=True
 
         )
@@ -132,39 +118,64 @@ def Turbine_in_points(City,dz_well,T_rock):
         bhe_in.points[-1].copy_state_to(BH_points)
         BH_out_points.append(BH_points)
     return BH_out_points
+a=Turbine_in_points(Munich)
 
 
 def Turbine_out_points(City):
-    T=Condenser_T(City)
-    P=Condenser_T(City)
+    T_con=Condenser_T(City)
+    P_con=Condenser_T(City)
     Turbine_out_points=list()
     TO_point=PlantThermoPoint(["Carbon Dioxide"], [1])
 
-    for i in range(len(T)):
+    for t in range(len(T_con)):
         tmp_point = TO_point.duplicate()
-        l=T[i]
-        k=P[i]
+        l=T_con[t]
+        k=P_con[t]
         tmp_point.set_variable("T", l)
         tmp_point.set_variable("P",k)
         Turbine_out_points.append(tmp_point)
 
     return Turbine_out_points
 
-def Turbine_Power(City,Turbine_des_m_dot):
+# %%--
+def Turbine_Power(City):
     dz_well = 1500  # [m] Depth of the reservoir                    #BH output T and P
     T_rock = 125
-    a=Turbine_in_points(City,dz_well, T_rock)
+    a=Turbine_in_points(City)
     b=Turbine_out_points(City)
     Turbine_Power=list()
 
     for i in range(len(Turbine_out_points(City))):
-        k = a[i]
-        l = b[i]
-        turbine = TurbineOD(input_point=k, output_point=l)
-        turbine.update_input_output_points(k, l)
-        turbine.update_off_design_flow_rate()
+        Turbine_des_m_dot=10
+        turbine = TurbineOD(input_point=a[i], output_point=b[i])
+        turbine.update_input_output_points(a[i], b[i])
+        #turbine.update_off_design_flow_rate()
         Turbine_Power.append(turbine.power)
     return Turbine_Power
+ # %%-
+
+#T_amb = Sort_by_month(Munich)
+Power = Turbine_Power(Munich)
+monthly_power = list()
+for i in range(0, len(Power), 24):
+    monthly_power.append(Power[i:i + 24])
+print("l", len(monthly_power))
+h = linspace(0, 23, 24)
+for j in range(0, 12):
+    plt.plot(h, monthly_power[j])
+plt.legend((
+
+    'Jan', 'Feb', 'Mar',
+    'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Set',
+    'Oct', 'Nov', 'Dec'),
+
+    loc='upper right'
+
+)
+plt.show()
+
+
 
 
 
