@@ -17,7 +17,7 @@ Riyadh=r'C:\Users\af_sh\PycharmProjects\BHEModel2.0\resources\meteo data\Riyadh 
 
 class Anual_Power_Variation:
     def __init__(self):
-        self.Sort_data()
+        self.City=City
 
     def Sort_data(City):
         Ambient_Temperature = pd.read_csv(City, usecols=['time', 'temperature'])

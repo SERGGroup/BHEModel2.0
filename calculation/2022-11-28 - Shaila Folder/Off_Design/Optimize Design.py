@@ -29,7 +29,7 @@ def Sort_data(City):
 
     Mean_T_amb_list = list(T_amb_avg)
     return Mean_T_amb_list  #annual
-
+Sort_data(Munich)
 def Sort_by_month(City):
     monthly_av_list = list()
     b=Sort_data(City)
@@ -51,6 +51,7 @@ def Sort_by_month(City):
     Nov=monthly_av_list[10]
     Dec=monthly_av_list[11]
     return monthly_av_list #Jan,Feb, Mar, Apr, May, Jun , Jul, Aug, Set, Oct, Nov, Dec
+Sort_by_month(Munich)
 def plot_T_mean(City):
     h = linspace(0, 23, 24)
     for i in range(0, 12):
@@ -81,11 +82,24 @@ def Condenser_T(City):
         T_Cond_annual.append(T_mean)
     return T_Cond_annual
 Condenser_T(Munich)
-
+def Condenser_P(City):
+    AC_pressure = list()
+    C_point = PlantThermoPoint(["Carbon Dioxide"], [1])
+    T_annual = Condenser_T(City)
+    for i in T_annual:
+        tmp_point = C_point.duplicate()
+        tmp_point.set_variable("T", i)
+        if i < 30:
+            tmp_point.set_variable("Q", 0)
+        else:
+            tmp_point.set_variable("rho", 700)
+        AC_pressure.append(tmp_point.get_variable("P"))
+    return AC_pressure
+Condenser_P(Munich)
 # %%-
 
 def BH_in_points(City):
-    AC_pressure = list()                            #BH input Pressure list
+                               #BH input Pressure list
     BH_in_point = list()
     BH_point = PlantThermoPoint(["Carbon Dioxide"], [1])
     T_annual=Condenser_T(City)
@@ -96,14 +110,14 @@ def BH_in_points(City):
             tmp_point.set_variable("Q", 0)
         else:
             tmp_point.set_variable("rho", 700)
-        AC_pressure.append(tmp_point.get_variable("P"))
-
+        tmp_point.get_variable("P")
         BH_in_point.append(tmp_point)
 
     return BH_in_point
+BH_in_points(Munich)
 # %%-
 
-def Turbine_in(City,dz_well,T_rock):
+def Turbine_in_points(City,dz_well,T_rock):
     BH_out_points=list()
     dz_well = 1500  # [m] Depth of the reservoir                    #BH output T and P
     T_rock = 125  # [°C] Temperature of the reservoir
@@ -120,13 +134,42 @@ def Turbine_in(City,dz_well,T_rock):
         output_condition = bhe_in.points[-1]
         BH_out_points.append(output_condition)
     return BH_out_points
-
+len(Turbine_in_points(Munich,1500,125))
 # %%-
-def Turbine_out(City):
-    T=Sort_data(City)
-    Turbine_out_T=list()
-    for i in T:
-        T_out=i*1.1
-        Turbine_out_T.append(T_out)
-    return Turbine_out_T
+def Turbine_out_points(City):
+    T=Condenser_T(City)
+    P=Condenser_T(City)
+    Turbine_out_points=list()
+    TO_point=PlantThermoPoint(["Carbon Dioxide"], [1])
+
+    for i in range(len(T)):
+        tmp_point = TO_point.duplicate()
+        l=T[i]
+        k=P[i]
+        tmp_point.set_variable("T", l)
+        tmp_point.set_variable("P",k)
+        Turbine_out_points.append(tmp_point)
+
+    return Turbine_out_points
+# %%-
+def Turbine_Power(City,Turbine_des_m_dot):
+    Turbine_Power=list()
+    Turbine_des_m_dot = 10
+    ip=list()
+    op=list()
+    for i in
+    a=Turbine_in_points(City,dz_well=1500,T_rock=125)
+    b
+    turbine = TurbineOD(input_point=a, output_point=b)
+
+
+
+
+
+
+
+
+
+
+
 
