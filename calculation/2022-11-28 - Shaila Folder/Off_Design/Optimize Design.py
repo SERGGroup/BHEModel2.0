@@ -29,7 +29,7 @@ def Sort_data(City):
 
     Mean_T_amb_list = list(T_amb_avg)
     return Mean_T_amb_list  #annual
-Sort_data(Munich)
+
 def Sort_by_month(City):
     monthly_av_list = list()
     b=Sort_data(City)
@@ -55,8 +55,8 @@ def plot_T_mean(City):
         loc='upper right')
     plt.title("hourly T_amb Variation over year 2018")
     plt.show()
-Sort_data(Munich)
-plot_T_mean(Munich)
+
+
 
 # %%-----------------------------------BH input/condenser out point setup-----------------------------------------------------
 def Condenser_T(City):
@@ -67,7 +67,7 @@ def Condenser_T(City):
         T_mean=float(s)+delta_T_appr
         T_Cond_annual.append(T_mean)
     return T_Cond_annual
-print("Condenser_T",Condenser_T(Munich))
+
 # %%-
 def Condenser_P(City):
     AC_pressure = list()
@@ -82,7 +82,7 @@ def Condenser_P(City):
             tmp_point.set_variable("rho", 700)
         AC_pressure.append(tmp_point.get_variable("P"))
     return AC_pressure
-print("Condenser_P",Condenser_P(Munich))
+
 # %%-
 def BH_in_points(City):
                           #BH input Pressure list
@@ -103,7 +103,7 @@ def BH_in_points(City):
 
     return BH_in_point
 
-print("BH_in_points",BH_in_points(Munich))
+
 # %%-
 def Turbine_in_points(City):
     h_in=list()
@@ -130,7 +130,7 @@ def Turbine_in_points(City):
     print("h_out_BH",h_in)
     print("s_out_BH", s_in)
     return [BH_out_points,s_in,h_in]
-print("Turbine_in_points",Turbine_in_points(Munich)[1])
+
 # %%-
 
 def Turbine_out_points(City):
@@ -167,9 +167,6 @@ def Turbine_out_points(City):
         Turbine_out_r_points.append(tmp_point)
 
     return Turbine_out_r_points
-Turbine_out_points(Munich)
-
-
 
 # %%--
 def Turbine_Power(City):
@@ -188,10 +185,10 @@ def Turbine_Power(City):
         turbine.update_off_design_flow_rate()
         Turbine_Power.append(turbine.power)
     return Turbine_Power
-print("Print",Turbine_Power(Munich))
+
  # %%-
 
-#T_amb = Sort_by_month(Munich)
+
 Power = Turbine_Power(Munich)
 monthly_power = list()
 for i in range(0, len(Power), 24):
@@ -214,7 +211,7 @@ plt.ylabel("Power/kW")
 plt.xlabel("hour")
 plt.title("Power Production over the year")
 plt.show()
-# %%-
+
 
 
 
