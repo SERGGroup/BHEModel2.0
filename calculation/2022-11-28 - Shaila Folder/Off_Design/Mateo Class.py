@@ -52,3 +52,32 @@ class Anual_Power_Variation:
         November=monthly_av_list[10]
         December=monthly_av_list[11]
         return monthly_av_list
+
+    h_out_t = list()
+    Q_out_t = list()
+    T_con = Condenser_T(City)
+    T_guess = list()
+    for el in T_con:
+        t_g = el * 1.1
+        T_guess.append(t_g)
+    P_con = Condenser_T(City)
+    Turbine_out_points = list()
+    TO_point = PlantThermoPoint(["Carbon Dioxide"], [1])
+
+    for t in range(len(T_con)):
+        tmp_point = TO_point.duplicate()
+        l = T_guess[t]
+        k = P_con[t]
+        tmp_point.set_variable("T", l)
+        tmp_point.set_variable("P", k)
+        h_out_t.append(tmp_point.get_variable("h"))
+        Q_out_t.append(tmp_point.get_variable("Q"))
+        Turbine_out_points.append(tmp_point)
+    print("h_out_t", h_out_t)
+    print("l", len(h_out_t))
+    print("Q_out_t", Q_out_t)
+    print("lq", len(Q_out_t))
+    return Turbine_out_points
+
+
+print("Turbine_out_points", Turbine_out_points(Munich))

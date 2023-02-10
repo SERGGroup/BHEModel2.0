@@ -285,6 +285,7 @@ for o in range(len(P_c_January)):
     turbine = TurbineOD(input_point=k, output_point=l)
     turbine.update_input_output_points(k, l)
     turbine.update_off_design_flow_rate()
+
     Turbine_Power.append(turbine.power)
 
 print(Turbine_Power)

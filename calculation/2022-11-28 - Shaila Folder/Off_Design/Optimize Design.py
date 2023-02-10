@@ -67,7 +67,8 @@ def Condenser_T(City):
         T_mean=float(s)+delta_T_appr
         T_Cond_annual.append(T_mean)
     return T_Cond_annual
-Condenser_T(Munich)
+print("Condenser_T",Condenser_T(Munich))
+# %%-
 def Condenser_P(City):
     AC_pressure = list()
     C_point = PlantThermoPoint(["Carbon Dioxide"], [1])
@@ -81,9 +82,10 @@ def Condenser_P(City):
             tmp_point.set_variable("rho", 700)
         AC_pressure.append(tmp_point.get_variable("P"))
     return AC_pressure
-
+print("Condenser_P",Condenser_P(Munich))
+# %%-
 def BH_in_points(City):
-                               #BH input Pressure list
+                          #BH input Pressure list
     BH_in_point = list()
     BH_point = PlantThermoPoint(["Carbon Dioxide"], [1])
     T_annual=Condenser_T(City)
@@ -94,12 +96,18 @@ def BH_in_points(City):
             tmp_point.set_variable("Q", 0)
         else:
             tmp_point.set_variable("rho", 700)
+
         tmp_point.get_variable("P")
         BH_in_point.append(tmp_point)
 
+
     return BH_in_point
 
+print("BH_in_points",BH_in_points(Munich))
+# %%-
 def Turbine_in_points(City):
+    h_in=list()
+    s_in=list()
     BH_out_points=list()
     dz_well = 1500  # [m] Depth of the reservoir                    #BH output T and P
     T_rock = 125  # [°C] Temperature of the reservoir
@@ -115,43 +123,72 @@ def Turbine_in_points(City):
 
         bhe_in.update()
         output_condition = bhe_in.points[-1]
+        h_in.append(output_condition.get_variable("h"))
+        s_in.append(output_condition.get_variable("s"))
         bhe_in.points[-1].copy_state_to(BH_points)
         BH_out_points.append(BH_points)
-    return BH_out_points
-a=Turbine_in_points(Munich)
-
+    print("h_out_BH",h_in)
+    print("s_out_BH", s_in)
+    return [BH_out_points,s_in,h_in]
+print("Turbine_in_points",Turbine_in_points(Munich)[1])
+# %%-
 
 def Turbine_out_points(City):
-    T_con=Condenser_T(City)
-    P_con=Condenser_T(City)
-    Turbine_out_points=list()
+    Turbine_out_r_points=list()
+    eta=0.7
+    T_out=list
+    h_out_iso=list()
+    h_out_r=list()
+
+    s_in=Turbine_in_points(City)[1]
+    h_in=Turbine_in_points(City)[2]
+    P_out=Condenser_P(City)
     TO_point=PlantThermoPoint(["Carbon Dioxide"], [1])
-
-    for t in range(len(T_con)):
+    for iso in range(len(P_out)):
         tmp_point = TO_point.duplicate()
-        l=T_con[t]
-        k=P_con[t]
-        tmp_point.set_variable("T", l)
-        tmp_point.set_variable("P",k)
-        Turbine_out_points.append(tmp_point)
+        a=s_in[iso]
+        b=P_out[iso]
+        tmp_point.set_variable("s",a )
+        tmp_point.set_variable("P",b)
+        h_out_iso.append(tmp_point.get_variable("h"))
+    for i in range(len(P_out)):
+        e=h_in[i]
+        f=h_out_iso[i]
+        x =  e- (eta * (e - f))
+        h_out_r.append(x)
 
-    return Turbine_out_points
+    print("h_ot",h_out_r)
+    for tor in range(len(P_out)):   #setting real output
+        tmp_point = TO_point.duplicate()
+        c=h_out_r[tor]
+        d=P_out[tor]
+        tmp_point.set_variable("h",c)
+        tmp_point.set_variable("P",d)
+        Turbine_out_r_points.append(tmp_point)
+
+    return Turbine_out_r_points
+Turbine_out_points(Munich)
+
+
 
 # %%--
 def Turbine_Power(City):
     dz_well = 1500  # [m] Depth of the reservoir                    #BH output T and P
     T_rock = 125
-    a=Turbine_in_points(City)
+    a=Turbine_in_points(City)[0]
     b=Turbine_out_points(City)
     Turbine_Power=list()
 
     for i in range(len(Turbine_out_points(City))):
         Turbine_des_m_dot=10
-        turbine = TurbineOD(input_point=a[i], output_point=b[i])
+        g=a[i]
+        u=b[i]
+        turbine = TurbineOD(input_point=g, output_point=u)
         turbine.update_input_output_points(a[i], b[i])
-        #turbine.update_off_design_flow_rate()
+        turbine.update_off_design_flow_rate()
         Turbine_Power.append(turbine.power)
     return Turbine_Power
+print("Print",Turbine_Power(Munich))
  # %%-
 
 #T_amb = Sort_by_month(Munich)
@@ -174,7 +211,7 @@ plt.legend((
 
 )
 plt.show()
-
+# %%-
 
 
 
