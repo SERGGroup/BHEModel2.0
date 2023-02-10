@@ -210,6 +210,9 @@ plt.legend((
     loc='upper right'
 
 )
+plt.ylabel("Power/kW")
+plt.xlabel("hour")
+plt.title("Power Production over the year")
 plt.show()
 # %%-
 
