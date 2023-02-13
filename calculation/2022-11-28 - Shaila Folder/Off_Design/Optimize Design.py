@@ -157,7 +157,7 @@ def Turbine_out_points(City):
         x =  e- (eta * (e - f))
         h_out_r.append(x)
 
-    print("h_ot",h_out_r)
+
     for tor in range(len(P_out)):   #setting real output
         tmp_point = TO_point.duplicate()
         c=h_out_r[tor]
@@ -166,26 +166,28 @@ def Turbine_out_points(City):
         tmp_point.set_variable("P",d)
         Turbine_out_r_points.append(tmp_point)
 
-    return Turbine_out_r_points
+    return [Turbine_out_r_points, h_out_r]
 
 # %%--
 def Turbine_Power(City):
     dz_well = 1500  # [m] Depth of the reservoir                    #BH output T and P
     T_rock = 125
-    a=Turbine_in_points(City)[0]
-    b=Turbine_out_points(City)
+    a=Turbine_in_points(City)[2]   #h in and out
+    b=Turbine_out_points(City)[1]
+    dh=list()
     Turbine_Power=list()
+    Turbine_des_m_dot = 10
+    for i in range(len(Turbine_out_points(City)[1])):
+        g=a[i]-b[i]
 
-    for i in range(len(Turbine_out_points(City))):
-        Turbine_des_m_dot=10
-        g=a[i]
-        u=b[i]
-        turbine = TurbineOD(input_point=g, output_point=u)
-        turbine.update_input_output_points(a[i], b[i])
-        turbine.update_off_design_flow_rate()
-        Turbine_Power.append(turbine.power)
+        dh.append(g)
+        #turbine = TurbineOD(input_point=g, output_point=u)
+        #turbine.update_input_output_points(a[i], b[i])
+        #turbine.evaluate_design()
+        #turbine.update_off_design_flow_rate()
+        Turbine_Power.append(float(dh[i])*Turbine_des_m_dot)
     return Turbine_Power
-
+print("Pow",Turbine_Power(Munich))
  # %%-
 
 
