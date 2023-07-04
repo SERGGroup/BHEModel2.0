@@ -229,6 +229,7 @@ class SimplifiedWell(ABC):
         self.dex = self.dh - self.points[0].RPHandler.T_0_in_K * self.ds
         self.q_bottom = h_list[2] - h_list[1]
         self.Q_bottom = self.q_bottom * self.points[0].m_dot
+        self.power = self.dh * self.points[0].m_dot
 
         self.eta_I = self.dh / self.q_bottom
 

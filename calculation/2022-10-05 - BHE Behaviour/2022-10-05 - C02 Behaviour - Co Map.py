@@ -6,7 +6,6 @@ import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import numpy as np
-import os
 
 
 # %%-------------------------------------   INITIALIZATION                      -------------------------------------> #
@@ -20,7 +19,7 @@ bhe = SimplifiedBHE(
 )
 
 n_points = 200
-p_points = get_np_array(4, 50, n_points, log_scale=True)  # in MPa
+p_points = get_np_array(4, 50, n_points, log_scale=True)  # in MPax
 h_points = get_np_array(200, 450, n_points, log_scale=False)  # in kJ/kg
 res_points = get_np_array(0, 0, n_points)
 

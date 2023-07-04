@@ -18,7 +18,13 @@ import os, math
 #   Data extracted from plot using:
 #       WebPlotDigitizer (https://automeris.io/WebPlotDigitizer)
 
-RES_FOLDER = os.path.join(constants.CALCULATION_FOLDER, "2023-02-06 - HOCLOOP Analysis", "0 - Resources")
+RES_FOLDER = os.path.join(
+
+    constants.CALCULATION_FOLDER, "HOCLOOP Calculation",
+    "Initial HOCLOOP Analysis", "0 - Resources"
+
+)
+
 VALIDATION_FILE = os.path.join(RES_FOLDER, "validation_datasets", "t_over_time_validation_datasets.csv")
 VALIDATION_ARR = np.array(pd.read_csv(VALIDATION_FILE).drop(0), dtype=float)
 VALIDATION_DICT = {}

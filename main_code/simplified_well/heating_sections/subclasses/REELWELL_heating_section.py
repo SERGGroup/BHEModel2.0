@@ -279,6 +279,7 @@ class REELWELLHeatingSection(AbstractHeatingSection):
         self.__tmp_tub = None
         self.__is_annulus = False
         self.integrator_list = list()
+        self.integrators_profiler = list()
 
         self.neglect_internal_heat_transfer = neglect_internal_heat_transfer
         self.hot_in_tubing = hot_in_tubing
@@ -311,6 +312,8 @@ class REELWELLHeatingSection(AbstractHeatingSection):
         """
 
         self.integrator_list = list()
+        self.integrators_profiler = list()
+
         self.__tmp_ann = self.input_point.duplicate()
         self.__tmp_tub = self.input_point.duplicate()
 
@@ -330,6 +333,7 @@ class REELWELLHeatingSection(AbstractHeatingSection):
             ))
 
             x_mid = self.__integrate()
+
             self.__is_annulus = not self.hot_in_tubing
             self.integrator_list.append(RK45(
 
@@ -351,9 +355,23 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
         if len(self.integrator_list) > 0:
 
-            while self.integrator_list[-1].status == 'running':
+            __integrator = self.integrator_list[-1]
+            self.integrators_profiler.append(list())
 
-                self.integrator_list[-1].step()
+            while __integrator.status == 'running':
+
+                __integrator.step()
+
+                range_list = [__integrator.t_old, __integrator.t]
+                range_list.sort()
+
+                self.integrators_profiler[-1].append({
+
+                    "range": range_list,
+                    "dense_out": __integrator.dense_output(),
+                    "error": (not __integrator.status == 'failed')
+
+                })
 
                 if check_function is not None:
 
@@ -395,6 +413,7 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
             )]
 
+            self.integrators_profiler = list()
             res = self.__integrate(self.bisect_check)
 
             if res is None:
@@ -542,3 +561,44 @@ class REELWELLHeatingSection(AbstractHeatingSection):
     # <---------------------   DISPLAY METHODS   ------------------------------->
     # <------------------------------------------------------------------------->
     # <------------------------------------------------------------------------->
+
+    def get_heating_section_profile(self, position_list):
+
+        t_list = np.full((2, len(position_list)), np.nan)
+
+        if self.neglect_internal_heat_transfer:
+
+            i_annulus = 0
+            i_tubing = 1
+
+            if not self.hot_in_tubing:
+
+                i_annulus = 1
+                i_tubing = 0
+
+            for i in range(len(position_list)):
+
+                pos = position_list[i]
+
+                p, h = self.get_heating_section_value(pos, i_annulus)
+                self.__tmp_ann.set_variable("P", p)
+                self.__tmp_ann.set_variable("H", h)
+
+                p, h = self.get_heating_section_value(pos, i_tubing)
+                self.__tmp_tub.set_variable("P", p)
+                self.__tmp_tub.set_variable("H", h)
+
+                t_list[0, i] = self.__tmp_ann.get_variable("T")
+                t_list[1, i] = self.__tmp_tub.get_variable("T")
+
+        return t_list
+
+    def get_heating_section_value(self, position, index):
+
+        if len(self.integrators_profiler) > index:
+
+            for step in self.integrators_profiler[index]:
+
+                if step["range"][0] <= position <= step["range"][1]:
+
+                    return step["dense_out"](position)

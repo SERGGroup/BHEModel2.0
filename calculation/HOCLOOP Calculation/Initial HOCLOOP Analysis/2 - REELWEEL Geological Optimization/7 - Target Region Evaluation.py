@@ -108,7 +108,7 @@ plt.show()
 
 # %%------------   SAVE IMAGE                             -----------------------------------------------------------> #
 
-RES_FOLDER = os.path.join(constants.CALCULATION_FOLDER, "2023-02-06 - HOCLOOP Analysis", "0 - Resources")
+RES_FOLDER = os.path.join(constants.CALCULATION_FOLDER, "Initial HOCLOOP Analysis", "0 - Resources")
 output_directory = os.path.join(RES_FOLDER, "output")
 
 if not os.path.isdir(output_directory):
