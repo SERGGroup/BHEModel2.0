@@ -3,8 +3,9 @@ import math
 from numpy import linspace
 import numpy as np
 
+from main_code.simplified_well.simplified_well_subclasses import SimplifiedBHE
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
-from main_code.simplified_well.simplified_well import SimplifiedBHE
+
 # %% ------------Design parameters ------------------------------------------------------------------->
 m_dot_D=43.85583
 delta_h_i_d=[4.987933577345359, 6.484313650548927, 6.933227672510043 ,7.067901879098372]

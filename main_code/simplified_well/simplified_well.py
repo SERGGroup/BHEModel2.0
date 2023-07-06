@@ -1,5 +1,6 @@
 from main_code.simplified_well.heating_sections import DefaultHeatingSection, AbstractHeatingSection
 from EEETools.Tools.API.ExcelAPI.modules_importer import calculate_excel
+from main_code.support.other.simple_integrator import SimpleIntegrator
 from EEETools.Tools.API.Tools.main_tools import get_result_data_frames
 from main_code.support import PlantThermoPoint, retrieve_PPI
 from abc import ABC, abstractmethod
@@ -19,8 +20,8 @@ class SimplifiedWell(ABC):
 
             self, input_thermo_point: PlantThermoPoint, dz_well, T_rocks,
             heating_section=None, k_rocks=0.2, c_rocks=1, rho_rocks=2500,
-            geo_flux=0.1, q_up_down=0.0, PPI=None, use_rk=True, d_inj=None, d_prod=None,
-            discretize_p_losses=False
+            t_surf=10, geo_flux=0.1, q_up_down=0.0, PPI=None, use_rk=True,
+            d_inj=None, d_prod=None, discretize_p_losses=False
 
     ):
 
@@ -40,6 +41,7 @@ class SimplifiedWell(ABC):
         #   alpha_rocks -> rock thermal diffusivity in [m^2/s]
         #   (1e3 conversion factor c_rocks [kJ / (kg K)] -> [J / (kg K)])
         self.alpha_rocks = k_rocks / (rho_rocks * c_rocks * 1e3)
+        self.ovr_grad = (T_rocks - t_surf) / dz_well
 
         self.geo_gradient = None
         self.depth_optimization = False
@@ -53,6 +55,7 @@ class SimplifiedWell(ABC):
         self.C0 = [0., 0.]
         self.P_loss = [0., 0.]
 
+        self.integrators_profiler = list()
         self.__init_points(input_thermo_point)
         self.__init_heating_section(heating_section)
         self.__reset_control_elements(first_initialization=True)
@@ -63,6 +66,7 @@ class SimplifiedWell(ABC):
     def __init_points(self, input_thermo_point):
 
         self.points = [input_thermo_point]
+        self.__tmp_point = input_thermo_point.duplicate()
 
     def __init_heating_section(self, heating_section):
 
@@ -170,7 +174,9 @@ class SimplifiedWell(ABC):
 
         self.__set_reference_state(ambient_condition)
 
+        self.integrators_profiler = list()
         self.evaluate_points()
+
         self.__evaluate_parameters()
         self.__evaluate_performance_parameters()
         self.__perform_exergy_analysis()
@@ -179,6 +185,7 @@ class SimplifiedWell(ABC):
 
     def update_simplified(self):
 
+        self.integrators_profiler = list()
         self.evaluate_points()
 
     def __set_reference_state(self, ambient_condition):
@@ -289,108 +296,100 @@ class SimplifiedWell(ABC):
 
         if input_point == self.points[-1]:
 
-            new_point = input_point.duplicate()
-            self.points.append(new_point)
+            self.__tmp_point = input_point.duplicate()
+            self.points.append(self.__tmp_point)
 
         else:
 
-            new_point = self.points[self.points.index(input_point) + 1]
+            self.__tmp_point = self.points[self.points.index(input_point) + 1]
 
         if is_upward:
 
-            mult = -1
+            self.__mult = -1
             dq = self.q_dot_up
 
         else:
 
-            mult = 1
+            self.__mult = 1
             dq = self.q_dot_down
 
         rho_in = input_point.get_variable("rho")
-        dh = (mult * g / 1e3 + dq) * self.dz_well
-        dh_dp_stream = (g + dq * 1e3) / g * 1e3
+        dh = (self.__mult * g / 1e3 + dq) * self.dz_well
+        self.__dh_dp_stream = (g + dq * 1e3) / g * 1e3
+
+        p0 = input_point.get_variable("P")
+        rho0 = input_point.get_variable("rho")
+        self.integrators_profiler.append(list())
 
         if not self.use_rk:
 
-            dP = mult * (rho_in * self.dz_well * g) / 1e6
-
-            new_point.set_variable("h", input_point.get_variable("h") + dh)
-            new_point.set_variable("P", input_point.get_variable("P") + dP)
-
-            c0_in = self.__calculate_C0(input_point, dh_dp_stream)
-            c0_out = self.__calculate_C0(new_point, dh_dp_stream)
-            c0 = (c0_out + c0_in) / 2
-            counter = 0
-
-            while True:
-
-                dP = mult * abs((1 - np.exp(c0 * g * self.dz_well / 1e6)) * rho_in / c0)
-                new_point.set_variable("P", input_point.get_variable("P") + dP)
-
-                old_CO = c0
-
-                c0_out = self.__calculate_C0(new_point, dh_dp_stream)
-                c0 = (c0_out + c0_in) / 2
-
-                if abs((old_CO - c0) / c0) < 1e-15 or counter > 20:
-
-                    break
-
-                else:
-
-                    counter += 1
+            integrator = SimpleIntegrator(self.rk_funct, 0, [p0, rho0], self.dz_well, n_steps=100)
 
         else:
-            def rk_funct(z, y):
 
-                p_curr = y[0]
-                rho_curr = y[1]
+            integrator = RK45(self.rk_funct, 0, [p0, rho0], self.dz_well)
 
-                # h_curr = input_point.get_variable("h") + (g / 1e3 + dq) * z
+        while integrator.status == 'running':
 
-                new_point.set_variable("P", p_curr)
-                new_point.set_variable("rho", rho_curr)
+            integrator.step()
 
-                c0_curr = self.__calculate_C0(new_point, dh_dp_stream)
+            range_list = [integrator.t_old, integrator.t]
+            range_list.sort()
 
-                if self.discretize_p_losses:
+            self.integrators_profiler[-1].append({
 
-                    dp_loss = self.__evaluate_pressure_losses(self.points[0], new_point, dz=1)
+                "range": range_list,
+                "dense_out": integrator.dense_output(),
+                "error": (not integrator.status == 'failed')
 
-                else:
+            })
 
-                    dp_loss = 0.
+        output = integrator.y
+        self.__tmp_point.set_variable("h", input_point.get_variable("h") + dh)
+        self.__tmp_point.set_variable("P", output[0])
 
-                dp = mult * rho_curr * 9.81 / 1e6 - dp_loss
-                d_rho = c0_curr * dp
-
-                return [dp, d_rho]
-
-            p0 = input_point.get_variable("P")
-            rho0 = input_point.get_variable("rho")
-
-            integrator = RK45(rk_funct, 0, [p0, rho0], self.dz_well)
-
-            while integrator.status == 'running':
-                integrator.step()
-
-            output = integrator.y
-            new_point.set_variable("h", input_point.get_variable("h") + dh)
-            new_point.set_variable("P", output[0])
-
-            c0 = (self.__calculate_C0(input_point, dh_dp_stream) + self.__calculate_C0(new_point, dh_dp_stream)) / 2
+        co_in = self.__calculate_C0(input_point, self.__dh_dp_stream)
+        co_out = self.__calculate_C0(self.__tmp_point, self.__dh_dp_stream)
+        c0 = (co_in + co_out) / 2
 
         if not self.discretize_p_losses:
 
-            dp_loss = self.__evaluate_pressure_losses(input_point, new_point, c0)
-            new_point.set_variable("P", new_point.get_variable("P") - dp_loss)
-            new_point.set_variable("h", input_point.get_variable("h") + dh)
+            dp_loss = self.__evaluate_pressure_losses(input_point, self.__tmp_point, c0)
+            self.__tmp_point.set_variable("P", self.__tmp_point.get_variable("P") - dp_loss)
+            self.__tmp_point.set_variable("h", input_point.get_variable("h") + dh)
 
         else:
 
             dp_loss = 0.
 
+        self.__tmp_point = self.__tmp_point.duplicate()
+
         return c0, dp_loss
+
+    def rk_funct(self, z, y):
+
+        p_curr = y[0]
+        rho_curr = y[1]
+
+        # h_curr = input_point.get_variable("h") + (g / 1e3 + dq) * z
+
+        self.__tmp_point.set_variable("P", p_curr)
+        self.__tmp_point.set_variable("rho", rho_curr)
+
+        c0_curr = self.__calculate_C0(self.__tmp_point, self.__dh_dp_stream)
+
+        if self.discretize_p_losses:
+
+            dp_loss = self.__evaluate_pressure_losses(self.points[0], self.__tmp_point, dz=1)
+
+        else:
+
+            dp_loss = 0.
+
+        dp = self.__mult * rho_curr * 9.81 / 1e6 - dp_loss
+        d_rho = c0_curr * dp
+
+        return [dp, d_rho]
 
     def __evaluate_pressure_losses(self, input_point, output_point, c0=None, dz=None):
 
@@ -677,67 +676,36 @@ class SimplifiedWell(ABC):
 
         )
 
+    def get_iteration_profile(self, position_list):
 
-class SimplifiedBHE(SimplifiedWell):
+        __tmp_point = self.points[0].duplicate()
+        t_list = np.full((2, len(position_list)), np.nan)
+        p_list = np.full((2, len(position_list)), np.nan)
 
-    def evaluate_points(self):
+        for i in range(len(position_list)):
 
-        self.C0[0], self.P_loss[0] = self.update_DP_vertical(self.points[0], is_upward=False)
-        self.heating_section.update()
-        self.C0[1], self.P_loss[1] = self.update_DP_vertical(self.points[2], is_upward=True)
+            pos = position_list[i]
 
+            p, rho = self.get_iteration_value(pos, 0)
+            __tmp_point.set_variable("P", p)
+            __tmp_point.set_variable("rho", rho)
+            t_list[0, i] = __tmp_point.get_variable("T")
+            p_list[0, i] = __tmp_point.get_variable("P")
 
-class SimplifiedCPG(SimplifiedWell):
+            p, rho = self.get_iteration_value(self.dz_well - pos, 1)
+            __tmp_point.set_variable("P", p)
+            __tmp_point.set_variable("rho", rho)
+            t_list[1, i] = __tmp_point.get_variable("T")
+            p_list[1, i] = __tmp_point.get_variable("P")
 
-    def __init__(
+        return np.array(t_list), np.array(p_list)
 
-        self, input_thermo_point: PlantThermoPoint, dz_well, T_rocks,
-        heating_section=None, k_rocks=0.2, geo_flux=0.1, q_up_down=0.0,
-        PPI=None, use_rk=False, d_inj=None, d_prod=None,
-        discretize_p_losses=False, p_res=None
+    def get_iteration_value(self, position, index):
 
-    ):
+        if len(self.integrators_profiler) > index:
 
-        super().__init__(
+            for step in self.integrators_profiler[index]:
 
-            input_thermo_point, dz_well, T_rocks,
-            heating_section=heating_section, k_rocks=k_rocks,
-            geo_flux=geo_flux, q_up_down=q_up_down,
-            PPI=PPI, use_rk=use_rk, d_inj=d_inj, d_prod=d_prod,
-            discretize_p_losses=discretize_p_losses
+                if step["range"][0] <= position <= step["range"][1]:
 
-        )
-
-        if p_res is not None:
-
-            self.p_res = p_res
-
-        else:
-
-            self.p_res = 1000 * 9.81 * dz_well / 1e6  # water hydrostatic pressure (in MPa)
-
-    def evaluate_points(self):
-
-        # iterate point 0 in order to get fixed point 1 (production well bottom hole) pressure.
-        # pressure = reservoir pressure - pressure losses in the reservoir
-
-        counter = 0
-        surface_temperature = self.points[0].get_variable("T")
-
-        while True:
-
-            self.C0[0], self.P_loss[0] = self.update_DP_vertical(self.points[0], is_upward=False)
-            self.heating_section.update()
-            dp = self.points[2].get_variable("P") - self.p_res
-
-            if abs(dp / self.p_res) < 1e-3 or counter > 10:
-
-                break
-
-            else:
-
-                counter += 1
-                self.points[0].set_variable("P", self.points[0].get_variable("P") - dp)
-                self.points[0].set_variable("T", surface_temperature)
-
-        self.C0[1], self.P_loss[1] = self.update_DP_vertical(self.points[2], is_upward=True)
+                    return step["dense_out"](position)

@@ -1,7 +1,7 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
 from main_code.simplified_well.heating_sections.subclasses.EGS_heating_section import EGSHeatingSection
 from main_code.simplified_well.heating_sections.subclasses.default_class import DefaultHeatingSection
-from main_code.simplified_well.simplified_well import SimplifiedCPG, SimplifiedBHE
+from main_code.simplified_well.simplified_well_subclasses import SimplifiedCPG, SimplifiedBHE
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
 from main_code.support.other.matplolib_stiles import ColorFader
 from openpyxl import load_workbook

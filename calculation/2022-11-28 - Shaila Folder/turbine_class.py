@@ -4,7 +4,7 @@ from main_code.off_design_model import TurbineOD, TurbineODPlotter
 import matplotlib.pyplot as plt
 
 # %% DESIGN
-from main_code.simplified_well.simplified_well import SimplifiedBHE
+from main_code.simplified_well.simplified_well_subclasses import SimplifiedBHE
 
 T_amb = 15 # [°C]
 dT_appr = 7  # [°C]

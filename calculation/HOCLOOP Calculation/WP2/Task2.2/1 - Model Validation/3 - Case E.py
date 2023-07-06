@@ -1,48 +1,62 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
-from main_code.simplified_well.heating_sections.subclasses import REELWELLHeatingSection, REELWELLGeometry
+from main_code.simplified_well.heating_sections.subclasses import REELWELLInclinedHeatingSection, REELWELLGeometry
+from main_code.simplified_well.simplified_well_subclasses import SimplifiedBHE
+from main_code.support.other.excel_exporter import export_profiles_to_excel
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
-from main_code.simplified_well.simplified_well import SimplifiedBHE
 from main_code import constants
 import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
 import os
 
 
 # %%------------   INPUT DATA DEFINITION                  -----------------------------------------------------------> #
 #   Validation data from:
-#       "slides-case-2.2-b.pdf" (in "0 - Resources\Case Studies" Folder)
+#       "slides-case-2.2-a.pdf" (in "0 - Resources\Case Studies" Folder)
 #
 
-t_in = 45           # [C]
-depth = 3000        # [m]
-l_overall = 6500    # [m]
+t_in = 25           # [C]
+depth = 1828.8      # [m]
 mass_flow = 8.80149 # [kg/s]
 
-t_surf = 11         # [C]
-t_grad = 0.0325     # [c/m]
+t_surf = 31.111     # [C]
+t_grad = 0.01513    # [C/m]
 k_rock = 2.423      # [W/(m K)]
 c_rock = 0.90267    # [kJ/(kg K)]
 rho_rock = 2600     # [kg/m^3]
 
-t_rock = t_surf + t_grad * depth
-l_horiz = l_overall - depth
-hs_geometry = REELWELLGeometry(l_horiz)
+t_rock = t_surf + t_grad * 1
+hs_geometry = REELWELLGeometry(
+
+    depth,
+    tub_id=0.01,
+    tub_od=0.011,
+    cas_id=0.172,
+    cas_od=0.188
+
+)
 
 
 # %%------------   INITIALIZE WELL                        -----------------------------------------------------------> #
 bhe_in = PlantThermoPoint(["Water"], [1])
 bhe_in.set_variable("T", t_in)
-bhe_in.set_variable("P", 2.3)
+bhe_in.set_variable("P", 0.1)
 
 well = SimplifiedBHE(
 
-    bhe_in, dz_well=depth, T_rocks=t_rock,
-    k_rocks=k_rock, c_rocks=c_rock, rho_rocks=rho_rock
+    bhe_in, dz_well=1, T_rocks=t_rock,
+    k_rocks=k_rock, c_rocks=c_rock, rho_rocks=rho_rock,
+    t_surf=t_surf
 
 )
 
-heating_section = REELWELLHeatingSection(well, hs_geometry, hot_in_tubing=True, neglect_internal_heat_transfer=True)
+heating_section = REELWELLInclinedHeatingSection(
+
+    well, hs_geometry,
+    hot_in_tubing=True,
+    neglect_internal_heat_transfer=True,
+    integration_steps=600
+
+)
 well.heating_section = heating_section
 
 
@@ -55,14 +69,16 @@ time_points.extend([7.78, 16.35, 28.41, 85.25, 176.99, 367.23, 761.72, 1895.72, 
 time_points.extend([0.08, 0.168, 0.25, 0.5, 1, 1.25, 2.5, 5])
 time_points.sort()
 
-step = 500
-profile_positions = np.linspace(0, l_horiz, int(l_horiz / step + 1))[1:]
+step = 50
+profile_positions = np.linspace(0, depth, int(depth / step + 1))[1:]
 
 time_list = list()
 t_out_list = list()
 p_out_list = list()
 w_out_list = list()
-profile_list = list()
+t_profile_list = list()
+p_profile_list = list()
+
 bhe_in.m_dot = mass_flow
 
 for time in time_points:
@@ -74,7 +90,11 @@ for time in time_points:
     t_out_list.append(well.points[-1].get_variable("T"))
     p_out_list.append(well.points[-1].get_variable("P"))
     w_out_list.append(well.power)
-    profile_list.append(heating_section.get_heating_section_profile(profile_positions))
+
+    t_list, p_list = heating_section.get_heating_section_profile(profile_positions)
+
+    t_profile_list.append(t_list)
+    p_profile_list.append(p_list)
 
     print("{} -> {}".format(time, t_out_list[-1]))
 
@@ -87,43 +107,19 @@ RES_FOLDER = os.path.join(
 
 )
 
-file_path = os.path.join(RES_FOLDER, "case_b.xlsx")
+file_path = os.path.join(RES_FOLDER, "case_a.xlsx")
+data_exporter = {
 
-main_data = {
-
-    'Time': time_list,
-    'T_out': t_out_list,
-    'W_out': w_out_list
+    "time_list": time_list,
+    "t_out_list": t_out_list,
+    "w_out_list": w_out_list,
+    "t_profile_list": t_profile_list,
+    "p_profile_list": p_profile_list,
+    "profile_positions": profile_positions
 
 }
-main_dataframe = pd.DataFrame(main_data)
 
-n_profile_points = len(profile_list[0][0,:])
-profile_list = np.array(profile_list)
-profile_array = np.zeros((len(t_out_list), 2 * n_profile_points + 1))
-profile_array[:, 0] = np.array(time_list)
-profile_array[:, 1:(1+n_profile_points)] = profile_list[:, 0, :]
-profile_array[:, (1+n_profile_points):] = profile_list[:, 1, :]
-
-profile_dataframe = pd.DataFrame(profile_array)
-
-writer = pd.ExcelWriter(file_path, engine='xlsxwriter')
-main_dataframe.to_excel(writer, sheet_name='Main Results', index=False)
-profile_dataframe.to_excel(writer, sheet_name='Temperature Profiles', index=False)
-writer.save()
-
-
-# %%------------   PLOT PROFILES                          -----------------------------------------------------------> #
-position_array = np.array(profile_positions)
-position_array = np.concatenate((position_array, np.flip(position_array)))
-
-for i in range(len(time_list)):
-
-    plt.plot(profile_array[i, 1:], position_array)
-
-plt.ylabel("horizontal distance [m]")
-plt.xlabel("Temperature [°C]")
-plt.show()
+export_profiles_to_excel(file_path, data_exporter)
 
 
 # %%------------   PLOT TIME VARIABLES                    -----------------------------------------------------------> #

@@ -1,7 +1,7 @@
 # %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
+from main_code.simplified_well.simplified_well_subclasses import SimplifiedBHE
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
 from main_code.support.other.support_functions import get_np_array
-from main_code.simplified_well.simplified_well import SimplifiedBHE
 from main_code.support.other.label_lines import label_lines
 import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt

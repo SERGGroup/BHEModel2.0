@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # %% DESIGN
-from main_code.simplified_well.simplified_well import SimplifiedBHE
+from main_code.simplified_well.simplified_well_subclasses import SimplifiedBHE
 
 T_amb = 15 # [°C]
 dT_appr = 7  # [°C]

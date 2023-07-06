@@ -1,5 +1,7 @@
 from main_code.simplified_well.heating_sections.abstract_class import AbstractHeatingSection
+from main_code.support.other.simple_integrator import SimpleIntegrator
 from scipy.integrate import RK45
+from scipy.constants import g
 import numpy as np
 
 
@@ -11,7 +13,6 @@ class REELWELLGeometry:
             tub_id=0.085, tub_od=0.16,
             cas_id=0.224, cas_od=0.244,
             k_insulation=0.15, ra_pipe=None
-
     ):
 
         """
@@ -75,7 +76,7 @@ class REELWELLGeometry:
         self.r_ins = np.log(tub_od / tub_id) / (2 * np.pi * self.k)
         self.parent_class = None
 
-    def q_ground(self, point):
+    def q_ground(self, point, depth=None):
 
         """
 
@@ -87,6 +88,14 @@ class REELWELLGeometry:
                 doi: 10.1016/j.geothermics.2011.08.003
 
         """
+
+        t_rock = self.parent_class.main_BHE.T_rocks
+        if depth is not None:
+
+            grad = self.parent_class.main_BHE.ovr_grad
+            t_rock -= (self.parent_class.main_BHE.dz_well - depth) * grad
+
+        dt = t_rock - point.get_variable("T")
 
         if self.parent_class is not None:
 
@@ -107,7 +116,6 @@ class REELWELLGeometry:
                 theta = (np.log(4 * td) - 2 * gamma)
                 f = 2 * k / r0 * (1 / theta - gamma / theta ** 2)
 
-            dt = self.parent_class.main_BHE.T_rocks - point.get_variable("T")
             q_rel = f * dt / 1e3        # 1e3 is a conversion factor: [W/m^2] -> [kW/m^2]
 
             return q_rel * (2 * np.pi * r0)
@@ -166,7 +174,13 @@ class REELWELLGeometry:
 
             d_A = 4 / (np.pi * self.d_tub)
 
-        return point.m_dot / point.get_variable("mu") * d_A * 1e6
+        mu = point.get_variable("mu")
+
+        if mu < 0:
+
+            mu = 1e3
+
+        return point.m_dot / mu * d_A * 1e6
 
     def f(self, point, is_annulus):
 
@@ -228,7 +242,7 @@ class REELWELLGeometry:
 
         return dp
 
-    def dh_dl(self, point, is_annulus, other_point=None):
+    def dh_dl(self, point, is_annulus, other_point=None, depth=None):
 
         """
 
@@ -243,7 +257,7 @@ class REELWELLGeometry:
 
         if is_annulus:
 
-            q_tot = self.q_ground(point) - self.q_int(point_annulus=point, point_tubing=other_point)
+            q_tot = self.q_ground(point, depth=depth) - self.q_int(point_annulus=point, point_tubing=other_point)
 
         else:
 
@@ -258,7 +272,8 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
             self, main_BHE, reelwell_geometry: REELWELLGeometry,
             n_wells=1, neglect_internal_heat_transfer=True, time=1,
-            hot_in_tubing=False
+            hot_in_tubing=False, integration_steps=None,
+            integrate_temperature=False
 
     ):
 
@@ -277,9 +292,13 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
         self.__tmp_ann = None
         self.__tmp_tub = None
-        self.__is_annulus = False
+        self.__tmp_point = None
+        self.is_annulus = False
+
         self.integrator_list = list()
         self.integrators_profiler = list()
+        self.integration_steps = integration_steps
+        self.integrate_temperature = integrate_temperature
 
         self.neglect_internal_heat_transfer = neglect_internal_heat_transfer
         self.hot_in_tubing = hot_in_tubing
@@ -323,26 +342,12 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
         if self.neglect_internal_heat_transfer:
 
-            self.__is_annulus = self.hot_in_tubing
+            self.is_annulus = self.hot_in_tubing
             x0 = (self.input_point.get_variable("P"), self.input_point.get_variable("h"))
-            self.integrator_list.append(RK45(
+            x_mid = self.__integrate(pos_0=0, pos_end=self.geom.l_hor, x0=x0)
 
-                self.rk_integration_funct,
-                0, x0, self.geom.l_hor,
-
-            ))
-
-            x_mid = self.__integrate()
-
-            self.__is_annulus = not self.hot_in_tubing
-            self.integrator_list.append(RK45(
-
-                self.rk_integration_funct,
-                self.geom.l_hor, x_mid, 0
-
-            ))
-
-            res = self.__integrate()
+            self.is_annulus = not self.hot_in_tubing
+            res = self.__integrate(pos_0=self.geom.l_hor, pos_end=0, x0=x_mid)
 
         else:
 
@@ -351,7 +356,113 @@ class REELWELLHeatingSection(AbstractHeatingSection):
         self.output_point.set_variable("P", res[0])
         self.output_point.set_variable("h", res[1])
 
-    def __integrate(self, check_function=None):
+    def __convert_to_pt(self, x0):
+
+        if self.integrate_temperature:
+
+            if self.__tmp_point is None:
+                self.__tmp_point = self.input_point.duplicate()
+
+            self.__tmp_point.set_variable("P", x0[0])
+            self.__tmp_point.set_variable("h", x0[1])
+            x0_1 = self.__tmp_point.get_variable("T")
+
+            if len(x0) > 2:
+
+                self.__tmp_point.set_variable("P", x0[2])
+                self.__tmp_point.set_variable("h", x0[3])
+                x0_3 = self.__tmp_point.get_variable("T")
+
+                x0 = (x0[0], x0_1, x0[2], x0_3)
+
+            else:
+
+                x0 = (x0[0], x0_1)
+
+        return x0
+
+    def __convert_to_ph(self, x0):
+
+        if self.integrate_temperature:
+
+            if self.__tmp_point is None:
+                self.__tmp_point = self.input_point.duplicate()
+
+            self.__tmp_point.set_variable("P", x0[0])
+            self.__tmp_point.set_variable("T", x0[1])
+            x0_1 = self.__tmp_point.get_variable("h")
+
+            if len(x0) > 2:
+
+                self.__tmp_point.set_variable("P", x0[2])
+                self.__tmp_point.set_variable("T", x0[3])
+                x0_3 = self.__tmp_point.get_variable("h")
+
+                x0 = (x0[0], x0_1, x0[2], x0_3)
+
+            else:
+
+                x0 = (x0[0], x0_1)
+
+        return x0
+
+    def __convert_derivatives(self, x0, dxs):
+
+        if self.integrate_temperature:
+
+            if self.__tmp_point is None:
+                self.__tmp_point = self.input_point.duplicate()
+
+            self.__tmp_point.set_variable("P", x0[0])
+            self.__tmp_point.set_variable("H", x0[1])
+
+            dhdp = self.__tmp_point.get_derivative("H", "P", "T")
+            dhdt = self.__tmp_point.get_derivative("H", "T", "P")
+
+            dx_1 = (dxs[1] - dhdp * dxs[0]) / dhdt
+
+            if len(x0) > 2:
+
+                self.__tmp_point.set_variable("P", x0[2])
+                self.__tmp_point.set_variable("H", x0[3])
+
+                dhdp = self.__tmp_point.get_derivative("H", "P", "T")
+                dhdt = self.__tmp_point.get_derivative("H", "P", "T")
+
+                dx_3 = (dxs[3] - dhdp * dxs[2]) / dhdt
+
+                dxs = (dxs[0], dx_1, dxs[2], dx_3)
+
+            else:
+
+                dxs = (dxs[0], dx_1)
+
+        return dxs
+
+    def __append_integrator(self, pos_0, pos_end, x0):
+
+        if self.integration_steps is None:
+
+            self.integrator_list.append(RK45(
+
+                self.integration_funct,
+                pos_0, self.__convert_to_pt(x0), pos_end
+
+            ))
+
+        else:
+
+            self.integrator_list.append(SimpleIntegrator(
+
+                self.integration_funct,
+                pos_0, self.__convert_to_pt(x0), pos_end,
+                self.integration_steps
+
+            ))
+
+    def __integrate(self, pos_0, pos_end, x0, check_function=None):
+
+        self.__append_integrator(pos_0, pos_end, x0)
 
         if len(self.integrator_list) > 0:
 
@@ -375,18 +486,17 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
                 if check_function is not None:
 
-                    if check_function(self.integrator_list[-1].y):
+                    if check_function(self.__convert_to_ph(self.integrator_list[-1].y)):
 
                         return None
 
-            return self.integrator_list[-1].y
+            return self.__convert_to_ph(self.integrator_list[-1].y)
 
         return None
 
     def __bisect_output(self):
 
-        t_interval = [self.input_point.get_variable("T"), self.main_BHE.T_rocks]
-        p_interval = [0., self.input_point.get_variable("P")]
+        t_interval, p_interval = self.get_bisect_intervals()
         res = []
 
         for i in range(self.n_bisect):
@@ -406,15 +516,8 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
             )
 
-            self.integrator_list = [RK45(
-
-                self.rk_integration_funct,
-                0, x0, self.geom.l_hor
-
-            )]
-
             self.integrators_profiler = list()
-            res = self.__integrate(self.bisect_check)
+            res = self.__integrate(pos_0=0, pos_end=self.geom.l_hor, x0=x0, check_function=self.bisect_check)
 
             if res is None:
 
@@ -432,6 +535,7 @@ class REELWELLHeatingSection(AbstractHeatingSection):
                     break
 
                 else:
+
 
                     i = (1, 0)[t_ann < t_tub]
                     t_interval[i] = t_guess
@@ -456,6 +560,13 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
         return p_ann, p_tub, t_ann, t_tub
 
+    def get_bisect_intervals(self):
+
+        t_interval = [self.input_point.get_variable("T"), self.main_BHE.T_rocks]
+        p_interval = [0., self.input_point.get_variable("P")]
+
+        return t_interval, p_interval
+
     def bisect_check(self, y):
 
         p_ann, p_tub, t_ann, t_tub = self.__get_check_values(y)
@@ -466,7 +577,7 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
         return False
 
-    def rk_integration_funct(self, t, x):
+    def integration_funct(self, t, x):
 
         """
 
@@ -479,8 +590,40 @@ class REELWELLHeatingSection(AbstractHeatingSection):
                       simultaneously. The first two elements are considered to be pressure and enthalpy in the annulus,
 
                     - If x has only 2 elements fluid condition are solved one after the other in the annulus and in the
-                      tubing the elements are considered to be pressure and enthalpy of the tubing or of the annulus
-                      depending on the "is_annulus" arguments
+                      tubing. The inputs are pressure and enthalpy of the tubing or of the annulus depending on the
+                      "is_annulus" arguments
+
+        """
+
+        # NOTE:
+        #
+        #   The function returns negative values for the derivatives in the annulus because the integration proceeds
+        #   upstream in that section. If hot_in_tubing is true all the changes are switched because the fluid has
+        #   changed direction in the pipes.
+        #
+        #   Note that this has been implemented with the XOR operator (^).
+        #
+        #       "self.__is_annulus ^ self.hot_in_tubing" is true if one between __is_annulus or hot_in_tubing is True
+        #       (but not if they both are)
+        #
+
+        return self.__convert_derivatives(x, self.base_integration_funct(t, self.__convert_to_ph(x)))
+
+    def base_integration_funct(self, t, x):
+
+        """
+
+            Runge-Kutta Integration Function:
+
+                The function returns the derivative of pressure and enthalpy in the pipe.
+                Depending on the number of elements of x different calculation are performed:
+
+                    - If x is a list with 4 elements both fluid condition in both the annulus and the tubing are solved
+                      simultaneously. The first two elements are considered to be pressure and enthalpy in the annulus,
+
+                    - If x has only 2 elements fluid condition are solved one after the other in the annulus and in the
+                      tubing. The inputs are pressure and enthalpy of the tubing or of the annulus depending on the
+                      "is_annulus" arguments
 
         """
 
@@ -511,23 +654,29 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
             if self.hot_in_tubing:
 
-                return dpdl_ann, dhdl_ann, -dpdl_tub, -dhdl_tub
+                dxs = dpdl_ann, dhdl_ann, -dpdl_tub, -dhdl_tub
 
-            return -dpdl_ann, -dhdl_ann, dpdl_tub, dhdl_tub
+            else:
+
+                dxs = -dpdl_ann, -dhdl_ann, dpdl_tub, dhdl_tub
 
         else:
 
             self.__tmp_ann.set_variable("P", x[0])
             self.__tmp_ann.set_variable("h", x[1])
 
-            dpdl = self.geom.dp_dl(self.__tmp_ann, self.__is_annulus)
-            dhdl = self.geom.dh_dl(self.__tmp_ann, self.__is_annulus)
+            dpdl = self.geom.dp_dl(self.__tmp_ann, self.is_annulus)
+            dhdl = self.geom.dh_dl(self.__tmp_ann, self.is_annulus)
 
-            if self.__is_annulus ^ self.hot_in_tubing:
+            if self.is_annulus ^ self.hot_in_tubing:
 
-                return -dpdl, -dhdl
+                dxs = -dpdl, -dhdl
 
-            return dpdl, dhdl
+            else:
+
+                dxs = dpdl, dhdl
+
+        return dxs
 
     # <------------------------------------------------------------------------->
     # <------------------------------------------------------------------------->
@@ -565,6 +714,7 @@ class REELWELLHeatingSection(AbstractHeatingSection):
     def get_heating_section_profile(self, position_list):
 
         t_list = np.full((2, len(position_list)), np.nan)
+        p_list = np.full((2, len(position_list)), np.nan)
 
         if self.neglect_internal_heat_transfer:
 
@@ -590,8 +740,10 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
                 t_list[0, i] = self.__tmp_ann.get_variable("T")
                 t_list[1, i] = self.__tmp_tub.get_variable("T")
+                p_list[0, i] = self.__tmp_ann.get_variable("P")
+                p_list[1, i] = self.__tmp_tub.get_variable("P")
 
-        return t_list
+        return np.array(t_list), np.array(p_list)
 
     def get_heating_section_value(self, position, index):
 
@@ -601,4 +753,133 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
                 if step["range"][0] <= position <= step["range"][1]:
 
-                    return step["dense_out"](position)
+                    return self.__convert_to_ph(step["dense_out"](position))
+
+            return self.__convert_to_ph(self.integrators_profiler[index][-1]["dense_out"](position))
+
+
+class REELWELLInclinedHeatingSection(REELWELLHeatingSection):
+
+    def __init__(
+
+            self, main_BHE, reelwell_geometry: REELWELLGeometry,
+            n_wells=1, neglect_internal_heat_transfer=True, time=1,
+            hot_in_tubing=False, integration_steps=None,
+            integrate_temperature=False, inclination=90
+
+    ):
+
+        super().__init__(
+
+            main_BHE, reelwell_geometry,
+            n_wells=n_wells, neglect_internal_heat_transfer=neglect_internal_heat_transfer,
+            time=time, hot_in_tubing=hot_in_tubing, integration_steps=integration_steps,
+            integrate_temperature=integrate_temperature
+
+        )
+
+        self.inclination = inclination
+        self.__tmp_ann = None
+        self.__tmp_tub = None
+
+    @property
+    def inclination(self):
+
+        return self.__alpha / np.pi * 180
+
+    @inclination.setter
+    def inclination(self, inclination):
+
+        self.__alpha = inclination / 180 * np.pi
+
+    def base_integration_funct(self, t, x):
+
+        """
+
+            Runge-Kutta Integration Function:
+
+                The function returns the derivative of pressure and enthalpy in the pipe.
+                Depending on the number of elements of x different calculation are performed:
+
+                    - If x is a list with 4 elements both fluid condition in both the annulus and the tubing are solved
+                      simultaneously. The first two elements are considered to be pressure and enthalpy in the annulus,
+
+                    - If x has only 2 elements fluid condition are solved one after the other in the annulus and in the
+                      tubing. The inputs are pressure and enthalpy of the tubing or of the annulus depending on the
+                      "is_annulus" arguments
+
+                    - Pressure and enthalpy increase due to gravitational potential change is considered as the current
+                      integrator represent a vertical well
+
+        """
+
+        # NOTE:
+        #
+        #   The function returns negative values for the derivatives in the annulus because the integration proceeds
+        #   upstream in that section. If hot_in_tubing is true all the changes are switched because the fluid has
+        #   changed direction in the pipes. The gravitational contribution is positive in any case as it increase with
+        #   depth
+        #
+        #   Note that this has been implemented with the XOR operator (^).
+        #
+        #       "self.__is_annulus ^ self.hot_in_tubing" is true if one between __is_annulus or hot_in_tubing is True
+        #       (but not if they both are)
+        #
+
+        depth = t * np.sin(self.__alpha)
+        dh_grav = g * np.sin(self.__alpha) / 1e3
+
+        if self.__tmp_ann is None:
+
+            self.__tmp_ann = self.input_point.duplicate()
+            self.__tmp_tub = self.input_point.duplicate()
+
+        if len(x) == 4:
+
+            self.__tmp_ann.set_variable("P", x[0])
+            self.__tmp_ann.set_variable("h", x[1])
+            self.__tmp_tub.set_variable("P", x[2])
+            self.__tmp_tub.set_variable("h", x[3])
+
+            dp_grav_ann = dh_grav * self.__tmp_ann.get_variable("rho") / 1e3
+            dp_grav_tub = dh_grav * self.__tmp_tub.get_variable("rho") / 1e3
+
+            dpdl_ann = self.geom.dp_dl(self.__tmp_ann, is_annulus=True)
+            dpdl_tub = self.geom.dp_dl(self.__tmp_tub, is_annulus=False)
+
+            dhdl_ann = self.geom.dh_dl(self.__tmp_ann, is_annulus=True, other_point=self.__tmp_tub, depth=depth)
+            dhdl_tub = self.geom.dh_dl(self.__tmp_tub, is_annulus=False, other_point=self.__tmp_ann, depth=depth)
+
+            if self.hot_in_tubing:
+
+                return dpdl_ann + dp_grav_ann, dhdl_ann + dh_grav, -dpdl_tub + dp_grav_tub, -dhdl_tub + dh_grav
+
+            return -dpdl_ann + dp_grav_ann, -dhdl_ann + dh_grav, dpdl_tub + dp_grav_tub, dhdl_tub + dh_grav
+
+        else:
+
+            self.__tmp_ann.set_variable("P", x[0])
+            self.__tmp_ann.set_variable("h", x[1])
+            dp_grav = g * np.sin(self.__alpha) * self.__tmp_ann.get_variable("rho") / 1e6
+
+            dpdl = self.geom.dp_dl(self.__tmp_ann, self.is_annulus)
+            dhdl = self.geom.dh_dl(self.__tmp_ann, self.is_annulus, depth=depth)
+
+            # if self.__tmp_ann.get_variable("T") < 0:
+            #
+            #     print("T")
+
+            if self.is_annulus ^ self.hot_in_tubing:
+
+                return -dpdl + dp_grav, -dhdl + dh_grav
+
+            return dpdl + dp_grav, dhdl + dh_grav
+
+    def get_bisect_intervals(self):
+
+        # TODO
+
+        t_interval = [self.input_point.get_variable("T"), self.main_BHE.T_rocks]
+        p_interval = [0., self.input_point.get_variable("P")]
+
+        return t_interval, p_interval
