@@ -8,14 +8,13 @@ from main_code import constants
 import numpy as np
 import os
 
-# %%------------   INIT CALCULATION PARAMETER             -----------------------------------------------------------> #
 
+# %%------------   INIT CALCULATION PARAMETER             -----------------------------------------------------------> #
 h_fixed = 375
 p_list = np.linspace(10, 50, 50)
 
 
 # %%------------   PURE CO2 CALCULATION                   -----------------------------------------------------------> #
-
 t_pure_list = list()
 t_h_pure_list = list()
 
@@ -43,7 +42,6 @@ for p in p_list:
 
 
 # %%------------   CO2-N2 MIXTURE CALCULATION             -----------------------------------------------------------> #
-
 t_mix_list = list()
 t_h_mix_list = list()
 
@@ -70,7 +68,6 @@ for p in p_list:
 
 
 # %%------------   PLOT RESULTS                           -----------------------------------------------------------> #
-
 fig = plt.figure(dpi=150)
 fig.set_size_inches(10, 8)
 ax = fig.add_subplot(1, 1, 1)
@@ -107,7 +104,6 @@ plt.legend([line_pure, line_mix, line_dashed[0]], ["Pure $CO_2$", "90% $CO_2$, 1
 plt.show()
 
 # %%------------   SAVE IMAGE                             -----------------------------------------------------------> #
-
 RES_FOLDER = os.path.join(constants.CALCULATION_FOLDER, "Initial HOCLOOP Analysis", "0 - Resources")
 output_directory = os.path.join(RES_FOLDER, "output")
 

@@ -1,4 +1,4 @@
-from main_code.simplified_well.heating_sections import DefaultHeatingSection, AbstractHeatingSection
+from main_code.well_model.simplified_well.heating_sections import DefaultHeatingSection, AbstractHeatingSection
 from EEETools.Tools.API.ExcelAPI.modules_importer import calculate_excel
 from main_code.support.other.simple_integrator import SimpleIntegrator
 from EEETools.Tools.API.Tools.main_tools import get_result_data_frames
@@ -18,55 +18,92 @@ class SimplifiedWell(ABC):
 
     def __init__(
 
-            self, input_thermo_point: PlantThermoPoint, dz_well, T_rocks,
-            heating_section=None, k_rocks=0.2, c_rocks=1, rho_rocks=2500,
-            t_surf=10, geo_flux=0.1, q_up_down=0.0, PPI=None, use_rk=True,
-            d_inj=None, d_prod=None, discretize_p_losses=False
+            self, input_thermo_point: PlantThermoPoint, dz_well,
+            t_rocks=None, t_surf=None, geo_flux=None,
+            k_rocks=0.2, c_rocks=1, rho_rocks=2500,
+            heating_section=None, PPI=None,
+            use_rk=True
 
     ):
 
         # GEOTHERMAL FIELD CONDITION
+        self.__init_geological_data(dz_well, t_rocks, t_surf, geo_flux, k_rocks, c_rocks, rho_rocks)
 
-        self.dz_well = dz_well      # unit: m .............. default: NONE (REQUIRED)
-        self.T_rocks = T_rocks      # unit: °C ............. default: NONE (REQUIRED)
-        self.geo_flux = geo_flux    # unit: W / m^2 ........ default: 0.1 W / m^2
-
-        self.k_rocks = k_rocks      # unit: W / (m K) ...... default: 0.2 W / (m K)
-        self.c_rocks = c_rocks      # unit: kJ / (kg K) .... default: 1 kJ / (kg K)
-        self.rho_rocks = rho_rocks  # unit: kg / m^3 ....... default: 2500 kg / m^3
-
-        self.d_inj = d_inj          # unit: m .............. default: NONE (PRESSURE LOSSES IGNORED)
-        self.d_prod = d_prod        # unit: m .............. default: NONE (PRESSURE LOSSES IGNORED)
-
-        #   alpha_rocks -> rock thermal diffusivity in [m^2/s]
-        #   (1e3 conversion factor c_rocks [kJ / (kg K)] -> [J / (kg K)])
-        self.alpha_rocks = k_rocks / (rho_rocks * c_rocks * 1e3)
-        self.ovr_grad = (T_rocks - t_surf) / dz_well
-
-        self.geo_gradient = None
         self.depth_optimization = False
         self.use_rk = use_rk
-        self.discretize_p_losses = discretize_p_losses
-
-        self.q_dot_up = - q_up_down
-        self.q_dot_down = q_up_down
 
         self.c_well = 0.
         self.C0 = [0., 0.]
-        self.P_loss = [0., 0.]
 
         self.integrators_profiler = list()
         self.__init_points(input_thermo_point)
         self.__init_heating_section(heating_section)
         self.__reset_control_elements(first_initialization=True)
+
         self.__ambient_condition = None
+        self.is_upward = False
 
         self.__current_PPI = PPI
+
+    def __init_geological_data(self, dz_well, t_rocks, t_surf, geo_flux, k_rocks, c_rocks, rho_rocks):
+
+        self.dz_well = dz_well  # unit: m .............. default: NONE (REQUIRED)
+        self.k_rocks = k_rocks  # unit: W / (m K) ...... default: 0.2 W / (m K)
+        self.c_rocks = c_rocks  # unit: kJ / (kg K) .... default: 1 kJ / (kg K)
+        self.rho_rocks = rho_rocks  # unit: kg / m^3 ....... default: 2500 kg / m^3
+
+        #   alpha_rocks -> rock thermal diffusivity in [m^2/s]
+        #   (1e3 conversion factor c_rocks [kJ / (kg K)] -> [J / (kg K)])
+        self.alpha_rocks = self.k_rocks / (self.rho_rocks * self.c_rocks * 1e3)
+        self.__init_temperatures(t_rocks, t_surf, geo_flux)
+
+    def __init_temperatures(self, t_rocks, t_surf, geo_flux):
+
+        if geo_flux is None or (t_surf is not None and t_rocks is not None):
+
+            if t_surf is None:
+
+                t_surf = 10 # [°C] (default value)
+
+            if t_rocks is None:
+
+                self.__raise_t_rocks_error()
+
+            self.t_surf = t_surf
+            self.t_rocks = t_rocks
+            self.geo_gradient = (self.t_rocks - self.t_surf) / self.dz_well
+            self.geo_flux = self.geo_gradient * self.k_rocks
+
+        elif t_surf is None:
+
+            if geo_flux is None:
+
+                geo_flux = 0.1
+
+            if t_rocks is None:
+
+                self.__raise_t_rocks_error()
+
+            self.t_rocks = t_rocks
+            self.geo_flux = geo_flux    # unit: W / m^2 ........ default: 0.1 W / m^2
+            self.geo_gradient = self.geo_flux / self.k_rocks
+            self.t_surf = self.t_rocks - self.geo_gradient * self.dz_well
+
+        elif t_rocks is None:
+
+            if geo_flux is None or t_surf is None:
+
+                self.__raise_t_rocks_error()
+
+            self.t_surf = t_surf
+            self.geo_flux = geo_flux  # unit: W / m^2 ........ default: 0.1 W / m^2
+            self.geo_gradient = self.geo_flux / self.k_rocks
+            self.t_rocks = self.t_surf + self.geo_gradient * self.dz_well
 
     def __init_points(self, input_thermo_point):
 
         self.points = [input_thermo_point]
-        self.__tmp_point = input_thermo_point.duplicate()
+        self.new_point = input_thermo_point.duplicate()
 
     def __init_heating_section(self, heating_section):
 
@@ -88,6 +125,19 @@ class SimplifiedWell(ABC):
 
         else:
             self.__heating_section_changed = False
+
+    def __raise_t_rocks_error(self):
+
+        raise ValueError(
+
+            """
+
+                \n't_rock' is needed to start the calculations: 
+                \nAs an alternative, you can provide both 't_surf' and 'geo_flux'
+
+            """
+
+        )
 
     # <------------------------------------------------------------------------->
     # <------------------------------------------------------------------------->
@@ -238,7 +288,11 @@ class SimplifiedWell(ABC):
         self.Q_bottom = self.q_bottom * self.points[0].m_dot
         self.power = self.dh * self.points[0].m_dot
 
-        self.eta_I = self.dh / self.q_bottom
+        if self.q_bottom > 0:
+            self.eta_I = self.dh / self.q_bottom
+
+        else:
+            self.eta_I = 0
 
     def __evaluate_performance_parameters(self):
 
@@ -263,59 +317,63 @@ class SimplifiedWell(ABC):
 
     def __perform_exergy_analysis(self):
 
-        excel_path = os.path.join(constants.RES_FOLDER, "3ETool_Excel-Files", "BHE_simple_analysis.xlsx")
-        T_rocks_K = self.T_rocks + 273.15
+        if self.q_bottom > 0:
 
-        new_exergy_list = [
+            excel_path = os.path.join(constants.RES_FOLDER, "3ETool_Excel-Files", "BHE_simple_analysis.xlsx")
+            T_rocks_K = self.t_rocks + 273.15
 
-            {"index": 20, "value": self.dz_well * g / 1000},
-            {"index": 21, "value": (1 - self.points[0].RPHandler.T_0_in_K / T_rocks_K) * self.q_bottom},
-            {"index": 22, "value": self.dex}
+            new_exergy_list = [
 
-        ]
+                {"index": 20, "value": self.dz_well * g / 1000},
+                {"index": 21, "value": (1 - self.points[0].RPHandler.T_0_in_K / T_rocks_K) * self.q_bottom},
+                {"index": 22, "value": self.dex}
 
-        for index in range(len(self.points)):
-            new_exergy_list.append({
+            ]
 
-                "index": index + 1,
-                "value": self.points[index].get_variable("exergy")
+            for index in range(len(self.points)):
+                new_exergy_list.append({
 
-            })
+                    "index": index + 1,
+                    "value": self.points[index].get_variable("exergy")
 
-        with warnings.catch_warnings():
+                })
 
-            warnings.simplefilter("ignore")
+            with warnings.catch_warnings():
 
-            array_handler = calculate_excel(excel_path, new_exergy_list=new_exergy_list, export_solution=False)
-            result = get_result_data_frames(array_handler)
+                warnings.simplefilter("ignore")
 
-        self.comp_results = result["Comp Out"]
-        self.eta_II = array_handler.overall_efficiency
+                array_handler = calculate_excel(excel_path, new_exergy_list=new_exergy_list, export_solution=False)
+                result = get_result_data_frames(array_handler)
+
+            self.comp_results = result["Comp Out"]
+            self.eta_II = array_handler.overall_efficiency
+
+        else:
+
+            self.comp_results = 0.
+            self.eta_II = 0.
+
+    # <------------------------------------------------------------------------->
+    # <------------------------------------------------------------------------->
+    # <-----------------   VERTICAL WELL INTEGRATION   ------------------------->
+    # <------------------------------------------------------------------------->
+    # <------------------------------------------------------------------------->
 
     def update_DP_vertical(self, input_point: PlantThermoPoint, is_upward=True):
 
         if input_point == self.points[-1]:
-
-            self.__tmp_point = input_point.duplicate()
-            self.points.append(self.__tmp_point)
+            self.new_point = input_point.duplicate()
+            self.points.append(self.new_point)
 
         else:
+            self.new_point = self.points[self.points.index(input_point) + 1]
 
-            self.__tmp_point = self.points[self.points.index(input_point) + 1]
-
+        self.is_upward = is_upward
         if is_upward:
-
-            self.__mult = -1
-            dq = self.q_dot_up
+            depths = (self.dz_well, 0)
 
         else:
-
-            self.__mult = 1
-            dq = self.q_dot_down
-
-        rho_in = input_point.get_variable("rho")
-        dh = (self.__mult * g / 1e3 + dq) * self.dz_well
-        self.__dh_dp_stream = (g + dq * 1e3) / g * 1e3
+            depths = (0, self.dz_well)
 
         p0 = input_point.get_variable("P")
         rho0 = input_point.get_variable("rho")
@@ -323,11 +381,11 @@ class SimplifiedWell(ABC):
 
         if not self.use_rk:
 
-            integrator = SimpleIntegrator(self.rk_funct, 0, [p0, rho0], self.dz_well, n_steps=100)
+            integrator = SimpleIntegrator(self.rk_funct, depths[0], [p0, rho0], depths[1], n_steps=100)
 
         else:
 
-            integrator = RK45(self.rk_funct, 0, [p0, rho0], self.dz_well)
+            integrator = RK45(self.rk_funct, depths[0], [p0, rho0], depths[1])
 
         while integrator.status == 'running':
 
@@ -345,119 +403,78 @@ class SimplifiedWell(ABC):
             })
 
         output = integrator.y
-        self.__tmp_point.set_variable("h", input_point.get_variable("h") + dh)
-        self.__tmp_point.set_variable("P", output[0])
+        self.new_point.set_variable("P", output[0])
+        self.new_point.set_variable("rho", output[1])
 
-        co_in = self.__calculate_C0(input_point, self.__dh_dp_stream)
-        co_out = self.__calculate_C0(self.__tmp_point, self.__dh_dp_stream)
+        co_in = self.calculate_C0(input_point, depths[0])
+        co_out = self.calculate_C0(self.new_point, depths[1])
         c0 = (co_in + co_out) / 2
 
-        if not self.discretize_p_losses:
+        self.additional_final_calculations(input_point, depths)
 
-            dp_loss = self.__evaluate_pressure_losses(input_point, self.__tmp_point, c0)
-            self.__tmp_point.set_variable("P", self.__tmp_point.get_variable("P") - dp_loss)
-            self.__tmp_point.set_variable("h", input_point.get_variable("h") + dh)
+        self.new_point = self.new_point.duplicate()
 
-        else:
-
-            dp_loss = 0.
-
-        self.__tmp_point = self.__tmp_point.duplicate()
-
-        return c0, dp_loss
+        return c0
 
     def rk_funct(self, z, y):
 
         p_curr = y[0]
         rho_curr = y[1]
 
-        # h_curr = input_point.get_variable("h") + (g / 1e3 + dq) * z
+        self.new_point.set_variable("P", p_curr)
+        self.new_point.set_variable("rho", rho_curr)
 
-        self.__tmp_point.set_variable("P", p_curr)
-        self.__tmp_point.set_variable("rho", rho_curr)
+        if self.is_upward:
 
-        c0_curr = self.__calculate_C0(self.__tmp_point, self.__dh_dp_stream)
-
-        if self.discretize_p_losses:
-
-            dp_loss = self.__evaluate_pressure_losses(self.points[0], self.__tmp_point, dz=1)
+            c0_curr = self.calculate_C0(self.new_point, self.dz_well - z)
 
         else:
 
-            dp_loss = 0.
+            c0_curr = self.calculate_C0(self.new_point, z)
 
-        dp = self.__mult * rho_curr * 9.81 / 1e6 - dp_loss
+        dp_loss = self.__evaluate_pressure_losses(self.new_point)
+
+        dp = rho_curr * g / 1e6 + dp_loss
         d_rho = c0_curr * dp
 
         return [dp, d_rho]
 
-    def __evaluate_pressure_losses(self, input_point, output_point, c0=None, dz=None):
+    def __evaluate_pressure_losses(self, input_point):
 
-        m_dot = input_point.m_dot
-        g = 9.81
+        dp = self.evaluate_pressure_losses(input_point)
 
-        if dz is None:
-            dz = abs(self.dz_well)
+        if self.is_upward:
 
-        if input_point.get_variable("P") > output_point.get_variable("P"):
-            d = self.d_prod
-
-        else:
-            d = self.d_inj
-
-        if d is not None:
-
-            mu = (input_point.get_variable("mu") + output_point.get_variable("mu")) / 2
-            re = 4 * m_dot / (np.pi * d * mu / 1e6)
-
-            f = self.__calculate_friction_factor(d, re)
-
-            if c0 is not None:
-
-                rho0 = max(input_point.get_variable("rho"), output_point.get_variable("rho"))
-                l_mod = (np.exp(c0 / 1e6 * g * dz) - 1) / (g * c0 / 1e6)
-                dp = 8 * (f * m_dot ** 2) / (d ** 5 * np.pi ** 2 * rho0) * l_mod
-
-            else:
-
-                rho0 = output_point.get_variable("rho")
-                dp = 8 * (f * m_dot ** 2) / (d ** 5 * np.pi ** 2 * rho0) * dz
+            return dp
 
         else:
 
-            dp = 0.
+            return -dp
 
-        return dp / 1e6
+    def calculate_C0(self, curr_point: PlantThermoPoint, depth=0.):
 
-    @staticmethod
-    def __calculate_friction_factor(d, re):
+        d_rho_d_P = curr_point.get_derivative("rho", "P", "T")
+        d_rho_d_T = curr_point.get_derivative("rho", "T", "P")
+        d_h_d_T = curr_point.get_derivative("h", "T", "P")
+        d_h_d_P = curr_point.get_derivative("h", "P", "T")
 
-        if d is not None:
+        return d_rho_d_P + d_rho_d_T / d_h_d_T * (self.dh_dl_stream(curr_point, depth) - d_h_d_P)
 
-            rough = 55 * 1e-6       # [m] surface roughness
-            rel_rough = rough / d
+    # The following three methods can be overwritten in subclasses to implement pressure
+    # and heat transfer calculations
 
-            A = (2.457 * np.log(1. / ((7. / re) ** 0.9 + 0.27 * rel_rough))) ** 16
-            B = (37530. / re) ** 16
+    def evaluate_pressure_losses(self, curr_point: PlantThermoPoint):
 
-            f = 8. * ((8. / re) ** 12 + (1 / (A + B)) ** 1.5) ** (1. / 12.)
+        return 0.
 
-        else:
+    def dh_dl_stream(self, curr_point: PlantThermoPoint, depth=0.):
 
-            f = 0.
+        rho = curr_point.get_variable("rho")
+        return 1e3 / rho
 
-        return f
+    def additional_final_calculations(self, input_point, depths):
 
-    @staticmethod
-    def __calculate_C0(thermo_point: PlantThermoPoint, dh_dp_stream):
-
-        d_rho_d_P = thermo_point.get_derivative("rho", "P", "T")
-        d_rho_d_T = thermo_point.get_derivative("rho", "T", "P")
-        d_h_d_T = thermo_point.get_derivative("h", "T", "P")
-        d_h_d_P = thermo_point.get_derivative("h", "P", "T")
-        rho = thermo_point.get_variable("rho")
-
-        return d_rho_d_P + d_rho_d_T / d_h_d_T * (dh_dp_stream / rho - d_h_d_P)
+        pass
 
     # <------------------------------------------------------------------------->
     # <------------------------------------------------------------------------->
@@ -692,7 +709,7 @@ class SimplifiedWell(ABC):
             t_list[0, i] = __tmp_point.get_variable("T")
             p_list[0, i] = __tmp_point.get_variable("P")
 
-            p, rho = self.get_iteration_value(self.dz_well - pos, 1)
+            p, rho = self.get_iteration_value(pos, 1)
             __tmp_point.set_variable("P", p)
             __tmp_point.set_variable("rho", rho)
             t_list[1, i] = __tmp_point.get_variable("T")
@@ -709,3 +726,138 @@ class SimplifiedWell(ABC):
                 if step["range"][0] <= position <= step["range"][1]:
 
                     return step["dense_out"](position)
+
+    @property
+    def calculation_setup_data(self):
+
+        data_frame = {
+
+            "Reservoir Data": {
+
+                "depth": {"value": self.dz_well, "unit": "m"},
+                "T_rock": {"value": self.t_rocks, "unit": "°C"},
+                "T_surf": {"value": self.t_surf, "unit": "°C"},
+                "geo_flux": {"value": self.geo_flux, "unit": "W / m^2"},
+                "geo_gradient": {"value": self.geo_gradient, "unit": "°C/m"},
+
+                "k_rocks": {"value": self.rho_rocks, "unit": "W / (m K)"},
+                "c_rocks": {"value": self.c_rocks, "unit": "kJ / (kg K)"},
+                "rho_rocks": {"value": self.rho_rocks, "unit": "kg / m^3"},
+                "alpha_rocks": {"value": self.alpha_rocks, "unit": "-"}
+
+            },
+
+            "Input Conditions": {
+
+                "fluid": {"value": self.points[0].str_fluid, "unit": None},
+                "P_in": {"value": self.points[0].get_variable("P"), "unit": self.points[0].get_unit("P")},
+                "T_in": {"value": self.points[0].get_variable("T"), "unit": self.points[0].get_unit("T")},
+                "rho_in": {"value": self.points[0].get_variable("rho"), "unit": self.points[0].get_unit("rho")},
+                "m_dot": {"value": self.points[0].m_dot, "unit": "kg/s"},
+
+            },
+
+            "Calculation Options": {
+
+                "use rk": {"value": self.use_rk, "unit": None},
+
+            }
+
+        }
+
+        data_frame = self.additional_setup_data(data_frame)
+        data_frame = self.heating_section.additional_setup_data(data_frame)
+        return data_frame
+
+    @abstractmethod
+    def additional_setup_data(self, data_frame: dict):
+
+        return data_frame
+
+class SimplifiedBHE(SimplifiedWell):
+
+    def evaluate_points(self):
+
+        self.C0[0] = self.update_DP_vertical(self.points[0], is_upward=False)
+        self.heating_section.update()
+        self.C0[1] = self.update_DP_vertical(self.points[2], is_upward=True)
+
+    def additional_setup_data(self, data_frame: dict):
+
+        data_frame["Calculation Options"].update({
+
+            "well class": {"value": "SimplifiedBHE", "unit": None}
+
+        })
+        return data_frame
+
+
+class SimplifiedCPG(SimplifiedWell):
+
+    def __init__(
+
+            self, input_thermo_point: PlantThermoPoint, dz_well,
+            t_rocks=None, t_surf=None, geo_flux=None,
+            k_rocks=0.2, c_rocks=1, rho_rocks=2500,
+            heating_section=None, PPI=None,
+            use_rk=True, p_res=None
+
+    ):
+
+        super().__init__(
+
+            input_thermo_point, dz_well, t_rocks=t_rocks, t_surf=t_surf,
+            heating_section=heating_section, k_rocks=k_rocks, c_rocks=c_rocks,
+            rho_rocks=rho_rocks, geo_flux=geo_flux, PPI=PPI, use_rk=use_rk
+
+        )
+
+        if p_res is not None:
+
+            self.p_res = p_res
+
+        else:
+
+            self.p_res = 1000 * 9.81 * dz_well / 1e6  # water hydrostatic pressure (in MPa)
+
+    def evaluate_points(self):
+
+        # iterate point 0 in order to get fixed point 1 (production well bottom hole) pressure.
+        # pressure = reservoir pressure - pressure losses in the reservoir
+
+        counter = 0
+        surface_temperature = self.points[0].get_variable("T")
+
+        while True:
+
+            self.C0[0] = self.update_DP_vertical(self.points[0], is_upward=False)
+            self.heating_section.update()
+            dp = self.points[2].get_variable("P") - self.p_res
+
+            if abs(dp / self.p_res) < 1e-3 or counter > 10:
+
+                break
+
+            else:
+
+                counter += 1
+                self.points[0].set_variable("P", self.points[0].get_variable("P") - dp)
+                self.points[0].set_variable("T", surface_temperature)
+
+        self.C0[1] = self.update_DP_vertical(self.points[2], is_upward=True)
+
+    def additional_setup_data(self, data_frame: dict):
+
+        data_frame["Calculation Options"].update({
+
+            "well class": {"value": "SimplifiedCPG", "unit": None}
+
+        })
+
+        data_frame["Reservoir Data"].update({
+
+            "P_reservoir": {"value": self.p_res, "unit": "MPa"}
+
+        })
+
+        return data_frame

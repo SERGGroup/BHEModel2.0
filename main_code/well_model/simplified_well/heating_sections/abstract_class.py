@@ -13,6 +13,7 @@ class AbstractHeatingSection(ABC):
         self.l_HS = 0.
         self.dP_HS = 0.
         self.CAPEX_well = 0.
+        self.time = 0.
 
     def __setattr__(self, attr, value):
 

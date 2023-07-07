@@ -1,7 +1,7 @@
 # %%------------
 import scipy.integrate
 
-from main_code.simplified_well.heating_sections import DefaultHeatingSection, AbstractHeatingSection
+from main_code.well_model.simplified_well.heating_sections import DefaultHeatingSection, AbstractHeatingSection
 from main_code.support import PlantThermoPoint, retrieve_PPI
 from main_code import constants
 

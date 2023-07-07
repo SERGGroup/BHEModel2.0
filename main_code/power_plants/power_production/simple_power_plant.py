@@ -1,5 +1,5 @@
 from main_code.power_plants.abstract_surface_plant import AbstractSurfacePlant
-from main_code.simplified_well.simplified_well import SimplifiedBHE
+from main_code.well_model.simplified_well.simplified_well import SimplifiedBHE
 from main_code.support import PlantThermoPoint
 from abc import ABC, abstractmethod
 from scipy.optimize import Bounds
@@ -73,7 +73,7 @@ class SimpleExpansionPlant(AbstractSurfacePlant):
         ambient_point.set_variable("P", 0.1)
         ambient_point.set_variable("T", T_ambient)
 
-        self.BHE_well = SimplifiedBHE(input_point, dz_well=BHE_depth, T_rocks=T_rock)
+        self.BHE_well = SimplifiedBHE(input_point, dz_well=BHE_depth, t_rocks=T_rock)
         self.append_ambient_condition(ambient_point)
 
         self.BHE_well.update(ambient_point)

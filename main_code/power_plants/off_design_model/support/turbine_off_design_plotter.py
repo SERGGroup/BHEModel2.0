@@ -1,4 +1,4 @@
-from main_code.off_design_model.turbine_off_design import TurbineOD
+from main_code.power_plants.off_design_model.turbine_off_design import TurbineOD
 from matplotlib.figure import Figure
 import numpy as np
 import math

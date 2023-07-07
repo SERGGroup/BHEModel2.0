@@ -1,7 +1,8 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
-from main_code.simplified_well.heating_sections.subclasses.EGS_heating_section import EGSHeatingSection
-from main_code.simplified_well.heating_sections.subclasses.default_class import DefaultHeatingSection
-from main_code.simplified_well.simplified_well_subclasses import SimplifiedBHE
+from main_code.well_model.simplified_well.heating_sections.subclasses.EGS_heating_section import EGSHeatingSection
+from main_code.well_model.simplified_well.heating_sections.subclasses.default_class import DefaultHeatingSection
+from main_code.well_model.geometry_based_well_models.simple_pressure_losses_model import PressureLossesBHE
+from main_code.well_model.simplified_well.simplified_well import SimplifiedBHE
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
 from main_code.support.other.matplolib_stiles import ColorFader
 from matplotlib.ticker import MultipleLocator
@@ -39,14 +40,14 @@ water_input.set_variable("P", P_in)
 bhe_CO2 = SimplifiedBHE(
 
     input_thermo_point=CO2_input,
-    dz_well=5000, T_rocks=200
+    dz_well=5000, t_rocks=200
 
 )
 
 bhe_water = SimplifiedBHE(
 
     input_thermo_point=water_input,
-    dz_well=5000, T_rocks=200
+    dz_well=5000, t_rocks=200
 
 )
 
@@ -59,8 +60,8 @@ P_water_down = bhe_water.points[1].get_variable("P")
 P_CO2_up = bhe_CO2.points[3].get_variable("P")
 P_water_up = bhe_water.points[3].get_variable("P")
 
-# %%------------   CHECK ADAMS INIT                       -----------------------------------------------------------> #
 
+# %%------------   CHECK ADAMS INIT                       -----------------------------------------------------------> #
 T_amb = 15  # [°C]
 dT_appr = 7  # [°C]
 dp_sat = 50  # [kPa]
@@ -116,11 +117,11 @@ def evaluate_turbine_power(
         d_inj = None
         d_prod = None
 
-    bhe_in = SimplifiedBHE(
+    bhe_in = PressureLossesBHE(
 
         input_thermo_point=tmp_co2_input,
-        dz_well=dz_well, T_rocks=T_rock, use_rk=True,
-        discretize_p_losses=discrete_losses,
+        dz_well=dz_well, t_rocks=T_rock, use_rk=True,
+        calc_discrete_pressure_losses=discrete_losses,
         d_inj=d_inj, d_prod=d_prod
 
     )
@@ -147,7 +148,6 @@ def evaluate_turbine_power(
 
 
 # %%------------   CHECK ADAMS SINGLE                     -----------------------------------------------------------> #
-
 """ 
     DATA FROM:
 
@@ -177,7 +177,6 @@ dp_turb, dh_turb, W_turb, q_res, bhe_out = evaluate_turbine_power(
 )
 
 # %%------------   CHECK ADAMS FROM EXCEL                 -----------------------------------------------------------> #
-
 file_directory = os.path.join(os.path.dirname(constants.RES_FOLDER), "2022-11-21 - Model Validation", "res")
 file_name = os.path.join(file_directory, "1-s2.0-S0306261914012124-mmc2.xlsx")
 wb = load_workbook(filename=file_name)
@@ -225,7 +224,6 @@ results[0] = np.array(results[0])*1.08
 
 
 # %%------------   PLOT ADAMS EXCEL RESULTS               -----------------------------------------------------------> #
-
 x_label = "Wturb (Adams et al.) [kWe]"
 y_label = "Wturb (current study) [kWe]"
 cf = ColorFader()
@@ -358,8 +356,8 @@ for key in keys:
 
 pbar.close()
 
-# %%------------   PLOT ADAMS DICTIONARY RESULTS          -----------------------------------------------------------> #
 
+# %%------------   PLOT ADAMS DICTIONARY RESULTS          -----------------------------------------------------------> #
 x_list = "m_dot"
 x_label = r'$m_{dot}\ [kg/s]$'
 

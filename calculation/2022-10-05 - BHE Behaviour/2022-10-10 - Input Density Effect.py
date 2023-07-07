@@ -1,5 +1,5 @@
 # %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
-from main_code.simplified_well.simplified_well_subclasses import SimplifiedBHE
+from main_code.well_model.simplified_well.simplified_well import SimplifiedBHE
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
 from main_code.support.other.support_functions import get_np_array
 import matplotlib.pyplot as plt
@@ -7,7 +7,6 @@ from tqdm import tqdm
 
 
 # %%-------------------------------------   INITIALIZATION                      -------------------------------------> #
-
 CO2_input = PlantThermoPoint(["CarbonDioxide"], [1])
 CO2_input.set_variable("T", 35)
 CO2_input.set_variable("rho", 800)
@@ -15,15 +14,15 @@ CO2_input.set_variable("rho", 800)
 bhe_CO2 = SimplifiedBHE(
 
     input_thermo_point=CO2_input,
-    dz_well=1200, T_rocks=150
+    dz_well=1200, t_rocks=150
 
 )
 
 n_points = 100
 rho_in_points = get_np_array(800, 1200, n_points)    # in m
 
-# %%-------------------------------------   CO2 CALCULATION                     -------------------------------------> #
 
+# %%-------------------------------------   CO2 CALCULATION                     -------------------------------------> #
 pbar_rho = tqdm(desc="evaluating rho analysis:", total=n_points)
 
 x_list = list()
@@ -42,6 +41,7 @@ for rho in rho_in_points:
     pbar_rho.update(1)
 
 pbar_rho.close()
+
 
 # %%-------------------------------------   PLOT RESULTS                        -------------------------------------> #
 fig, (ax) = plt.subplots(1, 1, dpi=200)

@@ -1,6 +1,5 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
-from main_code.simplified_well.heating_sections.subclasses import REELWELLInclinedHeatingSection, REELWELLGeometry
-from main_code.simplified_well.simplified_well_subclasses import SimplifiedBHE
+from main_code.well_model.geometry_based_well_models.REELWEEL_model import REELWEELBHE, REELWELLGeometry
 from main_code.support.other.excel_exporter import export_profiles_to_excel
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
 from main_code import constants
@@ -24,14 +23,15 @@ k_rock = 2.423      # [W/(m K)]
 c_rock = 0.90267    # [kJ/(kg K)]
 rho_rock = 2600     # [kg/m^3]
 
-t_rock = t_surf + t_grad * 1
+t_rock = t_surf + t_grad * depth
 hs_geometry = REELWELLGeometry(
 
     depth,
     tub_id=0.01,
     tub_od=0.011,
     cas_id=0.172,
-    cas_od=0.188
+    cas_od=0.188,
+    hot_in_tubing=True
 
 )
 
@@ -41,24 +41,13 @@ bhe_in = PlantThermoPoint(["Water"], [1])
 bhe_in.set_variable("T", t_in)
 bhe_in.set_variable("P", 0.1)
 
-well = SimplifiedBHE(
+well = REELWEELBHE(
 
-    bhe_in, dz_well=1, T_rocks=t_rock,
+    bhe_in, dz_well=depth, t_rocks=t_rock,
     k_rocks=k_rock, c_rocks=c_rock, rho_rocks=rho_rock,
-    t_surf=t_surf
+    T_surf=t_surf, rw_geometry=hs_geometry
 
 )
-
-heating_section = REELWELLInclinedHeatingSection(
-
-    well, hs_geometry,
-    hot_in_tubing=True,
-    neglect_internal_heat_transfer=True,
-    integrate_temperature=True,
-    integration_steps=600
-
-)
-well.heating_section = heating_section
 
 
 # %%------------   CALCULATIONS                           -----------------------------------------------------------> #
@@ -84,15 +73,15 @@ bhe_in.m_dot = mass_flow
 
 for time in time_points:
 
-    heating_section.time = time / 365
+    well.heating_section.time = time / 365
     well.update()
 
     time_list.append(time)
     t_out_list.append(well.points[-1].get_variable("T"))
-    p_out_list.append(well.points[-1].get_variable("P"))
+    p_out_list.append(well.points[1].get_variable("P"))
     w_out_list.append(well.power)
 
-    t_list, p_list = heating_section.get_heating_section_profile(profile_positions)
+    t_list, p_list = well.get_iteration_profile(profile_positions)
 
     t_profile_list.append(t_list)
     p_profile_list.append(p_list)
@@ -114,6 +103,7 @@ data_exporter = {
     "time_list": time_list,
     "t_out_list": t_out_list,
     "w_out_list": w_out_list,
+    "p_out_list": p_out_list,
     "t_profile_list": t_profile_list,
     "p_profile_list": p_profile_list,
     "profile_positions": profile_positions

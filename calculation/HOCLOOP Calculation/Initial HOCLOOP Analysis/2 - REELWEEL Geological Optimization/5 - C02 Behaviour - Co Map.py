@@ -1,8 +1,8 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
-from main_code.simplified_well.heating_sections.subclasses import REELWELLHeatingSection, REELWELLGeometry
+from main_code.well_model.geometry_based_well_models.REELWEEL_model import REELWELLHeatingSection, REELWELLGeometry
+from main_code.well_model.simplified_well.simplified_well import SimplifiedBHE
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
 from main_code.support.other.support_functions import get_np_array
-from main_code.simplified_well.simplified_well import SimplifiedBHE
 import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt
 from main_code import constants
@@ -17,7 +17,7 @@ input_point = PlantThermoPoint(["CarbonDioxide"], [1])
 bhe = SimplifiedBHE(
 
     input_thermo_point=input_point,
-    dz_well=0.1, T_rocks=30
+    dz_well=0.1, t_rocks=30
 
 )
 
@@ -214,7 +214,7 @@ time_points = [0.1, 1, 10]
 well = SimplifiedBHE(
 
     input_thermo_point=PlantThermoPoint(["CarbonDioxide"], [1]),
-    dz_well=depth, T_rocks=t_rock, use_rk=True
+    dz_well=depth, t_rocks=t_rock, use_rk=True
 
 )
 

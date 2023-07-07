@@ -1,5 +1,5 @@
 # %%
-from main_code.simplified_well.simplified_well_subclasses import SimplifiedBHE
+from main_code.well_model.simplified_well.simplified_well import SimplifiedBHE
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
 from tabulate import tabulate
 import matplotlib

@@ -1,7 +1,7 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
-from main_code.simplified_well.heating_sections.subclasses import REELWELLHeatingSection, REELWELLGeometry
+from main_code.well_model.geometry_based_well_models.REELWEEL_model import REELWELLHeatingSection, REELWELLGeometry
+from main_code.well_model.simplified_well.simplified_well import SimplifiedBHE
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
-from main_code.simplified_well.simplified_well import SimplifiedBHE
 from main_code.support.other.error_band import draw_error_band
 import matplotlib.pyplot as plt
 from main_code import constants
@@ -79,7 +79,11 @@ c_rock = 1.085      # [kJ/(kg K)]
 rho_rock = 2542     # [kg/m^3]
 
 l_horiz = l_overall - depth
-hs_geometry = REELWELLGeometry(l_horiz)
+hs_geometry = REELWELLGeometry(
+
+    l_horiz,
+    hot_in_tubing=False
+)
 
 
 # %%------------   INITIALIZE WELL                        -----------------------------------------------------------> #
@@ -90,17 +94,16 @@ bhe_in.set_variable("P", 0.2)
 
 well = SimplifiedBHE(
 
-    bhe_in, dz_well=depth, T_rocks=t_rock,
+    bhe_in, dz_well=depth, t_rocks=t_rock,
     k_rocks=k_rock, c_rocks=c_rock, rho_rocks=rho_rock
 
 )
 
-heating_section = REELWELLHeatingSection(well, hs_geometry, hot_in_tubing=False, neglect_internal_heat_transfer=True)
+heating_section = REELWELLHeatingSection(well, hs_geometry, neglect_internal_heat_transfer=True)
 well.heating_section = heating_section
 
 
 # %%------------   CALCULATIONS                           -----------------------------------------------------------> #
-
 n_points = 30
 shape = 2.5
 time_points = np.power((np.array(range(n_points)) + 1) / n_points, shape) * 10
@@ -133,8 +136,8 @@ for key in VALIDATION_DICT.keys():
 
     })
 
-# %%------------   PLOT RESULTS                           -----------------------------------------------------------> #
 
+# %%------------   PLOT RESULTS                           -----------------------------------------------------------> #
 fig = plt.figure(dpi=150)
 fig.set_size_inches(10, 8)
 ax = fig.add_subplot(1, 1, 1)
@@ -163,7 +166,6 @@ plt.show()
 
 
 # %%------------   SAVE IMAGE                             -----------------------------------------------------------> #
-
 output_directory = os.path.join(RES_FOLDER, "output")
 
 if not os.path.isdir(output_directory):

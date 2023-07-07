@@ -1,10 +1,10 @@
 # %% INIT
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
-from main_code.off_design_model import TurbineOD, TurbineODPlotter
+from main_code.power_plants.off_design_model import TurbineOD, TurbineODPlotter
 import matplotlib.pyplot as plt
 
 # %% DESIGN
-from main_code.simplified_well.simplified_well_subclasses import SimplifiedBHE
+from main_code.well_model.simplified_well.simplified_well import SimplifiedBHE
 
 T_amb = 15 # [°C]
 dT_appr = 7  # [°C]
@@ -29,7 +29,7 @@ def evaluate_well():
     bhe_inside = SimplifiedBHE(
 
         input_thermo_point=CO2_input,
-        dz_well=dz_well, T_rocks=T_rock, use_rk=True
+        dz_well=dz_well, t_rocks=T_rock, use_rk=True
 
     )
 

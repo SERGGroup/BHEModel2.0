@@ -123,20 +123,7 @@ class PlantThermoPoint(ThermodynamicPoint):
 
     def __format_points_table(self, formats):
 
-        fluids = self.RPHandler.fluids
-        composition = self.RPHandler.composition
-
-        table_name = str(fluids[0])
-
-        if len(fluids) > 1:
-
-            form_str = "{:.0f}% {}"
-            table_name = form_str.format(composition[0] * 100, table_name)
-
-            for i in range(1, len(fluids)):
-
-                table_name += " - {}".format(form_str.format(composition[i] * 100, fluids[i]))
-
+        table_name = self.str_fluid
         header_list = ["P", "T", "h", "s", "rho", "Q"]
 
         frm = formats(len(header_list) + 1)
@@ -174,3 +161,24 @@ class PlantThermoPoint(ThermodynamicPoint):
             row_str
 
         )
+
+    @property
+    def str_fluid(self):
+
+        fluid_list = self.RPHandler.fluids
+        comp_list = self.RPHandler.composition
+
+        if len(fluid_list) == 1:
+
+            return fluid_list[0]
+
+        else:
+
+            form_str = "{:.0f}% {}"
+            fluid_name = form_str.format(comp_list[0] * 100, fluid_list[0])
+
+            for i in range(1, len(fluid_list)):
+
+                fluid_name += " - {}".format(form_str.format(comp_list[i] * 100, fluid_list[i]))
+
+            return fluid_name

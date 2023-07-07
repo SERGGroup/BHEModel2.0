@@ -1,7 +1,7 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
-from main_code.simplified_well.heating_sections.subclasses import REELWELLHeatingSection, REELWELLGeometry
+from main_code.well_model.geometry_based_well_models.REELWEEL_model import REELWELLHeatingSection, REELWELLGeometry
+from main_code.well_model.simplified_well.simplified_well import SimplifiedBHE
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
-from main_code.simplified_well.simplified_well import SimplifiedBHE
 from scipy.optimize import minimize_scalar
 from main_code import constants
 import matplotlib.pyplot as plt
@@ -39,7 +39,7 @@ tmp_point = bhe_in.duplicate()
 
 well = SimplifiedBHE(
 
-    bhe_in, dz_well=depth, T_rocks=t_rock,
+    bhe_in, dz_well=depth, t_rocks=t_rock,
     k_rocks=k_rock, c_rocks=c_rock, rho_rocks=rho_rock,
     use_rk=True
 
@@ -84,7 +84,7 @@ for time in time_points:
     for depth in depth_list:
 
         well.dz_well = depth
-        well.T_rocks = depth / 1e3 * geo_grad + t_surf
+        well.t_rocks = depth / 1e3 * geo_grad + t_surf
         hs_geometry.l_hor = l_overall - depth
 
         def opt_fun_m_dot(m_dot):

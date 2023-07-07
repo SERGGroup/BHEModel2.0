@@ -1,0 +1,3 @@
+from main_code.well_model.simplified_well.heating_sections.subclasses.empty_heating_section import EmptyHeatingSection
+from main_code.well_model.simplified_well.heating_sections.subclasses.BHE_heating_section import BHEHeatingSection
+from main_code.well_model.simplified_well.heating_sections.subclasses.default_class import DefaultHeatingSection

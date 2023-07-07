@@ -1,5 +1,5 @@
 # %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
-from main_code.simplified_well.simplified_well_subclasses import SimplifiedBHE
+from main_code.well_model.simplified_well.simplified_well import SimplifiedBHE
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
 from main_code.support.other.support_functions import get_np_array
 import matplotlib.ticker as ticker
@@ -9,12 +9,11 @@ import numpy as np
 
 
 # %%-------------------------------------   INITIALIZATION                      -------------------------------------> #
-
 input_point = PlantThermoPoint(["CarbonDioxide"], [1])
 bhe = SimplifiedBHE(
 
     input_thermo_point=input_point,
-    dz_well=0.1, T_rocks=30
+    dz_well=0.1, t_rocks=30
 
 )
 
@@ -25,8 +24,8 @@ res_points = get_np_array(0, 0, n_points)
 
 h_mesh, p_mesh = np.meshgrid(h_points, p_points, indexing='ij')
 
-# %%-------------------------------------   CALCULATION                         -------------------------------------> #
 
+# %%-------------------------------------   CALCULATION                         -------------------------------------> #
 pbar = tqdm(desc="C0 map calculation", total=n_points * n_points)
 res, b = np.meshgrid(res_points, h_points, indexing='ij')
 
@@ -44,8 +43,8 @@ for i in range(n_points):
 
 pbar.close()
 
-# %%-------------------------------------   GET SATURATION LINE                 -------------------------------------> #
 
+# %%-------------------------------------   GET SATURATION LINE                 -------------------------------------> #
 support_point = PlantThermoPoint(["CarbonDioxide"], [1])
 
 n_sat_points = 500
@@ -72,7 +71,6 @@ for i in range(n_sat_points):
 pbar_sat.close()
 
 # %%-------------------------------------   GET ISO-T LINES                     -------------------------------------> #
-
 support_point = PlantThermoPoint(["CarbonDioxide"], [1])
 
 n_isolines_points = 500
@@ -146,8 +144,8 @@ for T in T_range:
 
 pbar_iso_t.close()
 
-# %%-------------------------------------   GET ISO-RHO LINES                   -------------------------------------> #
 
+# %%-------------------------------------   GET ISO-RHO LINES                   -------------------------------------> #
 rho_range = get_np_array(150, 1000, 18)  # in kg/m^3
 pbar_iso_h = tqdm(desc="iso-h lines calculation", total=n_isolines_points * len(rho_range))
 
@@ -187,12 +185,13 @@ for rho in rho_range:
 
 pbar_iso_h.close()
 
+
 # %%-------------------------------------   CALCULATE STANDARD BHE              -------------------------------------> #
 depth = 1750
 real_bhe = SimplifiedBHE(
 
     input_thermo_point=PlantThermoPoint(["CarbonDioxide"], [1]),
-    dz_well=depth, T_rocks=110, use_rk=True
+    dz_well=depth, t_rocks=110, use_rk=True
 
 )
 
@@ -210,8 +209,8 @@ for point in real_bhe.points:
 
 print(real_bhe)
 
-# %%-------------------------------------   COMPARE WITH DISCRETIZATION         -------------------------------------> #
 
+# %%-------------------------------------   COMPARE WITH DISCRETIZATION         -------------------------------------> #
 n_points = 1000
 depth_list = np.linspace(0, depth, n_points, endpoint=True)
 dz = depth_list[1] - depth_list[0]
@@ -255,7 +254,6 @@ disc_rho_list = rho_down_list + rho_up_list
 
 
 # %%-------------------------------------   PLOT RESULTS                        -------------------------------------> #
-
 highlight_isolines = False
 plot_well_behaviour = True
 plot_disc_well = True

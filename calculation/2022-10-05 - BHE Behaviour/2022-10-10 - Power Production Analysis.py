@@ -1,5 +1,5 @@
 # %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
-from main_code.simplified_well.simplified_well_subclasses import SimplifiedBHE
+from main_code.well_model.simplified_well.simplified_well import SimplifiedBHE
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
 from main_code.support.other.support_functions import get_np_array
 from main_code.support.other.label_lines import label_lines
@@ -8,7 +8,6 @@ from tqdm import tqdm
 
 
 # %%-------------------------------------   INITIALIZATION                      -------------------------------------> #
-
 T_in = 45
 CO2_input = PlantThermoPoint(["CarbonDioxide"], [1])
 CO2_input.set_variable("T", T_in)
@@ -21,14 +20,14 @@ water_input.set_variable("P", 0.2)
 bhe_CO2 = SimplifiedBHE(
 
     input_thermo_point=CO2_input,
-    dz_well=1000, T_rocks=150
+    dz_well=1000, t_rocks=150
 
 )
 
 bhe_water = SimplifiedBHE(
 
     input_thermo_point=water_input,
-    dz_well=1000, T_rocks=150
+    dz_well=1000, t_rocks=150
 
 )
 
@@ -106,8 +105,8 @@ line_styles = {
 }
 line_styles.setdefault("default")
 
-# %%-------------------------------------   CO2 CALCULATION                     -------------------------------------> #
 
+# %%-------------------------------------   CO2 CALCULATION                     -------------------------------------> #
 support_point = PlantThermoPoint(["CarbonDioxide"], [1])
 pbar = tqdm(desc="evaluating CO2 points", total=n_points * len(t_in_points))
 
@@ -119,7 +118,7 @@ for i in range(len(t_in_points)):
     for j in range(len(depth_points)):
 
         bhe_CO2.dz_well = depth_points[j]
-        bhe_CO2.T_rocks = t_in_points[i]
+        bhe_CO2.t_rocks = t_in_points[i]
 
         bhe_CO2.update()
         P_out = bhe_CO2.points[0].get_variable("P")
@@ -162,8 +161,9 @@ for i in range(len(t_in_points)):
     })
 
 pbar.close()
-# %%-------------------------------------   WATER CALCULATION                   -------------------------------------> #
 
+
+# %%-------------------------------------   WATER CALCULATION                   -------------------------------------> #
 pbar = tqdm(desc="evaluating water points", total=n_points * len(t_in_points))
 
 for i in range(len(t_in_points)):
@@ -174,7 +174,7 @@ for i in range(len(t_in_points)):
     for j in range(len(depth_points)):
 
         bhe_water.dz_well = depth_points[j]
-        bhe_water.T_rocks = t_in_points[i]
+        bhe_water.t_rocks = t_in_points[i]
         bhe_water.update()
 
         if 0 <= bhe_water.eta_II <= 1:

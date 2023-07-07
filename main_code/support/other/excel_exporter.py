@@ -1,3 +1,4 @@
+from main_code.well_model.simplified_well.simplified_well import SimplifiedBHE
 from openpyxl import Workbook, load_workbook, styles
 from abc import ABC, abstractmethod
 from datetime import date, datetime
@@ -157,18 +158,25 @@ def write_excel_sheet(excel_path, sheet_name, data_frame: dict, first_row=2, fir
 
 def export_profiles_to_excel(file_path, data_input):
 
+    well = SimplifiedBHE(t_rocks=250, dz_well=300, input_thermo_point=None)
+    #well = data_input["well"]
     time_list = data_input["time_list"]
     t_out_list = data_input["t_out_list"]
     w_out_list = data_input["w_out_list"]
+    p_out_list = data_input["p_out_list"]
     t_profile_list = data_input["t_profile_list"]
     p_profile_list = data_input["p_profile_list"]
     profile_positions = data_input["profile_positions"]
+
+    # Write Specification Data Sheet
+    specification = well.specification_data
 
     # Write Main Data Sheet
     main_data = {
 
         'Time': {"unit": ["days"], "values": [time_list]},
         'T_out': {"unit": ["°C"], "values": [t_out_list]},
+        'P_out': {"unit": ["MPa"], "values": [p_out_list]},
         'W_out': {"unit": ["kW"], "values": [w_out_list]}
 
     }

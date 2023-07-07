@@ -1,5 +1,5 @@
 #%%------------   IMPORT MODULES                     -----------------------------------------------------------> #
-from main_code.simplified_well.simplified_well_subclasses import SimplifiedBHE
+from main_code.well_model.simplified_well.simplified_well import SimplifiedBHE
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
 import matplotlib.pyplot
 
@@ -50,7 +50,7 @@ T_rock = 125    # [°C] Temperature of the reservoir
 bhe_inside = SimplifiedBHE(
 
     input_thermo_point=CO2_input,
-    dz_well=dz_well, T_rocks=T_rock, use_rk=True
+    dz_well=dz_well, t_rocks=T_rock, use_rk=True
 
 )
 

@@ -1,4 +1,4 @@
-from main_code.simplified_well.heating_sections.abstract_class import AbstractHeatingSection
+from main_code.well_model.simplified_well.heating_sections.abstract_class import AbstractHeatingSection
 from scipy.optimize import Bounds
 import matplotlib.pyplot as plt
 import numpy as np
@@ -90,7 +90,7 @@ class BHEHeatingSection(AbstractHeatingSection):
         tmp_point_next = self.input_point.duplicate()
         tmp_point_old = self.input_point.duplicate()
 
-        T_out = self.main_BHE.T_rocks - self.dt_rocks
+        T_out = self.main_BHE.t_rocks - self.dt_rocks
         T_in = self.input_point.get_variable("T")
 
         self.l_HS = 0.
@@ -144,7 +144,7 @@ class BHEHeatingSection(AbstractHeatingSection):
 
     def __evaluate_section_length(self, tmp_point_old, tmp_point_next):
 
-        dT_rock_curr = self.main_BHE.T_rocks - tmp_point_old.get_variable("T")
+        dT_rock_curr = self.main_BHE.t_rocks - tmp_point_old.get_variable("T")
         q_dot_need = self.m_dot_well * tmp_point_next.evaluate_variable_variation(tmp_point_old,"h")
 
         r_lin_ground = self.__calculate_ground_thermal_resistance()

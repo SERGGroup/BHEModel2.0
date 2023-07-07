@@ -2,7 +2,7 @@
 # %%------------   IMPORT MODULES                     -----------------------------------------------------------> #
 import numpy as np
 
-from main_code.simplified_well.simplified_well_subclasses import SimplifiedBHE
+from main_code.well_model.simplified_well.simplified_well import SimplifiedBHE
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
 import matplotlib.pyplot as plt
 
@@ -128,7 +128,7 @@ for element in Turbine_in_h:
 
 # %%------------   IMPORT MODULES                     -----------------------------------------------------------> #
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
-from main_code.simplified_BHE.simplified_BHE import SimplifiedBHE
+from main_code.well_model.simplified_well.simplified_well import SimplifiedBHE
 
 # %% ------------ Design parameters ------------------------------------------------------------------->
 Y_1_d=0.4285451346283881

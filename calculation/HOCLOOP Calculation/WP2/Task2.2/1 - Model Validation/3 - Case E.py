@@ -1,6 +1,6 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
-from main_code.simplified_well.heating_sections.subclasses import REELWELLInclinedHeatingSection, REELWELLGeometry
-from main_code.simplified_well.simplified_well_subclasses import SimplifiedBHE
+from main_code.well_model.geometry_based_well_models.REELWEEL_model import REELWELLInclinedHeatingSection, REELWELLGeometry
+from main_code.well_model.simplified_well.simplified_well import SimplifiedBHE
 from main_code.support.other.excel_exporter import export_profiles_to_excel
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
 from main_code import constants
@@ -31,7 +31,8 @@ hs_geometry = REELWELLGeometry(
     tub_id=0.01,
     tub_od=0.011,
     cas_id=0.172,
-    cas_od=0.188
+    cas_od=0.188,
+    hot_in_tubing=True
 
 )
 
@@ -43,7 +44,7 @@ bhe_in.set_variable("P", 0.1)
 
 well = SimplifiedBHE(
 
-    bhe_in, dz_well=1, T_rocks=t_rock,
+    bhe_in, dz_well=1, t_rocks=t_rock,
     k_rocks=k_rock, c_rocks=c_rock, rho_rocks=rho_rock,
     t_surf=t_surf
 
@@ -52,7 +53,6 @@ well = SimplifiedBHE(
 heating_section = REELWELLInclinedHeatingSection(
 
     well, hs_geometry,
-    hot_in_tubing=True,
     neglect_internal_heat_transfer=True,
     integration_steps=600
 

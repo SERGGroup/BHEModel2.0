@@ -1,4 +1,4 @@
-from main_code.simplified_well.heating_sections.abstract_class import AbstractHeatingSection
+from main_code.well_model.simplified_well.heating_sections.abstract_class import AbstractHeatingSection
 from main_code.support.other.simple_integrator import SimpleIntegrator
 from scipy.integrate import RK45
 from scipy.constants import g
@@ -12,7 +12,9 @@ class REELWELLGeometry:
             self, l_hor,
             tub_id=0.085, tub_od=0.16,
             cas_id=0.224, cas_od=0.244,
-            k_insulation=0.15, ra_pipe=None
+            k_insulation=0.15, ra_pipe=None,
+            hot_in_tubing=False
+
     ):
 
         """
@@ -74,6 +76,7 @@ class REELWELLGeometry:
         self.tkn_annulus = (self.d_ann_out - self.d_ann_int) / 2
 
         self.r_ins = np.log(tub_od / tub_id) / (2 * np.pi * self.k)
+        self.hot_in_tubing = hot_in_tubing
         self.parent_class = None
 
     def q_ground(self, point, depth=None):
@@ -89,21 +92,15 @@ class REELWELLGeometry:
 
         """
 
-        t_rock = self.parent_class.main_BHE.T_rocks
-        if depth is not None:
-
-            grad = self.parent_class.main_BHE.ovr_grad
-            t_rock -= (self.parent_class.main_BHE.dz_well - depth) * grad
-
-        dt = t_rock - point.get_variable("T")
-
         if self.parent_class is not None:
 
-            time = self.parent_class.time * 3.154e+7        # 3.154e+7 is a conversion factor: [year] -> [s]
+            time = self.parent_class.time * 3.154e+7  # 3.154e+7 is a conversion factor: [year] -> [s]
             alpha = self.parent_class.main_BHE.alpha_rocks
             k = self.parent_class.main_BHE.k_rocks
-            r0 = self.cas_od / 2
+            t_rock = self.get_t_rock(depth)
+            dt = t_rock - point.get_variable("T")
 
+            r0 = self.cas_od / 2
             td = alpha * time /  r0 ** 2
 
             if td < 2.8:
@@ -265,6 +262,16 @@ class REELWELLGeometry:
 
         return q_tot / point.m_dot
 
+    def get_t_rock(self, depth):
+
+        t_rock = self.parent_class.main_BHE.t_rocks
+
+        if depth is not None:
+
+            grad = self.parent_class.main_BHE.geo_gradient
+            t_rock -= (self.parent_class.main_BHE.dz_well - depth) * grad
+
+        return t_rock
 
 class REELWELLHeatingSection(AbstractHeatingSection):
 
@@ -272,8 +279,7 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
             self, main_BHE, reelwell_geometry: REELWELLGeometry,
             n_wells=1, neglect_internal_heat_transfer=True, time=1,
-            hot_in_tubing=False, integration_steps=None,
-            integrate_temperature=False
+            integration_steps=None, integrate_temperature=False
 
     ):
 
@@ -301,7 +307,6 @@ class REELWELLHeatingSection(AbstractHeatingSection):
         self.integrate_temperature = integrate_temperature
 
         self.neglect_internal_heat_transfer = neglect_internal_heat_transfer
-        self.hot_in_tubing = hot_in_tubing
 
     # <------------------------------------------------------------------------->
     # <------------------------------------------------------------------------->
@@ -342,11 +347,11 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
         if self.neglect_internal_heat_transfer:
 
-            self.is_annulus = self.hot_in_tubing
+            self.is_annulus = self.geom.hot_in_tubing
             x0 = (self.input_point.get_variable("P"), self.input_point.get_variable("h"))
             x_mid = self.__integrate(pos_0=0, pos_end=self.geom.l_hor, x0=x0)
 
-            self.is_annulus = not self.hot_in_tubing
+            self.is_annulus = not self.geom.hot_in_tubing
             res = self.__integrate(pos_0=self.geom.l_hor, pos_end=0, x0=x_mid)
 
         else:
@@ -562,7 +567,7 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
     def get_bisect_intervals(self):
 
-        t_interval = [self.input_point.get_variable("T"), self.main_BHE.T_rocks]
+        t_interval = [self.input_point.get_variable("T"), self.main_BHE.t_rocks]
         p_interval = [0., self.input_point.get_variable("P")]
 
         return t_interval, p_interval
@@ -652,7 +657,7 @@ class REELWELLHeatingSection(AbstractHeatingSection):
             dhdl_ann = self.geom.dh_dl(self.__tmp_ann, is_annulus=True, other_point=self.__tmp_tub)
             dhdl_tub = self.geom.dh_dl(self.__tmp_tub, is_annulus=False, other_point=self.__tmp_ann)
 
-            if self.hot_in_tubing:
+            if self.geom.hot_in_tubing:
 
                 dxs = dpdl_ann, dhdl_ann, -dpdl_tub, -dhdl_tub
 
@@ -668,7 +673,7 @@ class REELWELLHeatingSection(AbstractHeatingSection):
             dpdl = self.geom.dp_dl(self.__tmp_ann, self.is_annulus)
             dhdl = self.geom.dh_dl(self.__tmp_ann, self.is_annulus)
 
-            if self.is_annulus ^ self.hot_in_tubing:
+            if self.is_annulus ^ self.geom.hot_in_tubing:
 
                 dxs = -dpdl, -dhdl
 
@@ -721,7 +726,7 @@ class REELWELLHeatingSection(AbstractHeatingSection):
             i_annulus = 0
             i_tubing = 1
 
-            if not self.hot_in_tubing:
+            if not self.geom.hot_in_tubing:
 
                 i_annulus = 1
                 i_tubing = 0
@@ -764,8 +769,8 @@ class REELWELLInclinedHeatingSection(REELWELLHeatingSection):
 
             self, main_BHE, reelwell_geometry: REELWELLGeometry,
             n_wells=1, neglect_internal_heat_transfer=True, time=1,
-            hot_in_tubing=False, integration_steps=None,
-            integrate_temperature=False, inclination=90
+            integration_steps=None, integrate_temperature=False,
+            inclination=90
 
     ):
 
@@ -773,7 +778,7 @@ class REELWELLInclinedHeatingSection(REELWELLHeatingSection):
 
             main_BHE, reelwell_geometry,
             n_wells=n_wells, neglect_internal_heat_transfer=neglect_internal_heat_transfer,
-            time=time, hot_in_tubing=hot_in_tubing, integration_steps=integration_steps,
+            time=time, integration_steps=integration_steps,
             integrate_temperature=integrate_temperature
 
         )
@@ -850,7 +855,7 @@ class REELWELLInclinedHeatingSection(REELWELLHeatingSection):
             dhdl_ann = self.geom.dh_dl(self.__tmp_ann, is_annulus=True, other_point=self.__tmp_tub, depth=depth)
             dhdl_tub = self.geom.dh_dl(self.__tmp_tub, is_annulus=False, other_point=self.__tmp_ann, depth=depth)
 
-            if self.hot_in_tubing:
+            if self.geom.hot_in_tubing:
 
                 return dpdl_ann + dp_grav_ann, dhdl_ann + dh_grav, -dpdl_tub + dp_grav_tub, -dhdl_tub + dh_grav
 
@@ -869,7 +874,7 @@ class REELWELLInclinedHeatingSection(REELWELLHeatingSection):
             #
             #     print("T")
 
-            if self.is_annulus ^ self.hot_in_tubing:
+            if self.is_annulus ^ self.geom.hot_in_tubing:
 
                 return -dpdl + dp_grav, -dhdl + dh_grav
 
@@ -879,7 +884,7 @@ class REELWELLInclinedHeatingSection(REELWELLHeatingSection):
 
         # TODO
 
-        t_interval = [self.input_point.get_variable("T"), self.main_BHE.T_rocks]
+        t_interval = [self.input_point.get_variable("T"), self.main_BHE.t_rocks]
         p_interval = [0., self.input_point.get_variable("P")]
 
         return t_interval, p_interval

@@ -1,6 +1,11 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
-from main_code.simplified_well.heating_sections.subclasses import REELWELLHeatingSection, REELWELLGeometry
-from main_code.simplified_well.simplified_well_subclasses import SimplifiedBHE
+from main_code.well_model.geometry_based_well_models.REELWEEL_model import (
+
+    REELWELLHeatingSection,
+    REELWELLGeometry,
+    REELWEELBHE,
+
+)
 from main_code.support.other.excel_exporter import export_profiles_to_excel
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
 from main_code import constants
@@ -33,7 +38,8 @@ hs_geometry = REELWELLGeometry(
     tub_id=0.01,
     tub_od=0.011,
     cas_id=0.172,
-    cas_od=0.188
+    cas_od=0.188,
+    hot_in_tubing=True
 
 )
 
@@ -43,17 +49,17 @@ bhe_in = PlantThermoPoint(["Water"], [1])
 bhe_in.set_variable("T", t_in)
 bhe_in.set_variable("P", 2.3)
 
-well = SimplifiedBHE(
+well = REELWEELBHE(
 
-    bhe_in, dz_well=depth, T_rocks=t_rock,
-    k_rocks=k_rock, c_rocks=c_rock, rho_rocks=rho_rock
+    bhe_in, dz_well=depth, t_rocks=t_rock, T_surf=t_surf,
+    k_rocks=k_rock, c_rocks=c_rock, rho_rocks=rho_rock,
+    rw_geometry=hs_geometry
 
 )
 
 heating_section = REELWELLHeatingSection(
 
     well, hs_geometry,
-    hot_in_tubing=True,
     neglect_internal_heat_transfer=True,
     integrate_temperature=True,
 
@@ -91,7 +97,7 @@ for time in time_points:
 
     time_list.append(time)
     t_out_list.append(well.points[-1].get_variable("T"))
-    p_out_list.append(well.points[-1].get_variable("P"))
+    p_out_list.append(well.points[2].get_variable("P"))
     w_out_list.append(well.power)
 
     t_list_vert, p_list_vert = well.get_iteration_profile(profile_positions_vert)
@@ -114,9 +120,11 @@ RES_FOLDER = os.path.join(
 file_path = os.path.join(RES_FOLDER, "case_b.xlsx")
 data_exporter = {
 
+    "well": well,
     "time_list": time_list,
     "t_out_list": t_out_list,
     "w_out_list": w_out_list,
+    "p_out_list": p_out_list,
     "t_profile_list": t_profile_list,
     "p_profile_list": p_profile_list,
     "profile_positions": overall_profile_positions

@@ -1,17 +1,11 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
-from main_code.simplified_well.heating_sections.subclasses.EGS_heating_section import EGSHeatingSection
-from main_code.simplified_well.simplified_well_subclasses import SimplifiedBHE
+from main_code.well_model.simplified_well.simplified_well import SimplifiedBHE
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
-from main_code.support.other.support_functions import get_np_array
-from main_code.support.other.label_lines import label_lines
-import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt
-from tqdm import tqdm
 import numpy as np
-import os
+
 
 # %%------------   COMPARE WITH DISCRETIZATION            -----------------------------------------------------------> #
-
 P_in = 5.74  # [MPa]
 T_in = 20  # [°C]
 depth = 7500  # [m]
@@ -27,7 +21,7 @@ water_input.set_variable("P", P_in)
 bhe_CO2 = SimplifiedBHE(
 
     input_thermo_point=CO2_input,
-    dz_well=depth, T_rocks=400
+    dz_well=depth, t_rocks=400
 
 )
 
@@ -69,3 +63,4 @@ for depth in depth_list[1:]:
     up_point.set_variable("h", h_down - 9.81 * dz)
 
 plt.plot(p_down_list, rho_down_list)
+plt.show()

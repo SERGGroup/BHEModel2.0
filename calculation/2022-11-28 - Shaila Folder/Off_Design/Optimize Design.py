@@ -1,6 +1,6 @@
-from main_code.simplified_well.simplified_well import SimplifiedBHE
+from main_code.well_model.simplified_well.simplified_well import SimplifiedBHE
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
-from main_code.off_design_model.turbine_off_design import TurbineOD
+from main_code.power_plants.off_design_model.turbine_off_design import TurbineOD
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -117,7 +117,7 @@ def Turbine_in_points(City):
         bhe_in = SimplifiedBHE(
 
         input_thermo_point=element,
-        dz_well=dz_well, T_rocks=T_rock, use_rk=True
+        dz_well=dz_well, t_rocks=T_rock, use_rk=True
 
         )
 
