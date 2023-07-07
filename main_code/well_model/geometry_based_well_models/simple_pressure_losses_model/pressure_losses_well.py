@@ -122,6 +122,13 @@ class PressureLossesWell(SimplifiedWell, ABC):
 
         })
 
+        data_frame["well geometry"].update({
+
+            "d_inj": {"value": self.d_inj, "unit": "m"},
+            "d_prod": {"value": self.d_prod, "unit": "m"}
+
+        })
+
         return data_frame
 
 

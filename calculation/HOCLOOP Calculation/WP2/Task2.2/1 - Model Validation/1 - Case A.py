@@ -45,7 +45,7 @@ well = REELWEELBHE(
 
     bhe_in, dz_well=depth, t_rocks=t_rock,
     k_rocks=k_rock, c_rocks=c_rock, rho_rocks=rho_rock,
-    T_surf=t_surf, rw_geometry=hs_geometry
+    t_surf=t_surf, rw_geometry=hs_geometry
 
 )
 
@@ -100,6 +100,7 @@ RES_FOLDER = os.path.join(
 file_path = os.path.join(RES_FOLDER, "case_a.xlsx")
 data_exporter = {
 
+    "well": well,
     "time_list": time_list,
     "t_out_list": t_out_list,
     "w_out_list": w_out_list,

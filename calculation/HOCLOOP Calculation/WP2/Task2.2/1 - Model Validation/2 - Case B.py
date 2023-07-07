@@ -51,7 +51,7 @@ bhe_in.set_variable("P", 2.3)
 
 well = REELWEELBHE(
 
-    bhe_in, dz_well=depth, t_rocks=t_rock, T_surf=t_surf,
+    bhe_in, dz_well=depth, t_rocks=t_rock, t_surf=t_surf,
     k_rocks=k_rock, c_rocks=c_rock, rho_rocks=rho_rock,
     rw_geometry=hs_geometry
 

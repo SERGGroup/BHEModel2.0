@@ -765,6 +765,17 @@ class SimplifiedWell(ABC):
                 "pressure losses": {"value": "ignored", "unit": None},
                 "heat transfer": {"value": "ignored", "unit": None}
 
+            },
+
+            "well geometry": {
+
+                "depth": {"value": self.dz_well, "unit": "m"},
+
+            },
+
+            "Heating Section Data": {
+
+
             }
 
         }

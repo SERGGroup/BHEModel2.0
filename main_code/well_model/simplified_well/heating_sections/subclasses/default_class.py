@@ -65,4 +65,10 @@ class DefaultHeatingSection(AbstractHeatingSection):
 
     def additional_setup_data(self, data_frame: dict):
 
+        data_frame["Calculation Options"].update({
+
+            "heating section": {"value": "DefaultHeatingSection", "unit": None}
+
+        })
+
         return data_frame

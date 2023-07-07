@@ -61,5 +61,5 @@ class REELWEELBHE(SimplifiedBHE):
 
         })
 
-        data_frame = self.rw_geometry.additional_setup_data(data_frame)
+        data_frame = self.rw_geometry.additional_setup_data(data_frame, is_well=True)
         return data_frame

@@ -100,3 +100,21 @@ class EGSHeatingSection(AbstractHeatingSection):
     def set_optimization_param(self, optimization_param):
 
         pass
+
+    def additional_setup_data(self, data_frame: dict):
+
+        data_frame["Calculation Options"].update({
+
+            "heating section": {"value": "EGSHeatingSection", "unit": None}
+
+        })
+
+        data_frame.update({"Heating Section Data": {
+
+            "S_res": {"value": self.S_res, "unit": "[m/s]"},
+            "k_res": {"value": self.k_res, "unit": "[m^2]"},
+            "R_res": {"value": self.R_res, "unit": "[1/(m*s)]"},
+
+        }})
+
+        return data_frame

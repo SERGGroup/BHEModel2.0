@@ -273,6 +273,36 @@ class REELWELLGeometry:
 
         return t_rock
 
+    def additional_setup_data(self, data_frame: dict, is_well=True):
+
+        if is_well:
+
+            key = "well geometry"
+
+        else:
+
+            key = "Heating Section Data"
+
+        data_frame[key].update({
+
+            "l_hor": {"value": self.l_hor, "unit": "m"},
+            "tub_id": {"value": self.tub_id, "unit": "m"},
+            "tub_od": {"value": self.tub_od, "unit": "m"},
+            "cas_id": {"value": self.cas_id, "unit": "m"},
+            "cas_od": {"value": self.cas_od, "unit": "m"},
+            "k_insulation": {"value": self.k, "unit": "W/(m*K)"},
+            "d_tub": {"value": self.d_tub, "unit": "m"},
+            "d_ann_int": {"value": self.d_ann_int, "unit": "m"},
+            "d_ann_out": {"value": self.d_ann_out, "unit": "m"},
+            "tkn_annulus": {"value": self.tkn_annulus, "unit": "m"},
+            "d_h_ann": {"value": self.d_h_ann, "unit": "m"},
+            "r_ins": {"value": self.r_ins, "unit": "(m*K)/W"}
+
+        })
+
+        return data_frame
+
+
 class REELWELLHeatingSection(AbstractHeatingSection):
 
     def __init__(
@@ -762,6 +792,31 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
             return self.__convert_to_ph(self.integrators_profiler[index][-1]["dense_out"](position))
 
+    def additional_setup_data(self, data_frame: dict):
+
+        internal_he = "ignored"
+        integration_type = "RK45"
+
+        if self.integration_steps is not None:
+
+            integration_type = "simple - {} steps".format(self.integration_steps)
+
+        if self.neglect_internal_heat_transfer:
+
+            internal_he = "considered"
+
+        data_frame["Calculation Options"].update({
+
+            "heating section": {"value": "REELWELLHeatingSection", "unit": None},
+            "hs - integration": {"value": integration_type, "unit": None},
+            "hs - internal heat exc": {"value": internal_he, "unit": None},
+
+        })
+
+        data_frame = self.geom.additional_setup_data(data_frame, is_well=False)
+
+        return data_frame
+
 
 class REELWELLInclinedHeatingSection(REELWELLHeatingSection):
 
@@ -888,3 +943,21 @@ class REELWELLInclinedHeatingSection(REELWELLHeatingSection):
         p_interval = [0., self.input_point.get_variable("P")]
 
         return t_interval, p_interval
+
+    def additional_setup_data(self, data_frame: dict):
+
+        data_frame = super().additional_setup_data(data_frame)
+
+        data_frame["Calculation Options"].update({
+
+            "heating section": {"value": "REELWELLHeatingSection", "unit": None}
+
+        })
+
+        data_frame["well geometry"].update({
+
+            "inclination": {"value": self.inclination, "unit": "°"}
+
+        })
+
+        return data_frame

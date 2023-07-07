@@ -86,14 +86,18 @@ def export_to_excel(
 
     return new_func
 
-def write_excel_sheet(excel_path, sheet_name, data_frame: dict, first_row=2, first_column=2, overwrite="light"):
+def write_excel_sheet(
+
+        excel_path, sheet_name, data_frame: dict,
+        first_row=2, first_column=2, overwrite="light",
+        write_data=True
+
+):
 
     if not os.path.isfile(str(excel_path)):
-
         wb = Workbook()
 
     else:
-
         wb = load_workbook(excel_path)
 
     if overwrite == "hard":
@@ -108,6 +112,16 @@ def write_excel_sheet(excel_path, sheet_name, data_frame: dict, first_row=2, fir
         wb.create_sheet(sheet_name)
 
     sheet = wb[sheet_name]
+
+    if write_data:
+        __write_excel_data(sheet, data_frame, first_row, first_column)
+    else:
+        __write_excel_specification(sheet, data_frame, first_row, first_column)
+
+    wb.save(excel_path)
+
+
+def __write_excel_data(sheet, data_frame: dict, first_row, first_column):
 
     col = first_column
     for key in data_frame.keys():
@@ -153,13 +167,62 @@ def write_excel_sheet(excel_path, sheet_name, data_frame: dict, first_row=2, fir
 
             col += 1
 
-    wb.save(excel_path)
+
+def __write_excel_specification(sheet, data_frame: dict, first_row, first_column):
+
+    max_lines = 30
+
+    data_col = 0
+    row_offset = 0
+
+    for key in data_frame.keys():
+
+        if len(data_frame[key].keys()) > 0:
+
+            if row_offset + len(data_frame[key].keys()) > max_lines:
+
+                row_offset = 0
+                data_col += 1
+
+            name_col = first_column + data_col * 4
+            value_col = first_column + data_col * 4 + 1
+            units_col = first_column + data_col * 4 + 2
+            sub_data_frame = data_frame[key]
+
+            # Title
+            row = first_row + row_offset
+            sheet.merge_cells(start_row=row, start_column=name_col, end_row=row, end_column=units_col)
+            cell = sheet.cell(row, name_col, value=key)
+            cell.alignment = styles.Alignment(horizontal="center", vertical="center")
+            cell.font = styles.Font(italic=True)
+
+            for sub_keys in sub_data_frame.keys():
+
+                row_offset += 1
+                row = first_row + row_offset
+
+                sheet.cell(row, value_col, value=sub_data_frame[sub_keys]["value"])
+                cell = sheet.cell(row, name_col, value=sub_keys)
+                cell.font = styles.Font(bold=True)
+
+                if sub_data_frame[sub_keys]["unit"] is None:
+
+                    sheet.merge_cells(start_row=row, start_column=value_col, end_row=row, end_column=units_col)
+                    cell = sheet.cell(row, value_col)
+                    cell.font = styles.Font(italic=True)
+                    cell.alignment = styles.Alignment(horizontal="center", vertical="center")
+
+                else:
+
+                    cell = sheet.cell(row, units_col, value=sub_data_frame[sub_keys]["unit"])
+                    cell.font = styles.Font(italic=True)
+
+            row_offset += 2
 
 
 def export_profiles_to_excel(file_path, data_input):
 
-    well = SimplifiedBHE(t_rocks=250, dz_well=300, input_thermo_point=None)
-    #well = data_input["well"]
+    well = data_input["well"]
     time_list = data_input["time_list"]
     t_out_list = data_input["t_out_list"]
     w_out_list = data_input["w_out_list"]
@@ -169,7 +232,13 @@ def export_profiles_to_excel(file_path, data_input):
     profile_positions = data_input["profile_positions"]
 
     # Write Specification Data Sheet
-    specification = well.specification_data
+    write_excel_sheet(
+
+        excel_path=file_path, sheet_name='Calculation Settings',
+        data_frame=well.calculation_setup_data, overwrite="hard",
+        write_data=False
+
+    )
 
     # Write Main Data Sheet
     main_data = {

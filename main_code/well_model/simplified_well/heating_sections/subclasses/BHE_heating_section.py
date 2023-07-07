@@ -367,3 +367,27 @@ class BHEHeatingSection(AbstractHeatingSection):
             host.legend(handles=lns_list, loc='best')
             fig.tight_layout()
             plt.show()
+
+    def additional_setup_data(self, data_frame: dict):
+
+        pressure_losses_evaluation = "ignored"
+        if self.consider_pressure_losses:
+            pressure_losses_evaluation = "considered"
+
+        data_frame["Calculation Options"].update({
+
+            "heating section": {"value": "EGSHeatingSection", "unit": None},
+            "hs - pressure losses": {"value": pressure_losses_evaluation, "unit": None},
+
+        })
+
+        data_frame.update({"Heating Section Data": {
+
+            "dt rocks": {"value": self.dt_rocks, "unit": "[°C]"},
+            "n wells": {"value": self.n_wells, "unit": "[-]"},
+            "d_well": {"value": self.d_well, "unit": "[m]"},
+            "tkn_annulus": {"value": self.d_well, "unit": "[m]"}
+
+        }})
+
+        return data_frame

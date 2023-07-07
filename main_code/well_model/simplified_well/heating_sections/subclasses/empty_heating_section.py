@@ -36,3 +36,13 @@ class EmptyHeatingSection(AbstractHeatingSection):
 
     def set_optimization_param(self, optimization_param):
         pass
+
+    def additional_setup_data(self, data_frame: dict):
+
+        data_frame["Calculation Options"].update({
+
+            "heating section": {"value": "EmptyHeatingSection", "unit": None}
+
+        })
+
+        return data_frame
