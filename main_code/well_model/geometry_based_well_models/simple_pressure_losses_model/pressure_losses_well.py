@@ -9,9 +9,11 @@ class PressureLossesWell(SimplifiedWell, ABC):
 
     def __init__(
 
-            self, input_thermo_point: PlantThermoPoint, dz_well, t_rocks, d_inj, d_prod,
-            heating_section=None, k_rocks=0.2, c_rocks=1, rho_rocks=2500, t_surf=10,
-            geo_flux=0.1, PPI=None, use_rk=True, calc_discrete_pressure_losses=False
+            self, input_thermo_point: PlantThermoPoint,
+            dz_well, d_inj, d_prod, t_rocks=None, t_surf=None,
+            geo_flux=None, k_rocks=0.2, c_rocks=1, rho_rocks=2500,
+            heating_section=None, PPI=None, use_rk=True,
+            calc_discrete_pressure_losses=False
 
     ):
 
@@ -105,7 +107,35 @@ class PressureLossesWell(SimplifiedWell, ABC):
 
         return f
 
+    def additional_setup_data(self, data_frame: dict):
+
+        p_losses = "discrete"
+
+        if self.calc_discrete_pressure_losses:
+
+            p_losses = "calculated"
+
+        data_frame["Calculation Options"].update({
+
+            "well class": {"value": "PressureLossesWell", "unit": None},
+            "pressure losses": {"value": p_losses, "unit": None}
+
+        })
+
+        return data_frame
+
 
 class PressureLossesBHE(PressureLossesWell, SimplifiedBHE):
 
     pass
+
+    def additional_setup_data(self, data_frame: dict):
+
+        data_frame = super().additional_setup_data(data_frame)
+        data_frame["Calculation Options"].update({
+
+            "well class": {"value": "PressureLossesBHE", "unit": None},
+            "well model": {"value": "BHE", "unit": None}
+
+        })
+        return data_frame

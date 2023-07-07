@@ -62,3 +62,7 @@ class DefaultHeatingSection(AbstractHeatingSection):
     def set_optimization_param(self, optimization_param):
 
         pass
+
+    def additional_setup_data(self, data_frame: dict):
+
+        return data_frame

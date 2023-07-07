@@ -183,3 +183,8 @@ class AbstractHeatingSection(ABC):
     def plot_profiles(self):
 
         warnings.warn("\n\n!!IMPOSSIBLE TO DISPLAY THE PROFILE:\nThe heating section in use does not handle the desired function\n\n")
+
+    @abstractmethod
+    def additional_setup_data(self, data_frame: dict):
+
+        return data_frame

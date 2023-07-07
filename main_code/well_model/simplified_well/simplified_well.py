@@ -760,6 +760,10 @@ class SimplifiedWell(ABC):
             "Calculation Options": {
 
                 "use rk": {"value": self.use_rk, "unit": None},
+                "well class": {"value": "SimplifiedWell", "unit": None},
+                "well model": {"value": "None", "unit": None},
+                "pressure losses": {"value": "ignored", "unit": None},
+                "heat transfer": {"value": "ignored", "unit": None}
 
             }
 
@@ -774,6 +778,7 @@ class SimplifiedWell(ABC):
 
         return data_frame
 
+
 class SimplifiedBHE(SimplifiedWell):
 
     def evaluate_points(self):
@@ -786,7 +791,8 @@ class SimplifiedBHE(SimplifiedWell):
 
         data_frame["Calculation Options"].update({
 
-            "well class": {"value": "SimplifiedBHE", "unit": None}
+            "well class": {"value": "SimplifiedBHE", "unit": None},
+            "well model": {"value": "BHE", "unit": None},
 
         })
         return data_frame
@@ -850,7 +856,8 @@ class SimplifiedCPG(SimplifiedWell):
 
         data_frame["Calculation Options"].update({
 
-            "well class": {"value": "SimplifiedCPG", "unit": None}
+            "well class": {"value": "SimplifiedCPG", "unit": None},
+            "well model": {"value": "CPG", "unit": None},
 
         })
 
