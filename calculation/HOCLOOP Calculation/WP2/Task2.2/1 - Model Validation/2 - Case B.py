@@ -47,7 +47,7 @@ hs_geometry = REELWELLGeometry(
 # %%------------   INITIALIZE WELL                        -----------------------------------------------------------> #
 bhe_in = PlantThermoPoint(["Water"], [1])
 bhe_in.set_variable("T", t_in)
-bhe_in.set_variable("P", 2.3)
+bhe_in.set_variable("P", 0.1)
 
 well = REELWEELBHE(
 
