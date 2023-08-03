@@ -147,7 +147,7 @@ pbar_iso_t.close()
 
 # %%-------------------------------------   GET ISO-RHO LINES                   -------------------------------------> #
 rho_range = get_np_array(150, 1000, 18)  # in kg/m^3
-pbar_iso_h = tqdm(desc="iso-h lines calculation", total=n_isolines_points * len(rho_range))
+pbar_iso_h = tqdm(desc="iso-rho lines calculation", total=n_isolines_points * len(rho_range))
 
 for rho in rho_range:
 

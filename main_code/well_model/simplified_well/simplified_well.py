@@ -1,4 +1,5 @@
 from main_code.well_model.simplified_well.heating_sections import DefaultHeatingSection, AbstractHeatingSection
+from main_code.support.other.integration_profiler import IntegrationProfiler
 from EEETools.Tools.API.ExcelAPI.modules_importer import calculate_excel
 from main_code.support.other.simple_integrator import SimpleIntegrator
 from EEETools.Tools.API.Tools.main_tools import get_result_data_frames
@@ -377,30 +378,28 @@ class SimplifiedWell(ABC):
 
         p0 = input_point.get_variable("P")
         rho0 = input_point.get_variable("rho")
-        self.integrators_profiler.append(list())
 
         if not self.use_rk:
 
-            integrator = SimpleIntegrator(self.rk_funct, depths[0], [p0, rho0], depths[1], n_steps=100)
+            integrator = IntegrationProfiler(
+
+                SimpleIntegrator(self.rk_funct, depths[0], [p0, rho0], depths[1], n_steps=100)
+
+            )
 
         else:
 
-            integrator = RK45(self.rk_funct, depths[0], [p0, rho0], depths[1])
+            integrator = IntegrationProfiler(
+
+                RK45(self.rk_funct, depths[0], [p0, rho0], depths[1])
+
+            )
+
+        self.integrators_profiler.append(integrator)
 
         while integrator.status == 'running':
 
             integrator.step()
-
-            range_list = [integrator.t_old, integrator.t]
-            range_list.sort()
-
-            self.integrators_profiler[-1].append({
-
-                "range": range_list,
-                "dense_out": integrator.dense_output(),
-                "error": (not integrator.status == 'failed')
-
-            })
 
         output = integrator.y
         self.new_point.set_variable("P", output[0])
@@ -411,7 +410,6 @@ class SimplifiedWell(ABC):
         c0 = (co_in + co_out) / 2
 
         self.additional_final_calculations(input_point, depths)
-
         self.new_point = self.new_point.duplicate()
 
         return c0
@@ -424,17 +422,15 @@ class SimplifiedWell(ABC):
         self.new_point.set_variable("P", p_curr)
         self.new_point.set_variable("rho", rho_curr)
 
-        if self.is_upward:
+        dp_loss = self.__evaluate_pressure_losses(self.new_point)
+        dp = rho_curr * g / 1e6 + dp_loss
 
-            c0_curr = self.calculate_C0(self.new_point, self.dz_well - z)
+        if self.is_upward:
+            c0_curr = self.calculate_C0(self.new_point, depth=self.dz_well - z, dp_dl=dp)
 
         else:
+            c0_curr = self.calculate_C0(self.new_point, depth=z, dp_dl=dp)
 
-            c0_curr = self.calculate_C0(self.new_point, z)
-
-        dp_loss = self.__evaluate_pressure_losses(self.new_point)
-
-        dp = rho_curr * g / 1e6 + dp_loss
         d_rho = c0_curr * dp
 
         return [dp, d_rho]
@@ -451,14 +447,17 @@ class SimplifiedWell(ABC):
 
             return -dp
 
-    def calculate_C0(self, curr_point: PlantThermoPoint, depth=0.):
+    def calculate_C0(self, curr_point: PlantThermoPoint, depth=0., dp_dl=None):
 
-        d_rho_d_P = curr_point.get_derivative("rho", "P", "T")
-        d_rho_d_T = curr_point.get_derivative("rho", "T", "P")
-        d_h_d_T = curr_point.get_derivative("h", "T", "P")
-        d_h_d_P = curr_point.get_derivative("h", "P", "T")
+        drho_dP = curr_point.get_derivative("rho", "P", "T")
+        drho_dT = curr_point.get_derivative("rho", "T", "P")
+        dh_dT = curr_point.get_derivative("h", "T", "P")
+        dh_dP = curr_point.get_derivative("h", "P", "T")
 
-        return d_rho_d_P + d_rho_d_T / d_h_d_T * (self.dh_dl_stream(curr_point, depth) - d_h_d_P)
+        if dp_dl is None:
+            dp_dl = curr_point.get_variable("rho") * g / 1e6
+
+        return drho_dP + drho_dT / dh_dT * (self.dh_dl_stream(curr_point, depth) / dp_dl - dh_dP)
 
     # The following three methods can be overwritten in subclasses to implement pressure
     # and heat transfer calculations
@@ -469,12 +468,17 @@ class SimplifiedWell(ABC):
 
     def dh_dl_stream(self, curr_point: PlantThermoPoint, depth=0.):
 
-        rho = curr_point.get_variable("rho")
-        return 1e3 / rho
+        return g / 1e3
 
     def additional_final_calculations(self, input_point, depths):
 
         pass
+
+    @property
+    @abstractmethod
+    def neglect_internal_heat_transfer(self):
+
+        return False
 
     # <------------------------------------------------------------------------->
     # <------------------------------------------------------------------------->
@@ -693,7 +697,35 @@ class SimplifiedWell(ABC):
 
         )
 
-    def get_iteration_profile(self, position_list):
+    def get_iteration_points(self, position_list, profile=None):
+
+        if profile is None:
+            profile = self.integrators_profiler
+
+        __tmp_point = self.points[0].duplicate()
+        point_in_list = list()
+        point_out_list = list()
+
+        for i in range(len(position_list)):
+
+            pos = position_list[i]
+
+            p, rho = profile[0].get_iteration_value(pos)
+            __tmp_point.set_variable("P", p)
+            __tmp_point.set_variable("rho", rho)
+            point_in_list.append(__tmp_point.duplicate())
+
+            p, rho = profile[1].get_iteration_value(pos)
+            __tmp_point.set_variable("P", p)
+            __tmp_point.set_variable("rho", rho)
+            point_out_list.append(__tmp_point.duplicate())
+
+        return [point_in_list, point_out_list]
+
+    def get_iteration_profile(self, position_list, profile=None):
+
+        if profile is None:
+            profile = self.integrators_profiler
 
         __tmp_point = self.points[0].duplicate()
         t_list = np.full((2, len(position_list)), np.nan)
@@ -703,29 +735,19 @@ class SimplifiedWell(ABC):
 
             pos = position_list[i]
 
-            p, rho = self.get_iteration_value(pos, 0)
+            p, rho = profile[0].get_iteration_value(pos)
             __tmp_point.set_variable("P", p)
             __tmp_point.set_variable("rho", rho)
             t_list[0, i] = __tmp_point.get_variable("T")
             p_list[0, i] = __tmp_point.get_variable("P")
 
-            p, rho = self.get_iteration_value(pos, 1)
+            p, rho = profile[1].get_iteration_value(pos)
             __tmp_point.set_variable("P", p)
             __tmp_point.set_variable("rho", rho)
             t_list[1, i] = __tmp_point.get_variable("T")
             p_list[1, i] = __tmp_point.get_variable("P")
 
         return np.array(t_list), np.array(p_list)
-
-    def get_iteration_value(self, position, index):
-
-        if len(self.integrators_profiler) > index:
-
-            for step in self.integrators_profiler[index]:
-
-                if step["range"][0] <= position <= step["range"][1]:
-
-                    return step["dense_out"](position)
 
     @property
     def calculation_setup_data(self):
@@ -808,6 +830,10 @@ class SimplifiedBHE(SimplifiedWell):
         })
         return data_frame
 
+    @property
+    def neglect_internal_heat_transfer(self):
+        return False
+
 
 class SimplifiedCPG(SimplifiedWell):
 
@@ -879,3 +905,7 @@ class SimplifiedCPG(SimplifiedWell):
         })
 
         return data_frame
+
+    @property
+    def neglect_internal_heat_transfer(self):
+        return False

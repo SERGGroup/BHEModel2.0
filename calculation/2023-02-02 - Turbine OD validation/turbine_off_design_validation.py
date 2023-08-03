@@ -1,7 +1,7 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
 from main_code.support.other.error_band import draw_error_band
-from main_code.off_design_model import TurbineOD
+from main_code.power_plants.off_design_model import TurbineOD
 import matplotlib.pyplot as plt
 from main_code import constants
 import numpy as np

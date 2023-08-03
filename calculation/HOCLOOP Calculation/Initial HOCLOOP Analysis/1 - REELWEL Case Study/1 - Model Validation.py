@@ -172,4 +172,4 @@ if not os.path.isdir(output_directory):
 
     os.mkdir(output_directory)
 
-fig.savefig(os.path.join(output_directory, "1 - Model Validation.png"))
+fig.savefig(os.path.join(output_directory, "2 - Model Validation.png"))

@@ -220,7 +220,7 @@ def __write_excel_specification(sheet, data_frame: dict, first_row, first_column
             row_offset += 2
 
 
-def export_profiles_to_excel(file_path, data_input):
+def export_profiles_to_excel(file_path, data_input, times_in_main_tab=None):
 
     well = data_input["well"]
     time_list = data_input["time_list"]
@@ -240,13 +240,37 @@ def export_profiles_to_excel(file_path, data_input):
 
     )
 
+    if times_in_main_tab is None:
+
+        main_time_list = time_list
+        main_t_out_list = t_out_list
+        main_p_out_list = p_out_list
+        main_w_out_list = w_out_list
+
+    else:
+
+        main_time_list = list()
+        main_t_out_list = list()
+        main_p_out_list = list()
+        main_w_out_list = list()
+
+        for time in times_in_main_tab:
+
+            if time in time_list:
+
+                i = time_list.index(time)
+                main_time_list.append(time_list[i])
+                main_t_out_list.append(t_out_list[i])
+                main_p_out_list.append(p_out_list[i])
+                main_w_out_list.append(w_out_list[i])
+
     # Write Main Data Sheet
     main_data = {
 
-        'Time': {"unit": ["days"], "values": [time_list]},
-        'T_out': {"unit": ["°C"], "values": [t_out_list]},
-        'P_out': {"unit": ["MPa"], "values": [p_out_list]},
-        'W_out': {"unit": ["kW"], "values": [w_out_list]}
+        'Time': {"unit": ["days"], "values": [main_time_list]},
+        'T_out': {"unit": ["°C"], "values": [main_t_out_list]},
+        'P_out': {"unit": ["MPa"], "values": [main_p_out_list]},
+        'W_out': {"unit": ["kW"], "values": [main_w_out_list]}
 
     }
     write_excel_sheet(excel_path=file_path, sheet_name='Main Results', data_frame=main_data, overwrite="hard")

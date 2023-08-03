@@ -1,6 +1,11 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
-from main_code.well_model.geometry_based_well_models.REELWEEL_model import REELWELLHeatingSection, REELWELLGeometry
-from main_code.well_model.simplified_well.simplified_well import SimplifiedBHE
+from main_code.well_model.geometry_based_well_models.REELWEEL_model import (
+
+    REELWELLHeatingSection,
+    REELWELLGeometry,
+    REELWEELBHE,
+
+)
 from main_code.support.other.excel_exporter import export_profiles_to_excel
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
 from main_code import constants
@@ -31,11 +36,11 @@ hs_geometry = REELWELLGeometry(
 
     l_horiz,
     tub_id=0.01,
-    tub_od=0.013,
-    cas_id=0.162,
-    cas_od=0.178,
-    k_insulation=0.1,
-    hot_in_tubing=True
+    tub_od=0.011,
+    cas_id=0.172,
+    cas_od=0.188,
+    hot_in_tubing=True,
+    neglect_internal_heat_transfer=False
 
 )
 
@@ -43,20 +48,20 @@ hs_geometry = REELWELLGeometry(
 # %%------------   INITIALIZE WELL                        -----------------------------------------------------------> #
 bhe_in = PlantThermoPoint(["Water"], [1])
 bhe_in.set_variable("T", t_in)
-bhe_in.set_variable("P", 2.3)
+bhe_in.set_variable("P", 1)
 
-well = SimplifiedBHE(
+well = REELWEELBHE(
 
-    bhe_in, dz_well=depth, t_rocks=t_rock,
-    k_rocks=k_rock, c_rocks=c_rock, rho_rocks=rho_rock
+    bhe_in, dz_well=depth, t_rocks=t_rock, t_surf=t_surf,
+    k_rocks=k_rock, c_rocks=c_rock, rho_rocks=rho_rock,
+    rw_geometry=hs_geometry
 
 )
 
 heating_section = REELWELLHeatingSection(
 
     well, hs_geometry,
-    neglect_internal_heat_transfer=False,
-    integration_steps=200
+    integrate_temperature=True,
 
 )
 well.heating_section = heating_section
@@ -66,7 +71,10 @@ well.heating_section = heating_section
 n_points = 30
 shape = 2.5
 
-time_points = [1, 180, 365, 730, 1460, 2555, 3650]
+main_time_points = [7, 15, 30, 91, 182.5, 365, 730, 1825, 3650]
+
+time_points = []
+time_points.extend(main_time_points)
 time_points.extend([7.78, 16.35, 28.41, 85.25, 176.99, 367.23, 761.72, 1895.72, 3931.18])
 time_points.extend([0.08, 0.168, 0.25, 0.5, 1, 1.25, 2.5, 5])
 time_points.sort()
@@ -112,19 +120,22 @@ RES_FOLDER = os.path.join(
 
 )
 
-file_path = os.path.join(RES_FOLDER, "case_f.xlsx")
+file_path = os.path.join(RES_FOLDER, "case_b.xlsx")
 data_exporter = {
 
+    "well": well,
     "time_list": time_list,
     "t_out_list": t_out_list,
     "w_out_list": w_out_list,
+    "p_out_list": p_out_list,
     "t_profile_list": t_profile_list,
     "p_profile_list": p_profile_list,
     "profile_positions": overall_profile_positions
 
 }
 
-export_profiles_to_excel(file_path, data_exporter)
+export_profiles_to_excel(file_path, data_exporter, times_in_main_tab=main_time_points)
+
 
 # %%------------   PLOT TIME VARIABLES                    -----------------------------------------------------------> #
 fig, ax = plt.subplots()
