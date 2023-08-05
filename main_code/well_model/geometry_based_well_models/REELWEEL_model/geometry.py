@@ -22,7 +22,8 @@ class REELWELLGeometry:
             tub_id=0.085, tub_od=0.16,
             cas_id=0.224, cas_od=0.244,
             k_insulation=0.15, ra_pipe=None, hot_in_tubing=False,
-            neglect_internal_heat_transfer=True
+            neglect_internal_heat_transfer=True, max_back_time=5,
+            alpha_old = 0.5
 
     ):
 
@@ -88,8 +89,12 @@ class REELWELLGeometry:
 
         self.hot_in_tubing = hot_in_tubing
         self.neglect_internal_heat_transfer = neglect_internal_heat_transfer
+        self.max_back_time = max_back_time
+        self.alpha_old = alpha_old
 
         self.parent_class = None
+        self.__tmp_point_ann = None
+        self.__tmp_point_tub = None
 
     def q_ground(self, point, depth=None):
 
@@ -251,7 +256,7 @@ class REELWELLGeometry:
 
         return dp
 
-    def dh_dl(self, point, is_annulus, other_point=None, depth=None):
+    def dh_dl(self, point,  is_annulus, other_point=None, depth=None):
 
         """
 
@@ -273,6 +278,62 @@ class REELWELLGeometry:
             q_tot = self.q_int(point_annulus=other_point, point_tubing=point)
 
         return q_tot / point.m_dot
+
+    def get_old_dh_int(self, is_annulus, depth, old_profiles, first_var="P", second_var="rho"):
+
+        if self.neglect_internal_heat_transfer or (len(old_profiles) == 0):
+
+            return 0.
+
+        try:
+
+            if self.__tmp_point_ann is None:
+                self.__tmp_point_ann = self.parent_class.main_BHE.input_point.duplicate()
+
+            if self.__tmp_point_tub is None:
+                self.__tmp_point_tub = self.parent_class.main_BHE.input_point.duplicate()
+
+            q_int = 0.
+            sum_mean = 0.
+            for i in range(self.max_back_time):
+
+                if i < len(old_profiles):
+
+                    var_1, var_2 = old_profiles[-(i+1)][self.i_annulus].get_iteration_value(depth)
+                    self.__tmp_point_ann.set_variable(first_var, var_1)
+                    self.__tmp_point_ann.set_variable(second_var, var_2)
+
+                    var_1, var_2 = old_profiles[-(i+1)][self.i_tubing].get_iteration_value(depth)
+                    self.__tmp_point_tub.set_variable(first_var, var_1)
+                    self.__tmp_point_tub.set_variable(second_var, var_2)
+
+                    q_int_curr = self.q_int(
+
+                        point_annulus=self.__tmp_point_ann,
+                        point_tubing=self.__tmp_point_tub
+
+                    )
+
+                else:
+
+                    q_int_curr = 0.
+
+                sum_mean += self.alpha_old ** i
+                q_int += q_int_curr * self.alpha_old ** i
+
+            q_int = q_int / sum_mean
+
+            if is_annulus:
+
+                return -q_int
+
+            else:
+
+                return q_int
+
+        except:
+
+            return 0.
 
     def get_t_rock(self, depth):
 

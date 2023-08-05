@@ -4,6 +4,7 @@ from main_code.support.other.integration_profiler import IntegrationProfiler
 from main_code.support.other.simple_integrator import SimpleIntegrator
 from scipy.integrate import RK45
 from scipy.constants import g
+from copy import deepcopy
 import numpy as np
 
 
@@ -35,10 +36,8 @@ class REELWELLHeatingSection(AbstractHeatingSection):
         self.__tmp_ann = None
         self.__tmp_tub = None
         self.__tmp_point = None
-        self.__old_points = None
         self.__old_profiles = None
 
-        self.integrator_list = list()
         self.integrators_profiler = list()
         self.integration_steps = integration_steps
         self.integrate_temperature = integrate_temperature
@@ -48,6 +47,10 @@ class REELWELLHeatingSection(AbstractHeatingSection):
     # <------------------   THERMO ANALYSIS METHODS   -------------------------->
     # <------------------------------------------------------------------------->
     # <------------------------------------------------------------------------->
+
+    def reset_old_profilers(self):
+
+        self.__old_profiles = list()
 
     def update_HS(self):
 
@@ -70,7 +73,9 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
         """
 
-        self.integrator_list = list()
+        if len(self.integrators_profiler) > 0:
+            self.__old_profiles.append(deepcopy(self.integrators_profiler))
+
         self.integrators_profiler = list()
 
         self.__tmp_ann = self.input_point.duplicate()
@@ -187,7 +192,7 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
         if self.integration_steps is None:
 
-            self.integrator_list.append(
+            self.integrators_profiler.append(
                 IntegrationProfiler(
                     RK45(
                         self.integration_funct,
@@ -198,7 +203,7 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
         else:
 
-            self.integrator_list.append(
+            self.integrators_profiler.append(
                 IntegrationProfiler(
                     SimpleIntegrator(
                         self.integration_funct,
@@ -212,9 +217,9 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
         self.__append_integrator(pos_0, pos_end, x0)
 
-        if len(self.integrator_list) > 0:
+        if len(self.integrators_profiler) > 0:
 
-            __integrator = self.integrator_list[-1]
+            __integrator = self.integrators_profiler[-1]
 
             while __integrator.status == 'running':
 
@@ -222,11 +227,11 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
                 if check_function is not None:
 
-                    if check_function(self.__convert_to_ph(self.integrator_list[-1].y)):
+                    if check_function(self.__convert_to_ph(self.integrators_profiler[-1].y)):
 
                         return None
 
-            return self.__convert_to_ph(self.integrator_list[-1].y)
+            return self.__convert_to_ph(self.integrators_profiler[-1].y)
 
         return None
 
@@ -402,14 +407,17 @@ class REELWELLHeatingSection(AbstractHeatingSection):
             self.__tmp_ann.set_variable("h", x[1])
 
             dpdl = self.geom.dp_dl(self.__tmp_ann, self.is_annulus)
-            dhdl = self.geom.dh_dl(self.__tmp_ann, self.is_annulus)
+            dh_ext = self.geom.dh_dl(self.__tmp_ann, self.is_annulus)
+            dh_int = self.get_old_dh_int(is_annulus=self.is_annulus, depth=t)
 
             if self.is_annulus ^ self.geom.hot_in_tubing:
 
+                dhdl = dh_ext + dh_int
                 dxs = -dpdl, -dhdl
 
             else:
 
+                dhdl = dh_ext + dh_int
                 dxs = dpdl, dhdl
 
         return dxs
@@ -418,6 +426,46 @@ class REELWELLHeatingSection(AbstractHeatingSection):
     def solve_sequentially(self):
 
         return self.geom.neglect_internal_heat_transfer or (not self.main_BHE.neglect_internal_heat_transfer)
+
+    def get_old_dh_int(self, is_annulus, depth):
+
+        if self.geom.neglect_internal_heat_transfer or (len(self.__old_profiles) == 0):
+
+            return 0.
+
+        try:
+
+            if self.integrate_temperature:
+
+                q_int = self.geom.get_old_dh_int(
+
+                    is_annulus=is_annulus, depth=depth,
+                    old_profiles=self.__old_profiles,
+                    first_var="P", second_var="T"
+
+                )
+
+            else:
+
+                q_int = self.geom.get_old_dh_int(
+
+                    is_annulus=is_annulus, depth=depth,
+                    old_profiles=self.__old_profiles,
+                    first_var="P", second_var="T"
+
+                )
+
+            if is_annulus:
+
+                return -q_int
+
+            else:
+
+                return q_int
+
+        except:
+
+            return 0.
 
     # <------------------------------------------------------------------------->
     # <------------------------------------------------------------------------->
@@ -452,7 +500,10 @@ class REELWELLHeatingSection(AbstractHeatingSection):
     # <------------------------------------------------------------------------->
     # <------------------------------------------------------------------------->
 
-    def get_heating_section_profile(self, position_list):
+    def get_heating_section_profile(self, position_list, profile=None):
+
+        if profile is None:
+            profile = self.integrators_profiler
 
         t_list = np.full((2, len(position_list)), np.nan)
         p_list = np.full((2, len(position_list)), np.nan)
@@ -466,13 +517,25 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
                 pos = position_list[i]
 
-                p, h = self.integrator_list[i_annulus].get_iteration_value(pos)
-                self.__tmp_ann.set_variable("P", p)
-                self.__tmp_ann.set_variable("H", h)
+                if self.integrate_temperature:
 
-                p, h = self.integrator_list[i_tubing].get_iteration_value(pos)
-                self.__tmp_tub.set_variable("P", p)
-                self.__tmp_tub.set_variable("H", h)
+                    p, t = profile[i_annulus].get_iteration_value(pos)
+                    self.__tmp_ann.set_variable("P", p)
+                    self.__tmp_ann.set_variable("T", t)
+
+                    p, t = profile[i_tubing].get_iteration_value(pos)
+                    self.__tmp_tub.set_variable("P", p)
+                    self.__tmp_tub.set_variable("T", t)
+
+                else:
+
+                    p, h = profile[i_annulus].get_iteration_value(pos)
+                    self.__tmp_ann.set_variable("P", p)
+                    self.__tmp_ann.set_variable("H", h)
+
+                    p, h = profile[i_tubing].get_iteration_value(pos)
+                    self.__tmp_tub.set_variable("P", p)
+                    self.__tmp_tub.set_variable("H", h)
 
                 t_list[0, i] = self.__tmp_ann.get_variable("T")
                 t_list[1, i] = self.__tmp_tub.get_variable("T")
@@ -505,6 +568,14 @@ class REELWELLHeatingSection(AbstractHeatingSection):
         data_frame = self.geom.additional_setup_data(data_frame, is_well=False)
 
         return data_frame
+
+    def get_profiles(self, position_list):
+
+        profile_list = list()
+        for profile in self.__old_profiles:
+            profile_list.append(self.get_heating_section_profile(position_list, profile))
+
+        return profile_list
 
 
 class REELWELLInclinedHeatingSection(REELWELLHeatingSection):

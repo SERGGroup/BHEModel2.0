@@ -10,6 +10,7 @@ from main_code.support.other.excel_exporter import export_profiles_to_excel
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
 from main_code import constants
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 import numpy as np
 import os
 
@@ -35,12 +36,14 @@ l_horiz = l_overall - depth
 hs_geometry = REELWELLGeometry(
 
     l_horiz,
-    tub_id=0.01,
-    tub_od=0.011,
-    cas_id=0.172,
-    cas_od=0.188,
+    tub_id=0.05,
+    tub_od=0.08,
+    cas_id=0.1617,
+    cas_od=0.1778,
     hot_in_tubing=True,
-    neglect_internal_heat_transfer=False
+    neglect_internal_heat_transfer=False,
+    max_back_time=3,
+    alpha_old=0.5
 
 )
 
@@ -92,7 +95,7 @@ t_profile_list = list()
 p_profile_list = list()
 
 bhe_in.m_dot = mass_flow
-
+pbar = tqdm(desc="Calculation Ongoing", total=len(time_points))
 for time in time_points:
 
     heating_section.time = time / 365
@@ -100,7 +103,7 @@ for time in time_points:
 
     time_list.append(time)
     t_out_list.append(well.points[-1].get_variable("T"))
-    p_out_list.append(well.points[-1].get_variable("P"))
+    p_out_list.append(well.points[2].get_variable("P"))
     w_out_list.append(well.power)
 
     t_list_vert, p_list_vert = well.get_iteration_profile(profile_positions_vert)
@@ -108,8 +111,10 @@ for time in time_points:
 
     t_profile_list.append(np.concatenate((t_list_vert.T, t_list.T)).T)
     p_profile_list.append(np.concatenate((p_list_vert.T, p_list.T)).T)
+    pbar.update(1)
+    # print("{} -> {}".format(time, t_out_list[-1]))
 
-    print("{} -> {}".format(time, t_out_list[-1]))
+pbar.close()
 
 
 # %%------------   EXPORT RESULTS                         -----------------------------------------------------------> #
@@ -120,7 +125,7 @@ RES_FOLDER = os.path.join(
 
 )
 
-file_path = os.path.join(RES_FOLDER, "case_b.xlsx")
+file_path = os.path.join(RES_FOLDER, "case_f.xlsx")
 data_exporter = {
 
     "well": well,

@@ -76,7 +76,7 @@ t_profile_list = list()
 p_profile_list = list()
 
 bhe_in.m_dot = mass_flow
-pbar = tqdm(desc="C0 map calculation", total=len(time_points))
+pbar = tqdm(desc="Calculation Ongoing", total=len(time_points))
 for time in time_points:
 
     well.heating_section.time = time / 365

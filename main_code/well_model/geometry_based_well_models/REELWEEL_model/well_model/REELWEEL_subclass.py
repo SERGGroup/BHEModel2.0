@@ -51,6 +51,8 @@ class REELWEELBHE(SimplifiedBHE):
     def evaluate_points(self):
 
         self.__old_profiles = list()
+        self.heating_section.reset_old_profilers()
+
         self.integrators_profiler = list()
         super().evaluate_points()
 
@@ -76,8 +78,16 @@ class REELWEELBHE(SimplifiedBHE):
     def dh_dl_stream(self, curr_point: PlantThermoPoint, depth=0.):
 
         is_annulus = self.rw_geometry.hot_in_tubing ^ self.is_upward
+
         dh_ext = self.rw_geometry.dh_dl(curr_point, is_annulus=is_annulus, depth=depth)
-        dh_int = self.get_old_dh_int(is_annulus=is_annulus, depth=depth)
+        dh_int = self.rw_geometry.get_old_dh_int(
+
+            is_annulus=is_annulus, depth=depth,
+            old_profiles=self.__old_profiles,
+            first_var="P", second_var="rho"
+
+        )
+
         dh = dh_ext + dh_int
 
         if self.is_upward:
@@ -88,9 +98,17 @@ class REELWEELBHE(SimplifiedBHE):
 
     def additional_setup_data(self, data_frame: dict):
 
+        pressure_losses_value = "considered"
+        heat_transfer_value = "ignored"
+
+        if not self.rw_geometry.neglect_internal_heat_transfer:
+            heat_transfer_value = "considered"
+
         data_frame["Calculation Options"].update({
 
-            "well class": {"value": "REELWEEL_BHE", "unit": None}
+            "well class": {"value": "REELWEEL_BHE", "unit": None},
+            "pressure losses": {"value": pressure_losses_value, "unit": None},
+            "heat transfer": {"value": heat_transfer_value, "unit": None}
 
         })
 
@@ -127,41 +145,6 @@ class REELWEELBHE(SimplifiedBHE):
             return True
 
         return self.neglect_internal_heat_transfer
-
-    def get_old_dh_int(self, is_annulus, depth):
-
-        if self.neglect_internal_heat_transfer or (len(self.__old_profiles) == 0):
-
-            return 0.
-
-        try:
-
-            p, rho = self.__old_profiles[-1][self.rw_geometry.i_annulus].get_iteration_value(depth)
-            self.__tmp_point_annulus.set_variable("P", p)
-            self.__tmp_point_annulus.set_variable("rho", rho)
-
-            p, rho = self.__old_profiles[-1][self.rw_geometry.i_tubing].get_iteration_value(depth)
-            self.__tmp_point_tubing.set_variable("P", p)
-            self.__tmp_point_tubing.set_variable("rho", rho)
-
-            q_int = self.rw_geometry.q_int(
-
-                point_annulus=self.__tmp_point_annulus,
-                point_tubing=self.__tmp_point_tubing
-
-            )
-
-            if is_annulus:
-
-                return -q_int
-
-            else:
-
-                return q_int
-
-        except:
-
-            return 0.
 
     def get_profiles(self, position_list):
 

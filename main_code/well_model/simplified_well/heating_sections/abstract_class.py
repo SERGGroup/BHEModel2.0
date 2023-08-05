@@ -180,6 +180,10 @@ class AbstractHeatingSection(ABC):
     # <------------------------------------------------------------------------->
     # <------------------------------------------------------------------------->
 
+    def reset_old_profilers(self):
+
+        pass
+
     def plot_profiles(self):
 
         warnings.warn("\n\n!!IMPOSSIBLE TO DISPLAY THE PROFILE:\nThe heating section in use does not handle the desired function\n\n")

@@ -206,6 +206,16 @@ class SimplifiedWell(ABC):
 
         return self.__heating_section
 
+    @property
+    def input_point(self):
+
+        return self.points[0]
+
+    @property
+    def output_point(self):
+
+        return self.points[-1]
+
     @heating_section.setter
     def heating_section(self, input_heating_section):
 
