@@ -103,7 +103,7 @@ for time in time_points:
 
     time_list.append(time)
     t_out_list.append(well.points[-1].get_variable("T"))
-    p_out_list.append(well.points[2].get_variable("P"))
+    p_out_list.append(well.points[-1].get_variable("P"))
     w_out_list.append(well.power)
 
     t_list_vert, p_list_vert = well.get_iteration_profile(profile_positions_vert)

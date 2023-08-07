@@ -34,7 +34,8 @@ hs_geometry = REELWELLGeometry(
     cas_od=0.1778,
     k_insulation=0.1,
     hot_in_tubing=True,
-    neglect_internal_heat_transfer=False
+    neglect_internal_heat_transfer=False,
+    max_back_time=3, alpha_old=0.5
 
 )
 
@@ -48,7 +49,7 @@ well = REELWEELBHE(
 
     bhe_in, dz_well=depth, t_rocks=t_rock,
     k_rocks=k_rock, c_rocks=c_rock, rho_rocks=rho_rock,
-    t_surf=t_surf, rw_geometry=hs_geometry, max_iteration=100
+    t_surf=t_surf, rw_geometry=hs_geometry, max_iteration=20
 
 )
 
