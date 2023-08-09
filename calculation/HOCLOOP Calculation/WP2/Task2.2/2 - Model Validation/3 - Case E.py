@@ -32,7 +32,7 @@ hs_geometry = REELWELLGeometry(
     tub_od=0.13,
     cas_id=0.291696,
     cas_od=0.307798,
-    k_insulation=0.1,
+    k_insulation=0.01,
     hot_in_tubing=True,
     neglect_internal_heat_transfer=False,
     max_back_time=3, alpha_old=0.5
