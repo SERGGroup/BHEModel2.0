@@ -36,10 +36,11 @@ l_horiz = l_overall - depth
 hs_geometry = REELWELLGeometry(
 
     l_horiz,
-    tub_id=0.05,
-    tub_od=0.08,
+    tub_id=0.1,
+    tub_od=0.13,
     cas_id=0.1617,
     cas_od=0.1778,
+    k_insulation=0.1,
     hot_in_tubing=True,
     neglect_internal_heat_transfer=False,
     max_back_time=3,
@@ -57,7 +58,7 @@ well = REELWEELBHE(
 
     bhe_in, dz_well=depth, t_rocks=t_rock, t_surf=t_surf,
     k_rocks=k_rock, c_rocks=c_rock, rho_rocks=rho_rock,
-    rw_geometry=hs_geometry
+    rw_geometry=hs_geometry, max_iteration=30
 
 )
 
@@ -139,7 +140,7 @@ data_exporter = {
 
 }
 
-export_profiles_to_excel(file_path, data_exporter, times_in_main_tab=main_time_points)
+export_profiles_to_excel(file_path, data_exporter)
 
 
 # %%------------   PLOT TIME VARIABLES                    -----------------------------------------------------------> #

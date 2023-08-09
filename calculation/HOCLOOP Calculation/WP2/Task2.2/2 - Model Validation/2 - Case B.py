@@ -37,8 +37,8 @@ hs_geometry = REELWELLGeometry(
     l_horiz,
     tub_id=0.01,
     tub_od=0.011,
-    cas_id=0.172,
-    cas_od=0.188,
+    cas_id=0.1616964,
+    cas_od=0.1778,
     hot_in_tubing=True,
     neglect_internal_heat_transfer=True
 
@@ -134,7 +134,7 @@ data_exporter = {
 
 }
 
-export_profiles_to_excel(file_path, data_exporter, times_in_main_tab=main_time_points)
+export_profiles_to_excel(file_path, data_exporter) #, times_in_main_tab=main_time_points)
 
 
 # %%------------   PLOT TIME VARIABLES                    -----------------------------------------------------------> #

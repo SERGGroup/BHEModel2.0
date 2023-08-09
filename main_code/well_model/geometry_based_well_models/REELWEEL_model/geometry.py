@@ -29,42 +29,42 @@ class REELWELLGeometry:
 
         """
 
-        REELWELL BHE well geometry.
+            REELWELL BHE well geometry.
 
-        INPUT PARAMETERS:
+            INPUT PARAMETERS:
 
-            l_hor -> length of the horizontal section in [m]
+                l_hor -> length of the horizontal section in [m]
 
-            tub_id -> tubing internal diameter in [m]
-            tub_od -> tubing external diameter in [m]
+                tub_id -> tubing internal diameter in [m]
+                tub_od -> tubing external diameter in [m]
 
-            cas_id -> casing internal diameter in [m]
-            cas_od -> casing external diameter in [m]
+                cas_id -> casing internal diameter in [m]
+                cas_od -> casing external diameter in [m]
 
-            k_insulation -> thermal conductivity of the insulation between the tubing and the casing [W/(m*K)]
-            ra_pipe -> roughness of the pipe surface [m]
+                k_insulation -> thermal conductivity of the insulation between the tubing and the casing [W/(m*K)]
+                ra_pipe -> roughness of the pipe surface [m]
 
-        OTHER ATTRIBUTES:
+            OTHER ATTRIBUTES:
 
-            d_tub .......... diameter of the internal fluid tubing      [m]
-            d_ann_int ...... internal diameter of the fluid annulus     [m]
-            d_ann_out ...... external diameter of the fluid annulus     [m]
-            d_h_ann ........ hydraulic diameter of the fluid annulus    [m]
-            tkn_annulus .... thickness of the fluid annulus             [m]
+                d_tub .......... diameter of the internal fluid tubing      [m]
+                d_ann_int ...... internal diameter of the fluid annulus     [m]
+                d_ann_out ...... external diameter of the fluid annulus     [m]
+                d_h_ann ........ hydraulic diameter of the fluid annulus    [m]
+                tkn_annulus .... thickness of the fluid annulus             [m]
 
-            r_ins .......... thermal resistance of the insulation between tubing and annulus [(m*K)/W]
-            parent_class ... reference to the REELWELLHeatingSection class
-                             (needed for the ground heat exchange calculation)
+                r_ins .......... thermal resistance of the insulation between tubing and annulus [(m*K)/W]
+                parent_class ... reference to the REELWELLHeatingSection class
+                                 (needed for the ground heat exchange calculation)
 
-        NOTE:
+            NOTE:
 
-            - Default values for the geometry has been identified considering the REELWELL DualPipe
-              dimensions
+                - Default values for the geometry has been identified considering the REELWELL DualPipe
+                  dimensions
 
-            - Natural Rubber has been considered in defining default value for thermal conductivity,
-              this has to be clarified with REELWELL.
+                - Natural Rubber has been considered in defining default value for thermal conductivity,
+                  this has to be clarified with REELWELL.
 
-            - By default roughness is neglected (ra_pipe=None), correlation for smooth tubes are used.
+                - By default roughness is neglected (ra_pipe=None), correlation for smooth tubes are used.
 
         """
 
@@ -111,9 +111,10 @@ class REELWELLGeometry:
 
         if self.parent_class is not None:
 
+            k = self.parent_class.main_BHE.k_rocks
             time = self.parent_class.time * 3.154e+7  # 3.154e+7 is a conversion factor: [year] -> [s]
             alpha = self.parent_class.main_BHE.alpha_rocks
-            k = self.parent_class.main_BHE.k_rocks
+
             t_rock = self.get_t_rock(depth)
             dt = t_rock - point.get_variable("T")
 
@@ -163,8 +164,8 @@ class REELWELLGeometry:
         else:
 
             dt = point_annulus.get_variable("T") - point_tubing.get_variable("T")
-            h_ann = self.nu(point_annulus, is_annulus=True) / self.d_h_ann * (point_annulus.get_variable("k") / 1e3)
-            h_tub = self.nu(point_tubing, is_annulus=False) / self.d_tub * (point_tubing.get_variable("k") / 1e3)
+            h_ann = self.nu(point_annulus, is_annulus=True) * (point_annulus.get_variable("k") / 1e3) / self.d_h_ann
+            h_tub = self.nu(point_tubing, is_annulus=False) * (point_tubing.get_variable("k") / 1e3) / self.d_tub
             r = (1 / (self.d_tub * h_tub) + 1 / (self.d_ann_int * h_ann)) / np.pi + self.r_ins
 
             return dt / r / 1e3
@@ -358,7 +359,6 @@ class REELWELLGeometry:
 
         data_frame[key].update({
 
-            "l_hor": {"value": self.l_hor, "unit": "m"},
             "tub_id": {"value": self.tub_id, "unit": "m"},
             "tub_od": {"value": self.tub_od, "unit": "m"},
             "cas_id": {"value": self.cas_id, "unit": "m"},

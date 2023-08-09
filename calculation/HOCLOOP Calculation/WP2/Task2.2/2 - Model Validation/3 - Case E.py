@@ -28,10 +28,10 @@ t_rock = t_surf + t_grad * depth
 hs_geometry = REELWELLGeometry(
 
     depth,
-    tub_id=0.05,
-    tub_od=0.08,
-    cas_id=0.1617,
-    cas_od=0.1778,
+    tub_id=0.08,
+    tub_od=0.13,
+    cas_id=0.291696,
+    cas_od=0.307798,
     k_insulation=0.1,
     hot_in_tubing=True,
     neglect_internal_heat_transfer=False,
@@ -119,7 +119,7 @@ data_exporter = {
 
 }
 
-export_profiles_to_excel(file_path, data_exporter, times_in_main_tab=main_time_points)
+export_profiles_to_excel(file_path, data_exporter) #, times_in_main_tab=main_time_points)
 
 
 # %%------------   PLOT TIME VARIABLES                    -----------------------------------------------------------> #

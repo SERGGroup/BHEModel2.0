@@ -115,7 +115,7 @@ data_exporter = {
 
 }
 
-export_profiles_to_excel(file_path, data_exporter, times_in_main_tab=main_time_points)
+export_profiles_to_excel(file_path, data_exporter)
 
 
 # %%------------   PLOT TIME VARIABLES                    -----------------------------------------------------------> #

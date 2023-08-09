@@ -772,7 +772,7 @@ class SimplifiedWell(ABC):
                 "geo_flux": {"value": self.geo_flux, "unit": "W / m^2"},
                 "geo_gradient": {"value": self.geo_gradient, "unit": "°C/m"},
 
-                "k_rocks": {"value": self.rho_rocks, "unit": "W / (m K)"},
+                "k_rocks": {"value": self.k_rocks, "unit": "W / (m K)"},
                 "c_rocks": {"value": self.c_rocks, "unit": "kJ / (kg K)"},
                 "rho_rocks": {"value": self.rho_rocks, "unit": "kg / m^3"},
                 "alpha_rocks": {"value": self.alpha_rocks, "unit": "-"}
