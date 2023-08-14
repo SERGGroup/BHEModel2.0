@@ -437,7 +437,7 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
             if self.integrate_temperature:
 
-                q_int = self.geom.get_old_dh_int(
+                q_int = self.geom.get_old_q_int(
 
                     is_annulus=is_annulus, depth=depth,
                     old_profiles=self.__old_profiles,
@@ -447,7 +447,7 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
             else:
 
-                q_int = self.geom.get_old_dh_int(
+                q_int = self.geom.get_old_q_int(
 
                     is_annulus=is_annulus, depth=depth,
                     old_profiles=self.__old_profiles,
@@ -457,11 +457,11 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
             if is_annulus:
 
-                return -q_int
+                return -q_int / self.__tmp_ann.m_dot
 
             else:
 
-                return q_int
+                return q_int / self.__tmp_tub.m_dot
 
         except:
 
@@ -507,6 +507,8 @@ class REELWELLHeatingSection(AbstractHeatingSection):
 
         t_list = np.full((2, len(position_list)), np.nan)
         p_list = np.full((2, len(position_list)), np.nan)
+        rho_list = np.full((2, len(position_list)), np.nan)
+        h_list = np.full((2, len(position_list)), np.nan)
 
         if self.solve_sequentially:
 
@@ -542,7 +544,12 @@ class REELWELLHeatingSection(AbstractHeatingSection):
                 p_list[0, i] = self.__tmp_ann.get_variable("P")
                 p_list[1, i] = self.__tmp_tub.get_variable("P")
 
-        return np.array(t_list), np.array(p_list)
+                rho_list[0, i] = self.__tmp_ann.get_variable("rho")
+                rho_list[1, i] = self.__tmp_tub.get_variable("rho")
+                h_list[0, i] = self.__tmp_ann.get_variable("H")
+                h_list[1, i] = self.__tmp_tub.get_variable("H")
+
+        return np.array(t_list), np.array(p_list), np.array(rho_list), np.array(h_list)
 
     def additional_setup_data(self, data_frame: dict):
 

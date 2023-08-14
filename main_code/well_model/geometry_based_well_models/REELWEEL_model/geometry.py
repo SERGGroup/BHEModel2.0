@@ -82,7 +82,7 @@ class REELWELLGeometry:
         self.d_ann_int = self.tub_od
         self.d_ann_out = self.cas_id
 
-        self.d_h_ann = self.d_ann_out - self.d_ann_int
+        self.d_hyd_ann = self.d_ann_out - self.d_ann_int
         self.tkn_annulus = (self.d_ann_out - self.d_ann_int) / 2
 
         self.r_ins = np.log(tub_od / tub_id) / (2 * np.pi * self.k)
@@ -164,7 +164,7 @@ class REELWELLGeometry:
         else:
 
             dt = point_annulus.get_variable("T") - point_tubing.get_variable("T")
-            h_ann = self.nu(point_annulus, is_annulus=True) * (point_annulus.get_variable("k") / 1e3) / self.d_h_ann
+            h_ann = self.nu(point_annulus, is_annulus=True) * (point_annulus.get_variable("k") / 1e3) / self.d_hyd_ann
             h_tub = self.nu(point_tubing, is_annulus=False) * (point_tubing.get_variable("k") / 1e3) / self.d_tub
             r = (1 / (self.d_tub * h_tub) + 1 / (self.d_ann_int * h_ann)) / np.pi + self.r_ins
 
@@ -173,7 +173,13 @@ class REELWELLGeometry:
     def nu(self, point, is_annulus):
 
         re = self.re(point, is_annulus)
-        return 0.023 * np.power(re, 0.8) * np.power(point.get_variable("Pr"), 0.4)
+        pr = point.get_variable("Pr")
+
+        if type(pr) == float:
+            return 0.023 * np.power(re, 0.8) * np.power(pr, 0.4)
+
+        else:
+            return 0.023 * np.power(re, 0.8) * np.power(0.7, 0.4)
 
     def re(self, point, is_annulus):
 
@@ -208,7 +214,7 @@ class REELWELLGeometry:
 
             if is_annulus:
 
-                e_d = self.ra / self.d_h_ann
+                e_d = self.ra / self.d_hyd_ann
 
             else:
 
@@ -243,17 +249,17 @@ class REELWELLGeometry:
         if is_annulus:
 
             A = np.pi * (self.d_ann_out - self.tkn_annulus) * self.tkn_annulus
-            dh = self.d_h_ann
+            d_hyd = self.d_hyd_ann
 
         else:
 
-            A = np.pi / 4 * self.d_ann_out ** 2
-            dh = self.d_tub
+            A = np.pi / 4 * self.d_tub ** 2
+            d_hyd = self.d_tub
 
         rho = point.get_variable("rho")
         p_kinetic = point.m_dot ** 2 / (2 * rho * A ** 2)
         f = self.f(point, is_annulus)
-        dp = - f / dh * p_kinetic  / 1e6
+        dp = - f / d_hyd * p_kinetic  / 1e6
 
         return dp
 
@@ -280,7 +286,7 @@ class REELWELLGeometry:
 
         return q_tot / point.m_dot
 
-    def get_old_dh_int(self, is_annulus, depth, old_profiles, first_var="P", second_var="rho"):
+    def get_old_q_int(self, is_annulus, depth, old_profiles, first_var="P", second_var="rho"):
 
         if self.neglect_internal_heat_transfer or (len(old_profiles) == 0):
 
@@ -368,7 +374,7 @@ class REELWELLGeometry:
             "d_ann_int": {"value": self.d_ann_int, "unit": "m"},
             "d_ann_out": {"value": self.d_ann_out, "unit": "m"},
             "tkn_annulus": {"value": self.tkn_annulus, "unit": "m"},
-            "d_h_ann": {"value": self.d_h_ann, "unit": "m"},
+            "d_h_ann": {"value": self.d_hyd_ann, "unit": "m"},
             "r_ins": {"value": self.r_ins, "unit": "(m*K)/W"}
 
         })

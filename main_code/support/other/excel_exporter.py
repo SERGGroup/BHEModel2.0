@@ -220,7 +220,7 @@ def __write_excel_specification(sheet, data_frame: dict, first_row, first_column
             row_offset += 2
 
 
-def export_profiles_to_excel(file_path, data_input, times_in_main_tab=None):
+def export_profiles_to_excel(file_path, data_input, times_in_main_tab=None, reverse_time_position=False):
 
     well = data_input["well"]
     time_list = data_input["time_list"]
@@ -275,28 +275,78 @@ def export_profiles_to_excel(file_path, data_input, times_in_main_tab=None):
     }
     write_excel_sheet(excel_path=file_path, sheet_name='Main Results', data_frame=main_data, overwrite="hard")
 
-    profiles_list = [t_profile_list, p_profile_list]
-    profiles_names = ['Temperature Profiles', 'Pressure Profiles']
+    profile_data = {
+
+        "time_list": time_list,
+        "profile_positions": profile_positions,
+        "profiles_names": ['Temperature Profiles', 'Pressure Profiles'],
+        "profiles_list": [t_profile_list, p_profile_list],
+
+    }
+    __write_profiles(file_path, profile_data, reverse_time_position=reverse_time_position)
+
+
+def __write_profiles(file_path, profile_data, reverse_time_position=False):
+
+    time_list = profile_data["time_list"]
+    profile_positions = profile_data["profile_positions"]
     n_days = len(time_list)
+    n_pos = len(profile_positions)
 
-    for i in range(len(profiles_list)):
-        curr_profile_name = profiles_names[i]
-        curr_profile_list = np.array(profiles_list[i])
+    for i in range(len(profile_data["profiles_list"])):
 
-        ann_data = {
+        curr_profile_name = profile_data["profiles_names"][i]
+        curr_profile_list = np.array(profile_data["profiles_list"][i])
 
-            'Time': {"unit": ["days"], "values": [time_list]},
-            'Annulus': {"unit": profile_positions, "values": curr_profile_list[:, 0, :].T},
+        if reverse_time_position:
 
-        }
+            data ={'Position': {"unit": ["m"], "values": [profile_positions]}}
 
-        write_excel_sheet(excel_path=file_path, sheet_name=curr_profile_name, data_frame=ann_data, overwrite="hard")
+            for i in range(len(time_list)):
 
-        tub_data = {
+                data.update({
 
-            'Time': {"unit": ["days"], "values": [time_list]},
-            'Tubing': {"unit": profile_positions, "values": curr_profile_list[:, 1, :].T}
+                    "{:.2f} Days".format(time_list[i]): {
 
-        }
+                        "unit": ["Annulus", "Tubing"], "values": curr_profile_list[i, :, :]
 
-        write_excel_sheet(excel_path=file_path, sheet_name=curr_profile_name, data_frame=tub_data, first_row=6 + n_days)
+                    }
+
+                })
+
+            write_excel_sheet(
+
+                excel_path=file_path, sheet_name=curr_profile_name,
+                data_frame=data, overwrite="hard"
+
+            )
+
+        else:
+
+            ann_data = {
+
+                'Time': {"unit": ["days"], "values": [time_list]},
+                'Annulus': {"unit": profile_positions, "values": curr_profile_list[:, 0, :].T},
+
+            }
+            tub_data = {
+
+                'Time': {"unit": ["days"], "values": [time_list]},
+                'Tubing': {"unit": profile_positions, "values": curr_profile_list[:, 1, :].T}
+
+            }
+
+
+            write_excel_sheet(
+
+                excel_path=file_path, sheet_name=curr_profile_name,
+                data_frame=ann_data, overwrite="hard"
+
+            )
+
+            write_excel_sheet(
+
+                excel_path=file_path, sheet_name=curr_profile_name,
+                data_frame=tub_data, first_row = 6 + n_days
+
+            )

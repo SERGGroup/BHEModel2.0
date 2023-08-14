@@ -32,10 +32,11 @@ hs_geometry = REELWELLGeometry(
     tub_od=0.13,
     cas_id=0.291696,
     cas_od=0.307798,
-    k_insulation=0.01,
+    k_insulation=0.1,
     hot_in_tubing=True,
     neglect_internal_heat_transfer=False,
-    max_back_time=3, alpha_old=0.5
+    max_back_time=3,
+    alpha_old=0.5
 
 )
 
@@ -49,7 +50,7 @@ well = REELWEELBHE(
 
     bhe_in, dz_well=depth, t_rocks=t_rock,
     k_rocks=k_rock, c_rocks=c_rock, rho_rocks=rho_rock,
-    t_surf=t_surf, rw_geometry=hs_geometry, max_iteration=20
+    t_surf=t_surf, rw_geometry=hs_geometry, max_iteration=10
 
 )
 
@@ -88,7 +89,7 @@ for time in time_points:
     p_out_list.append(well.points[-1].get_variable("P"))
     w_out_list.append(well.power)
 
-    t_list, p_list = well.get_iteration_profile(profile_positions)
+    t_list, p_list, rho_list, h_list = well.get_iteration_profile(profile_positions)
 
     t_profile_list.append(t_list)
     p_profile_list.append(p_list)
@@ -96,6 +97,7 @@ for time in time_points:
     pbar.update(1)
     #print("{} -> {}".format(time, t_out_list[-1]))
 pbar.close()
+
 
 # %%------------   EXPORT RESULTS                         -----------------------------------------------------------> #
 RES_FOLDER = os.path.join(
@@ -126,6 +128,6 @@ export_profiles_to_excel(file_path, data_exporter) #, times_in_main_tab=main_tim
 fig, ax = plt.subplots()
 time_array = np.array(time_list) / 365
 
-ax.plot(time_array, t_out_list)
+ax.plot(time_array, np.array(t_out_list))
 plt.xscale("log")
 plt.show()

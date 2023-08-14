@@ -463,11 +463,12 @@ class SimplifiedWell(ABC):
         drho_dT = curr_point.get_derivative("rho", "T", "P")
         dh_dT = curr_point.get_derivative("h", "T", "P")
         dh_dP = curr_point.get_derivative("h", "P", "T")
+        dh_dl = self.dh_dl_stream(curr_point, depth)
 
         if dp_dl is None:
             dp_dl = curr_point.get_variable("rho") * g / 1e6
 
-        return drho_dP + drho_dT / dh_dT * (self.dh_dl_stream(curr_point, depth) / dp_dl - dh_dP)
+        return drho_dP + drho_dT / dh_dT * (dh_dl / dp_dl - dh_dP)
 
     # The following three methods can be overwritten in subclasses to implement pressure
     # and heat transfer calculations
@@ -740,6 +741,8 @@ class SimplifiedWell(ABC):
         __tmp_point = self.points[0].duplicate()
         t_list = np.full((2, len(position_list)), np.nan)
         p_list = np.full((2, len(position_list)), np.nan)
+        rho_list = np.full((2, len(position_list)), np.nan)
+        h_list = np.full((2, len(position_list)), np.nan)
 
         for i in range(len(position_list)):
 
@@ -750,14 +753,18 @@ class SimplifiedWell(ABC):
             __tmp_point.set_variable("rho", rho)
             t_list[0, i] = __tmp_point.get_variable("T")
             p_list[0, i] = __tmp_point.get_variable("P")
+            rho_list[0, i] = __tmp_point.get_variable("rho")
+            h_list[0, i] = __tmp_point.get_variable("H")
 
             p, rho = profile[1].get_iteration_value(pos)
             __tmp_point.set_variable("P", p)
             __tmp_point.set_variable("rho", rho)
             t_list[1, i] = __tmp_point.get_variable("T")
             p_list[1, i] = __tmp_point.get_variable("P")
+            rho_list[1, i] = __tmp_point.get_variable("rho")
+            h_list[1, i] = __tmp_point.get_variable("H")
 
-        return np.array(t_list), np.array(p_list)
+        return np.array(t_list), np.array(p_list), np.array(rho_list), np.array(h_list)
 
     @property
     def calculation_setup_data(self):

@@ -40,10 +40,10 @@ hs_geometry = REELWELLGeometry(
     tub_od=0.13,
     cas_id=0.1617,
     cas_od=0.1778,
-    k_insulation=0.01,
+    k_insulation=0.1,
     hot_in_tubing=True,
     neglect_internal_heat_transfer=False,
-    max_back_time=3,
+    max_back_time=2,
     alpha_old=0.5
 
 )
@@ -58,7 +58,7 @@ well = REELWEELBHE(
 
     bhe_in, dz_well=depth, t_rocks=t_rock, t_surf=t_surf,
     k_rocks=k_rock, c_rocks=c_rock, rho_rocks=rho_rock,
-    rw_geometry=hs_geometry, max_iteration=30
+    rw_geometry=hs_geometry, max_iteration=10
 
 )
 
@@ -107,8 +107,8 @@ for time in time_points:
     p_out_list.append(well.points[-1].get_variable("P"))
     w_out_list.append(well.power)
 
-    t_list_vert, p_list_vert = well.get_iteration_profile(profile_positions_vert)
-    t_list, p_list = heating_section.get_heating_section_profile(profile_positions)
+    t_list_vert, p_list_vert, rho_list_vert, h_list_vert = well.get_iteration_profile(profile_positions_vert)
+    t_list, p_list, rho_list, h_list = heating_section.get_heating_section_profile(profile_positions)
 
     t_profile_list.append(np.concatenate((t_list_vert.T, t_list.T)).T)
     p_profile_list.append(np.concatenate((p_list_vert.T, p_list.T)).T)
@@ -140,7 +140,7 @@ data_exporter = {
 
 }
 
-export_profiles_to_excel(file_path, data_exporter)
+export_profiles_to_excel(file_path, data_exporter, reverse_time_position=True)
 
 
 # %%------------   PLOT TIME VARIABLES                    -----------------------------------------------------------> #

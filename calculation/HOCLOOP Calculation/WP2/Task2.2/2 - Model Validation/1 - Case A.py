@@ -85,7 +85,7 @@ for time in time_points:
     p_out_list.append(well.points[1].get_variable("P"))
     w_out_list.append(well.power)
 
-    t_list, p_list = well.get_iteration_profile(profile_positions)
+    t_list, p_list, rho_list, h_list = well.get_iteration_profile(profile_positions)
 
     t_profile_list.append(t_list)
     p_profile_list.append(p_list)
@@ -115,7 +115,7 @@ data_exporter = {
 
 }
 
-export_profiles_to_excel(file_path, data_exporter)
+export_profiles_to_excel(file_path, data_exporter, reverse_time_position=True)
 
 
 # %%------------   PLOT TIME VARIABLES                    -----------------------------------------------------------> #

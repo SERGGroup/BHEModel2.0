@@ -103,8 +103,8 @@ for time in time_points:
     p_out_list.append(well.points[2].get_variable("P"))
     w_out_list.append(well.power)
 
-    t_list_vert, p_list_vert = well.get_iteration_profile(profile_positions_vert)
-    t_list, p_list = heating_section.get_heating_section_profile(profile_positions)
+    t_list_vert, p_list_vert, rho_list_vert, h_list_vert = well.get_iteration_profile(profile_positions_vert)
+    t_list, p_list, rho_list, h_list = heating_section.get_heating_section_profile(profile_positions)
 
     t_profile_list.append(np.concatenate((t_list_vert.T, t_list.T)).T)
     p_profile_list.append(np.concatenate((p_list_vert.T, p_list.T)).T)

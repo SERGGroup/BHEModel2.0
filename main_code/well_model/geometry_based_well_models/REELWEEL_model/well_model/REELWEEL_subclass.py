@@ -80,13 +80,13 @@ class REELWEELBHE(SimplifiedBHE):
         is_annulus = self.rw_geometry.hot_in_tubing ^ self.is_upward
 
         dh_ext = self.rw_geometry.dh_dl(curr_point, is_annulus=is_annulus, depth=depth)
-        dh_int = self.rw_geometry.get_old_dh_int(
+        dh_int = self.rw_geometry.get_old_q_int(
 
             is_annulus=is_annulus, depth=depth,
             old_profiles=self.__old_profiles,
             first_var="P", second_var="rho"
 
-        )
+        ) / curr_point.m_dot
 
         dh = dh_ext + dh_int
 
@@ -146,7 +146,7 @@ class REELWEELBHE(SimplifiedBHE):
 
         return self.neglect_internal_heat_transfer
 
-    def get_profiles(self, position_list):
+    def get_profiles(self, position_list, indices_list=None):
 
         profile_list = list()
         for profile in self.__old_profiles:
