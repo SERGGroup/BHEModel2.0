@@ -87,12 +87,16 @@ class REELWELLGeometry:
         self.d_hyd_ann = self.d_ann_out - self.d_ann_int
         self.tkn_annulus = (self.d_ann_out - self.d_ann_int) / 2
 
+        self.a_flow_tub = np.pi / 4 * self.d_tub ** 2
+        self.a_flow_ann = np.pi / 4 * (self.d_ann_out ** 2 - self.d_ann_int ** 2)
+
         self.r_ins = np.log(tub_od / tub_id) / (2 * np.pi * self.k)
 
         self.hot_in_tubing = hot_in_tubing
-        self.neglect_internal_heat_transfer = neglect_internal_heat_transfer
         self.max_back_time = max_back_time
         self.alpha_old = alpha_old
+
+        self.neglect_internal_heat_transfer = neglect_internal_heat_transfer
         self.ignore_tubing_pressure_losses = ignore_tubing_pressure_losses
         self.ignore_annulus_pressure_losses = ignore_annulus_pressure_losses
 
@@ -193,11 +197,11 @@ class REELWELLGeometry:
 
         if is_annulus:
 
-            d_A = 4 / (np.pi * (self.d_ann_out + self.d_ann_int))
+            d_A = self.d_hyd_ann / self.a_flow_ann
 
         else:
 
-            d_A = 4 / (np.pi * self.d_tub)
+            d_A = self.d_tub / self.a_flow_tub
 
         mu = point.get_variable("mu")
 
@@ -256,7 +260,7 @@ class REELWELLGeometry:
 
                 return 0.
 
-            A = np.pi * (self.d_ann_out - self.tkn_annulus) * self.tkn_annulus
+            A = self.a_flow_ann
             d_hyd = self.d_hyd_ann
 
         else:
@@ -265,7 +269,7 @@ class REELWELLGeometry:
 
                 return 0.
 
-            A = np.pi / 4 * self.d_tub ** 2
+            A = self.a_flow_tub
             d_hyd = self.d_tub
 
         rho = point.get_variable("rho")
@@ -392,6 +396,18 @@ class REELWELLGeometry:
         })
 
         return data_frame
+
+    def fluid_speed(self, is_annulus, point):
+
+        if is_annulus:
+
+            A = self.a_flow_ann
+
+        else:
+
+            A = self.a_flow_tub
+
+        return point.m_dot / (point.get_variable("rho") * A)
 
     @property
     def i_annulus(self):

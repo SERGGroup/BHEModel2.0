@@ -146,10 +146,17 @@ class REELWEELBHE(SimplifiedBHE):
 
         return self.neglect_internal_heat_transfer
 
-    def get_profiles(self, position_list, indices_list=None):
+    def get_profiles(self, position_list, get_index=None):
 
-        profile_list = list()
-        for profile in self.__old_profiles:
-            profile_list.append(self.get_iteration_profile(position_list, profile))
+        if get_index is None:
 
-        return profile_list
+            profile_list = list()
+            for profile in self.__old_profiles:
+                profile_list.append(self.get_iteration_profile(position_list, profile))
+
+            return profile_list
+
+        else:
+
+            profile = self.__old_profiles[get_index]
+            return self.get_iteration_profile(position_list, profile)

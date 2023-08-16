@@ -42,7 +42,7 @@ hs_geometry = REELWELLGeometry(
     cas_od=0.1778,
     k_insulation=0.1,
     hot_in_tubing=True,
-    max_back_time=2,
+    max_back_time=4,
     alpha_old=0.5,
     neglect_internal_heat_transfer=False,
     ignore_tubing_pressure_losses=False,
@@ -54,13 +54,13 @@ hs_geometry = REELWELLGeometry(
 # %%------------   INITIALIZE WELL                        -----------------------------------------------------------> #
 bhe_in = PlantThermoPoint(["Water"], [1])
 bhe_in.set_variable("T", t_in)
-bhe_in.set_variable("P", 1)
+bhe_in.set_variable("P", 1.2)
 
 well = REELWEELBHE(
 
     bhe_in, dz_well=depth, t_rocks=t_rock, t_surf=t_surf,
     k_rocks=k_rock, c_rocks=c_rock, rho_rocks=rho_rock,
-    rw_geometry=hs_geometry, max_iteration=10
+    rw_geometry=hs_geometry, max_iteration=20
 
 )
 
@@ -81,11 +81,11 @@ main_time_points = [7, 15, 30, 91, 182.5, 365, 730, 1825, 3650]
 
 time_points = []
 time_points.extend(main_time_points)
-time_points.extend([7.78, 16.35, 28.41, 85.25, 176.99, 367.23, 761.72, 1895.72, 3931.18])
-time_points.extend([0.08, 0.168, 0.25, 0.5, 1, 1.25, 2.5, 5])
+#time_points.extend([7.78, 16.35, 28.41, 85.25, 176.99, 367.23, 761.72, 1895.72, 3931.18])
+#time_points.extend([0.08, 0.168, 0.25, 0.5, 1, 1.25, 2.5, 5])
 time_points.sort()
 
-step = 100
+step = 50
 profile_positions = np.linspace(0, l_horiz, int(l_horiz / step + 1))[1:]
 profile_positions_vert = np.linspace(0, depth, int(depth / step + 1))[1:]
 overall_profile_positions = np.concatenate((profile_positions_vert, profile_positions + depth))
@@ -101,7 +101,7 @@ bhe_in.m_dot = mass_flow
 pbar = tqdm(desc="Calculation Ongoing", total=len(time_points))
 for time in time_points:
 
-    heating_section.time = time / 365
+    well.heating_section.time = time / 365
     well.update()
 
     time_list.append(time)
@@ -115,7 +115,6 @@ for time in time_points:
     t_profile_list.append(np.concatenate((t_list_vert.T, t_list.T)).T)
     p_profile_list.append(np.concatenate((p_list_vert.T, p_list.T)).T)
     pbar.update(1)
-    # print("{} -> {}".format(time, t_out_list[-1]))
 
 pbar.close()
 

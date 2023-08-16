@@ -25,7 +25,6 @@
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
     <data-source source="LOCAL" name="User Data Source" uuid="c9637963-8237-47a3-b8df-cdbf617728f5">
-      <driver-ref>cd436025-cdfe-4498-8a20-7a205b743d8d</driver-ref>
       <synchronize>true</synchronize>
       <configured-by-url>true</configured-by-url>
       <jdbc-driver>java.sql.Driver</jdbc-driver>
