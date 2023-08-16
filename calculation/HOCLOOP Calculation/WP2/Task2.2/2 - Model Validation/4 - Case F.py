@@ -42,9 +42,11 @@ hs_geometry = REELWELLGeometry(
     cas_od=0.1778,
     k_insulation=0.1,
     hot_in_tubing=True,
-    neglect_internal_heat_transfer=False,
     max_back_time=2,
-    alpha_old=0.5
+    alpha_old=0.5,
+    neglect_internal_heat_transfer=False,
+    ignore_tubing_pressure_losses=False,
+    ignore_annulus_pressure_losses=False
 
 )
 
@@ -140,13 +142,13 @@ data_exporter = {
 
 }
 
-export_profiles_to_excel(file_path, data_exporter, reverse_time_position=True)
+export_profiles_to_excel(file_path, data_exporter, reverse_time_position=False)
 
 
 # %%------------   PLOT TIME VARIABLES                    -----------------------------------------------------------> #
 fig, ax = plt.subplots()
 time_array = np.array(time_list) / 365
 
-ax.plot(time_array, t_out_list)
+ax.plot(time_array, p_out_list)
 plt.xscale("log")
 plt.show()

@@ -23,7 +23,9 @@ class REELWELLGeometry:
             cas_id=0.224, cas_od=0.244,
             k_insulation=0.15, ra_pipe=None, hot_in_tubing=False,
             neglect_internal_heat_transfer=True, max_back_time=5,
-            alpha_old = 0.5
+            alpha_old = 0.5,
+            ignore_tubing_pressure_losses=False,
+            ignore_annulus_pressure_losses=False
 
     ):
 
@@ -91,6 +93,8 @@ class REELWELLGeometry:
         self.neglect_internal_heat_transfer = neglect_internal_heat_transfer
         self.max_back_time = max_back_time
         self.alpha_old = alpha_old
+        self.ignore_tubing_pressure_losses = ignore_tubing_pressure_losses
+        self.ignore_annulus_pressure_losses = ignore_annulus_pressure_losses
 
         self.parent_class = None
         self.__tmp_point_ann = None
@@ -248,10 +252,18 @@ class REELWELLGeometry:
 
         if is_annulus:
 
+            if self.ignore_annulus_pressure_losses:
+
+                return 0.
+
             A = np.pi * (self.d_ann_out - self.tkn_annulus) * self.tkn_annulus
             d_hyd = self.d_hyd_ann
 
         else:
+
+            if self.ignore_tubing_pressure_losses:
+
+                return 0.
 
             A = np.pi / 4 * self.d_tub ** 2
             d_hyd = self.d_tub

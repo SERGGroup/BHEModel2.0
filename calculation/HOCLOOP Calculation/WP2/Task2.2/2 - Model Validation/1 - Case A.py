@@ -4,6 +4,7 @@ from main_code.support.other.excel_exporter import export_profiles_to_excel
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
 from main_code import constants
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 import numpy as np
 import os
 
@@ -32,7 +33,9 @@ hs_geometry = REELWELLGeometry(
     cas_id=0.1617,
     cas_od=0.1778,
     hot_in_tubing=True,
-    neglect_internal_heat_transfer=True
+    neglect_internal_heat_transfer=True,
+    ignore_tubing_pressure_losses=True,
+    ignore_annulus_pressure_losses=False
 
 )
 
@@ -74,6 +77,7 @@ t_profile_list = list()
 p_profile_list = list()
 
 bhe_in.m_dot = mass_flow
+pbar = tqdm(desc="Calculation Ongoing", total=len(time_points))
 
 for time in time_points:
 
@@ -90,7 +94,10 @@ for time in time_points:
     t_profile_list.append(t_list)
     p_profile_list.append(p_list)
 
-    print("{} -> {}".format(time, t_out_list[-1]))
+    pbar.update(1)
+    # print("{} -> {}".format(time, t_out_list[-1]))
+
+pbar.close()
 
 
 # %%------------   EXPORT RESULTS                         -----------------------------------------------------------> #
@@ -115,7 +122,7 @@ data_exporter = {
 
 }
 
-export_profiles_to_excel(file_path, data_exporter, reverse_time_position=True)
+export_profiles_to_excel(file_path, data_exporter, reverse_time_position=False)
 
 
 # %%------------   PLOT TIME VARIABLES                    -----------------------------------------------------------> #

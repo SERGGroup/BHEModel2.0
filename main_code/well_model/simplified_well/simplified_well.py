@@ -451,11 +451,11 @@ class SimplifiedWell(ABC):
 
         if self.is_upward:
 
-            return dp
+            return -dp
 
         else:
 
-            return -dp
+            return dp
 
     def calculate_C0(self, curr_point: PlantThermoPoint, depth=0., dp_dl=None):
 
