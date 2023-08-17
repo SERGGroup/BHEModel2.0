@@ -28,7 +28,7 @@ mass_flow_modifier = 1
 mass_flow = mass_flow_base * mass_flow_modifier
 
 cas_id_base = 0.1617     # [m]
-cas_id_modifier = 1
+cas_id_modifier = 1.25
 cas_id = cas_id_base * cas_id_modifier
 
 depth = 3000        # [m]
@@ -136,7 +136,7 @@ RES_FOLDER = os.path.join(
 
 )
 
-file_path = os.path.join(RES_FOLDER, "case_f.xlsx")
+file_path = os.path.join(RES_FOLDER, "other f cases", "case_f.4.xlsx")
 data_exporter = {
 
     "well": well,

@@ -24,7 +24,7 @@ p_in = 1.3          # [MPa]
 t_in = 45           # [C]
 
 mass_flow_base = 8.80149 # [kg/s]
-mass_flow_modifier = 1
+mass_flow_modifier = 0.5
 mass_flow = mass_flow_base * mass_flow_modifier
 
 cas_id_base = 0.1617     # [m]
@@ -136,7 +136,7 @@ RES_FOLDER = os.path.join(
 
 )
 
-file_path = os.path.join(RES_FOLDER, "case_f.xlsx")
+file_path = os.path.join(RES_FOLDER, "other f cases", "case_f.1.xlsx")
 data_exporter = {
 
     "well": well,
