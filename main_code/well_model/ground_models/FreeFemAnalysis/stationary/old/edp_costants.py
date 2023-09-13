@@ -1,4 +1,4 @@
-from constants import FREE_FEM_FOLDER
+from main_code.constants import FREE_FEM_FOLDER
 import os
 
 EDP_FILE_PATH = os.path.join(FREE_FEM_FOLDER, "Temperature Distribution.edp")
@@ -59,7 +59,7 @@ real gradTube=gradRock*gradTubeRatio;
 
 def write_edp_file(
 
-    temperature_bc=True, perfrom_double_mesh_calculation=True,
+    temperature_bc=True, perform_double_mesh_calculation=True,
     overall_mesh=True, mesh_refinement=False,
     n_points=7, n_points_circle=20,
     ratio_L=2000, ratio_H=1000,
@@ -92,7 +92,7 @@ def write_edp_file(
         export_result = __TUBE_GRAD_BC["result_export"]
         bc_definition = __TUBE_GRAD_BC["bc_definition"]
 
-    if perfrom_double_mesh_calculation:
+    if perform_double_mesh_calculation:
 
         __write_double_calculation_edp(
 

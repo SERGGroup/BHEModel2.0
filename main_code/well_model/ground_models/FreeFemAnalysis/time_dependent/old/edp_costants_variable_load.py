@@ -1,4 +1,4 @@
-from constants import FREE_FEM_FOLDER
+from main_code.constants import FREE_FEM_FOLDER
 import os
 
 EDP_FILE_PATH = os.path.join(FREE_FEM_FOLDER, "Temperature Distribution.edp")
@@ -20,61 +20,34 @@ real T={max_time};
 int nT={time_steps};
 real deltat=T/nT;
 
-real gradRock={grad_rock},"""
+real gradRock={grad_rock}, DT={DT};"""
 
-__EXPORT_RESULTS = """
-int K = 1000; 
-real theta, sum=0;
+__PLOT_AND_EXPORT_RESULTS = """
+    if (counter%plotevery == 0){{
 
-for (int i = 0; i < K; i++){{
-	
-	theta = pi * i / K;
-    x = r*sin(theta);
-	y = r*cos(theta);
-	sum = sum + {result_element};
+        plot(uInt, value=true, grey=true, fill=true);   
 
-}}
+    }}
 
-real tubeFlux = sum / K * 2 * pi * r;
-ofstream file("mean_gradient.txt");
-file.precision(10);
-file << tubeFlux;
+    if (counter%saveevery == 0){{
+
+        sum = 0;
+        fx = dx(uInt);
+        fy = dy(uInt);
+
+        for (int i = 0; i < 1000; i++){{
+
+            theta = pi * i / 1000;
+            x = r*sin(theta);
+            y = r*cos(theta);
+            sum = sum + (fx * sin(theta) + fy * cos(theta));
+
+        }}
+        
+        ff << t << "; " << sum/1000 * 2*pi*r << endl;   
+        
+    }}
 """
-
-__TUBE_TEMP_BC = {
-
-    "param_init": __MAIN_PARAMETER_INITIALIZATION + " DT={DT};",
-    "bc_definition": """ + on(Ctube, uInt=-DT)""",
-    "result_export": __EXPORT_RESULTS.format(result_element="fx * sin(t) + fy * cos(t)")
-
-}
-
-def write_edp_file(
-
-    n_points=10, n_points_circle=30,
-    ratio_L=2000, ratio_H=1000,
-    DT=1, grad_rock=0.01,
-    max_time_year=5, time_steps=10000
-
-):
-
-    param_init = __TUBE_TEMP_BC["param_init"].format(
-
-        n_points=n_points, n_points_circle=n_points_circle,
-        ratio_L=ratio_L, ratio_H=ratio_H,
-        DT=DT, grad_rock=grad_rock,
-
-        max_time=max_time_year*365*24*3600*1E-6, time_steps=time_steps
-
-    )
-    bc_definition = __TUBE_TEMP_BC["bc_definition"]
-
-    __write_double_calculation_edp(
-
-        param_init, bc_definition
-
-    )
-
 
 # <------------------------------------------------------------------------->
 # <------------------------------------------------------------------------->
@@ -122,20 +95,38 @@ VhExt uExt, vExt, uExtPrev=u0, g=gradRock;	// Define uInt and vInt as piecewise-
 problem thermalInt(uInt, vInt, solver=LU)
 
 	= int2d(ThInt)(    
-        
+
         uInt * vInt
 		+ deltat * (
-		
+
 		    dx(uInt)*dx(vInt)	
 		    + dy(uInt)*dy(vInt)
-		
+
 		)
 
 	) - int2d(ThInt)(
-	
+
         uIntPrev * vInt
 
-	) {tube_boundary_condition} + on(CMeshInt, uInt=uExtPrev);	// The Dirichlet boundary condition
+	) + on(Ctube, uInt=-DT) + on(CMeshInt, uInt=uExtPrev);
+	
+problem thermalIntNOFLUX(uInt, vInt, solver=LU)
+
+	= int2d(ThInt)(    
+
+        uInt * vInt
+		+ deltat * (
+
+		    dx(uInt)*dx(vInt)	
+		    + dy(uInt)*dy(vInt)
+
+		)
+
+	) - int2d(ThInt)(
+
+        uIntPrev * vInt
+
+	) + on(CMeshInt, uInt=uExtPrev);
 
 // DEFINE EXTERNAL PROBLEM
 problem thermalExt(uExt, vExt, solver=LU)
@@ -144,14 +135,14 @@ problem thermalExt(uExt, vExt, solver=LU)
 
         uExt*vExt
 		+ deltat * (
-		
+
 		    dx(uExt)*dx(vExt)	
 		    + dy(uExt)*dy(vExt)
-		    
+
 		)
 
 	) - int2d(ThExt)(
-	
+
         uExtPrev * vExt
 
 	) - int1d(ThExt, CMeshExt)(
@@ -163,7 +154,7 @@ problem thermalExt(uExt, vExt, solver=LU)
         g*vExt*deltat
 
     )
-	+ on(Ctop, uExt=-gradRock*H);	// The Dirichlet boundary condition
+	+ on(Ctop, uExt=-gradRock*H);
 
 real t=0;
 int counter=0;
@@ -176,38 +167,24 @@ VhInt fx, fy;
 ofstream ff("thermic.dat");
 
 while(t < T){{
-
-	thermalInt;
-	thermalExt;
     
-    if (counter%plotevery == 0){{
+    if (t%(T/3) < T/6){{
     
-        plot(uInt, value=true, grey=true, fill=true);   
-    
-    }}
-    
-    if (counter%saveevery == 0){{
-        
-        sum = 0;
-        
-        for (int i = 0; i < 1000; i++){{
+	    thermalInt;
 	
-            theta = pi * i / 1000;
-            x = r*sin(theta);
-            y = r*cos(theta);
-            sum = sum + (fx * sin(theta) + fy * cos(theta));
-        
-        }}
-                
-        fx = dx(uInt);
-        fy = dy(uInt);
-        ff << t << "; " << sum/1000 * 2*pi*r << endl;   
-    
-    }}
-    
+	}} else {{
+	
+	    thermalIntNOFLUX;
+	    
+	}}
+	
+	thermalExt;
+
+    {plot_export_result}
+
     t = t + deltat;
     counter = counter + 1;
-    
+
     uIntPrev=uInt;
     uExtPrev=uExt;
 
@@ -215,11 +192,24 @@ while(t < T){{
 
 """
 
-def __write_double_calculation_edp(
+def write_edp_file(
 
-    param_init, bc_definition
+    n_points=10, n_points_circle=30,
+    ratio_L=2000, ratio_H=1000,
+    DT=1, grad_rock=0.01,
+    max_time_year=5, time_steps=10000
 
 ):
+
+    param_init = __MAIN_PARAMETER_INITIALIZATION.format(
+
+        n_points=n_points, n_points_circle=n_points_circle,
+        ratio_L=ratio_L, ratio_H=ratio_H,
+        DT=DT, grad_rock=grad_rock,
+
+        max_time=max_time_year*365*24*3600*1E-6, time_steps=time_steps
+
+    )
 
     with open(EDP_FILE_PATH, "w") as edp_file:
 
@@ -228,7 +218,7 @@ def __write_double_calculation_edp(
             __DOUBLE_MESH_CALCULATIONS.format(
 
                 main_parameter_initialization=param_init,
-                tube_boundary_condition=bc_definition
+                plot_export_result=__PLOT_AND_EXPORT_RESULTS
 
             )
 

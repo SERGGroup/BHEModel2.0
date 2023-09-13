@@ -1,4 +1,4 @@
-from constants import GROUND_MESH_FOLDER
+from main_code.constants import GROUND_MESH_FOLDER
 from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
 import fortranformat as ff

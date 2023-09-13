@@ -1,0 +1,35 @@
+
+
+include "ffmatlib.idp"
+
+// Parameters
+
+int pointsH=10, pointsCircle=20;
+real ratioL=2000, ratioH=1000;
+real r=1., L=r*ratioL, H=r*ratioH;
+int pointsL = pointsH*L/H;
+
+real T=157.68;
+int nT=10000;
+real deltat=T/nT;
+
+real gradRock=0.01, DT=1;
+
+int Cside=99, Ctop=98, Cbottom=97,CMeshExt=96, CMeshInt=95, Ctube=94;
+real ratioR=100;
+
+// external mesh boundary
+border C1(t=L, -L){x=t; y=H; label=Ctop;}
+border C2(t=H, -H){x=-L; y=t; label=Cside;}
+border C3(t=-L, L){x=t; y=-H; label=Cbottom;}
+border C4(t=-H, H){x=L; y=t; label=Cside;}
+border C10(t=0, 2*pi){x=ratioR*r*sin(t); y=ratioR*r*cos(t); label=CMeshExt;}
+
+// internal mesh boundary
+border C0(t=0, 2*pi){x=r*sin(t); y=r*cos(t); label=Ctube;}
+border C01(t=2*pi, 0){x=ratioR*r*sin(t); y=ratioR*r*cos(t); label=CMeshInt;}
+
+// The triangulated domain Th is on the left side of its boundary
+// mesh ThInt = buildmesh(C0(pointsCircle)+C01(pointsCircle));
+mesh ThExt = buildmesh(C0(pointsCircle)+C10(pointsCircle)+C1(pointsL)+C2(pointsH)+C3(pointsL)+C4(pointsH));
+plot(ThExt, wait=1);

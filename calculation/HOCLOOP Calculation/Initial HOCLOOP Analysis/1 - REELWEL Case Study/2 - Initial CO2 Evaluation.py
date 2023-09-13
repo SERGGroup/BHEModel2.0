@@ -7,6 +7,7 @@ from main_code import constants
 import numpy as np
 import os
 
+
 # %%------------   INPUT DATA DEFINITION                  -----------------------------------------------------------> #
 
 t_in = 30           # [C]
@@ -25,7 +26,8 @@ l_horiz = l_overall - depth
 hs_geometry = REELWELLGeometry(
 
     l_horiz,
-    hot_in_tubing=False
+    hot_in_tubing=False,
+    neglect_internal_heat_transfer=True
 
 )
 
@@ -44,7 +46,7 @@ well = SimplifiedBHE(
 
 )
 
-heating_section = REELWELLHeatingSection(well, hs_geometry, neglect_internal_heat_transfer=True)
+heating_section = REELWELLHeatingSection(well, hs_geometry)
 well.heating_section = heating_section
 
 

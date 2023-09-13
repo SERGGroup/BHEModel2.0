@@ -4,8 +4,14 @@ include "ffmatlib.idp"
 real ratioL = 1000., ratioH = 800.;
 real r=1., L=r*ratioL, H=r*ratioH;
 real DT=20, gradRock = 0.1;
+real Pe=1;
+real vx=10, vy=0;
 
-int Cside=99, Ctop=98, Cbottom=97, Ctube=96;
+real modv = (vx ^ 2 + vy^2);
+vx = vx / modv;
+vy = vy / modv;
+
+int Cside=99, Ctop=98, Cbottom=97, Ctube=96, CtubeExt=95;
 int pointsH=7, pointsCircle=20, refIndex=5;
 int pointsL = pointsH*L/H;
 
@@ -16,6 +22,11 @@ border C3(t=-L, L){x=t; y=-H; label=Cbottom;}
 border C4(t=-H, H){x=L; y=t; label=Cside;}
 
 border C0(t=0, 2*pi){x=r*sin(t); y=r*cos(t); label=Ctube;}
+
+// Mesh for visualization purposes
+real ratioR=25;
+border C01(t=2*pi, 0){x=ratioR*r*sin(t); y=ratioR*r*cos(t); label=CtubeExt;}
+mesh ThPlot = buildmesh(C0(10)+C01(100));
 
 // The triangulated domain Th is on the left side of its boundary
 mesh Th = buildmesh(C0(pointsCircle)+C1(pointsL)+C2(pointsH)+C3(pointsL)+C4(pointsH));
@@ -31,7 +42,8 @@ solve thermal(u, v, solver=LU)
 	= int2d(Th)(    // The bilinear part
 		
 		dx(u)*dx(v)	
-		+ dy(u)*dy(v)
+		+ dy(u)*dy(v) +
+		Pe * (vx * dx(u) + vy * dy(u)) * v
 		
 	) - int1d(Th, Cbottom)(
     
@@ -77,3 +89,7 @@ file << sum / (K + 1) << "\n";
 // Plot the result
 // plot(Th);
 plot(u, wait=true, value=true, grey=true, fill=true);
+
+fespace Vplot(ThPlot, P1);
+Vplot uplot = u;
+plot(uplot, wait=true, value=true, grey=true, fill=true);

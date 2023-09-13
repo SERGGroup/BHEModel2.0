@@ -3,7 +3,13 @@ include "ffmatlib.idp"
 // Parameters
 real ratioL=7500., ratioH=4000., ratioR=100;
 real r=1., L=r*ratioL, H=r*ratioH;
-real DT=40, gradRock = 0.1;
+real DT=40, gradRock = 0;
+real Pe=1;
+real vx=10, vy=0;
+
+real modv = (vx ^ 2 + vy^2);
+vx = vx / modv;
+vy = vy / modv;
 
 int Cside=99, Ctop=98, Cbottom=97, Ctube=96, CtubeExt=95, CtubeInt=94;
 int pointsH=30, pointsCircle=100;
@@ -35,26 +41,28 @@ VhExt uExt, vExt;	// Define uInt and vInt as piecewise-P1 continuous functions
 // DEFINE INTERNAL PROBLEM
 problem thermalInt(uInt, vInt, solver=LU)
 
-	= int2d(ThInt)(    // The bilinear part
+	= int2d(ThInt)(    // The bilinear part - Conduction
 		
 		dx(uInt)*dx(vInt)	
-		+ dy(uInt)*dy(vInt)
+		+ dy(uInt)*dy(vInt) +
+		Pe * (vx * dx(uInt) + vy * dy(uInt)) * vInt
 		
-	) 
+	)
 	+ on(CtubeInt, uInt=-DT) 
 	+ on(CtubeExt, uInt=uExt);	// The Dirichlet boundary condition
 
 // DEFINE EXTERNAL PROBLEM
 problem thermalExt(uExt, vExt, solver=LU)
 
-	= int2d(ThExt)(    // The bilinear part
+	= int2d(ThExt)(    // The bilinear part - Conduction
 		
 		dx(uExt)*dx(vExt)	
 		+ dy(uExt)*dy(vExt)
+		+ Pe * (vx * dx(uExt) + vy * dy(uExt)) * vExt
 		
 	) - int1d(ThExt, Ctube)(
     
-		-(dx(uInt)*x/(ratioR*r)+ dy(uInt)*y/(ratioR*r))*vExt
+		-(dx(uInt)*x/(ratioR*r) + dy(uInt)*y/(ratioR*r))*vExt
 	
 	)
 	+ on(Ctop, uExt=-gradRock*H)
@@ -93,5 +101,5 @@ while(n < 50){
 
 }
 
-plot(uExt, wait=true, value=true, grey=true, fill=true);
+plot(uInt, wait=true, value=true, grey=true, fill=true);
 	

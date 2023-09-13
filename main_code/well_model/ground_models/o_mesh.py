@@ -1,4 +1,4 @@
-from constants import GROUND_MESH_FOLDER
+from main_code.constants import GROUND_MESH_FOLDER
 import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
 import fortranformat as ff
