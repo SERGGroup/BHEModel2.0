@@ -2,22 +2,58 @@ TIME_ITERATION_PARAM = """
 real Tstart={min_time};
 real Tend={max_time};
 int nT={time_steps};
+{delta_t_definition}
+"""
+
+STD_DELTAT = {
+
+    "Definition":"""
+real deltat = Tend / nt;
+""",
+
+    "Implementation": """
+    t = deltat * i;
+"""
+}
+
+LOG_DELTAT = {
+
+    "Definition": """
 real logdeltat = (log10(Tend)-log10(Tstart)) / nT;
 real deltat = Tstart;
+""",
+
+    "Implementation": """
+    t = 10^(logdeltat * i + log10(Tstart));
+    deltat = t - told;
 """
+}
 
 PROBLEM_DEF_PARAM = """
 // Problem Definition Parameters
 real gradRock={grad_rock}, DT={DT};
-real vx={vx}, vy={vy};
+real vxUnd={vx}, vyUnd={vy};
 real Pe={Pe};
 """
 
 SPEED_ADIMENSIONALIZATION = """
 // Speed Adimensionalization
-real modv = (vx ^ 2 + vy^2);
-vx = vx / modv;
-vy = vy / modv;
+real modvUnd = sqrt(vxUnd ^ 2 + vyUnd^2);
+vxUnd = vxUnd / modvUnd;
+vyUnd = vyUnd / modvUnd;
+
+// Speed Field Definition 
+// (Potential Velocity Field)
+real cosAlphaV = vxUnd;
+real sinAlphaV = vyUnd;
+func cosThetaV = (x * vxUnd + y * vyUnd) / sqrt(x^2 + y^2);
+func sinThetaV = sqrt(1 - cosThetaV^2);
+
+func rInv = 1 / sqrt(x^2 + y^2);
+func potFieldFunc = (1/rInv + rInv) * cosThetaV;
+"""
+EMPTY_FIELD_INIT = """
+func potFieldFunc = 0;
 """
 
 PROBLEM_DEFINITION = """
@@ -25,6 +61,7 @@ PROBLEM_DEFINITION = """
 fespace Vh(Th, P1);
 func u0 = -gradRock*y;
 Vh u, v, uPrev=u0, f=gradRock;	// Define u and v as piecewise-P1 continuous functions
+Vh potField=potFieldFunc;
 
 // The finite element space defined over ThPlot for visualization only
 fespace Vplot(ThPlot, P1);
@@ -39,7 +76,7 @@ solve thermal(u, v, solver=LU)
 		
             dx(u)*dx(v)	
             + dy(u)*dy(v) +
-            Pe * (vx * dx(u) + vy * dy(u)) * v
+            Pe * (dx(potField) * dx(u) + dy(potField) * dy(u)) * v
         
         )
 		
@@ -71,8 +108,7 @@ Vh fx, fy;
 for (int i = 0; i <= nT; ++i){{
 
     told = t;
-    t = 10^(logdeltat * i + log10(Tstart));
-    deltat = t - told;
+    {delta_t_implementation}
 
 	thermal;
 
@@ -129,7 +165,8 @@ class ProblemDefinitionOptions:
 
         self, grad_rock, DT, time_range, time_steps,
         vx=0., vy=0., pe=0., save_path=None, n_save=200,
-        n_plot=0, n_sections_save=1000
+        n_plot=0, n_sections_save=1000,
+        log_based_time = True
 
     ):
 
@@ -142,6 +179,7 @@ class ProblemDefinitionOptions:
         self.max_time = max(time_range)
         self.min_time = min(time_range)
         self.time_steps = time_steps
+        self.log_based_time = log_based_time
 
         self.n_sections_save = n_sections_save
         self.save_path = save_path
@@ -150,9 +188,18 @@ class ProblemDefinitionOptions:
 
     def edp_text(self):
 
+        if self.log_based_time:
+
+            delta_t_dict = LOG_DELTAT
+
+        else:
+
+            delta_t_dict = STD_DELTAT
+
         return_script = TIME_ITERATION_PARAM.format(
 
-            max_time=self.max_time, min_time=self.min_time, time_steps=self.time_steps
+            max_time=self.max_time, min_time=self.min_time, time_steps=self.time_steps,
+            delta_t_definition=delta_t_dict["Definition"]
 
         )
 
@@ -165,6 +212,9 @@ class ProblemDefinitionOptions:
 
         if not (self.vx == 0. and self.vy == 0.):
             return_script += SPEED_ADIMENSIONALIZATION
+
+        else:
+            return_script += EMPTY_FIELD_INIT
 
         return_script += PROBLEM_DEFINITION
 
@@ -189,7 +239,8 @@ class ProblemDefinitionOptions:
             plot_every_initialization=plot_every_init_txt,
             n_sections_save=self.n_sections_save, n_save=self.n_save,
             save_path=self.save_path.replace("\\", "\\\\"), display_plot=display_plt_txt,
-            save_output=save_output, open_save_stream=open_save_stream
+            save_output=save_output, open_save_stream=open_save_stream,
+            delta_t_implementation=delta_t_dict["Implementation"]
 
         )
 

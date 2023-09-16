@@ -18,18 +18,22 @@ calculation_folder = os.path.join(
 
 
 # %%------------   INITIALIZATION                         -----------------------------------------------------------> #
+a = 4
+n_mesh = 2
+m_mesh = 20
+
 mo = MeshOptions(
 
-    n_points=10, n_points_circle=30, graph_r_ratio=25,
-    ratio_L=1500., ratio_H=500., ref_index=2,
-    add_visualization_mesh=True, show_mesh=True
+    n_points=a * n_mesh, n_points_circle=a * m_mesh * n_mesh, graph_r_ratio=15,
+    mesh_path=os.path.join(calculation_folder, "mesh_out.mesh"),
+    retrieve_mesh=False, add_visualization_mesh=True
 
 )
 
 pdo = ProblemDefinitionOptions(
 
     grad_rock=0.01, DT=40.,
-    max_time=157.68, time_steps=10000
+    time_range=[0, 157.68], time_steps=10000
 
 )
 
