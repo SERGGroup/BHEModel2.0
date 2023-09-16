@@ -31,19 +31,19 @@ result_folder = os.path.join(
 
 # %%------------   CALCULATIONS                           -----------------------------------------------------------> #
 a = 4
-b = 10
 DT = 40.
-multiplier = 3
+n_mesh = 2
+m_mesh = 15
 n_save = 500
 results = dict()
 
-for time_steps in [5, 10, 50, 100]:
+for time_steps in [10, 50, 100]:
 
     print("{} time steps".format(time_steps))
 
     mo = MeshOptions(
 
-        n_points=a*multiplier, n_points_circle=a*b*multiplier, graph_r_ratio=15,
+        n_points=a * n_mesh, n_points_circle=a * m_mesh * n_mesh, graph_r_ratio=15,
         mesh_path=os.path.join(calculation_folder, "mesh_out.mesh"),
         retrieve_mesh=False, add_visualization_mesh=True
 
@@ -74,7 +74,7 @@ for time_steps in [5, 10, 50, 100]:
 
         line_split = line.split(";")
         time_list.append(float(line_split[0].strip()))
-        value_list.append(float(line_split[1].strip()))
+        value_list.append(float(line_split[1].strip()) / (DT * 2 * np.pi))
 
     results.update({
 
@@ -91,7 +91,7 @@ for time_steps in [5, 10, 50, 100]:
 
 
 # %%------------   SAVE RESULTS                           -----------------------------------------------------------> #
-file_path = os.path.join(result_folder, "time-sensitivity-{}.xlsx".format(2))
+file_path = os.path.join(result_folder, "time-sensitivity.xlsx")
 
 for key in results.keys():
 
@@ -105,45 +105,17 @@ for key in results.keys():
 
 
 # %%------------   PLOT RESULTS                           -----------------------------------------------------------> #
-def calculate_q(td):
-
-    if issubclass(type(td), Iterable):
-
-        result = list()
-        for td_item in td:
-            result.append(calculate_q(td_item))
-
-        return result
-
-    else:
-
-        if td < 2.8:
-
-            f = ((np.pi * td) ** -0.5 + 0.5 - (td / np.pi) ** 0.5 / 4 + td / 8)
-
-        else:
-
-            gamma = 0.57722
-            theta = (np.log(4 * td) - 2 * gamma)
-            f = 2 * (1 / theta - gamma / theta ** 2)
-
-        return f
-
 keys_list = list(results.keys())
-time_array = np.array(results[keys_list[-1]]["time"])
-f_array = calculate_q(time_array)
-f_array = np.array(f_array) * DT * 2 * np.pi
 
 keys_list.reverse()
-for key in keys_list[0:-1]:
+for key in keys_list:
 
     plt.plot(results[key]["time"], results[key]["value"], label=key)
 
-plt.plot(time_array, f_array, "--", label="correlation", color="Black")
-
 plt.xlabel("$t_d$ [-]")
-plt.ylabel("$dT/dr$ [°C/m]")
+plt.ylabel("$f$ [-]")
 plt.xscale("log")
 plt.yscale("log")
-plt.legend()
+plt.legend(fontsize="8")
+plt.title("Time Step Sensitivity")
 plt.show()

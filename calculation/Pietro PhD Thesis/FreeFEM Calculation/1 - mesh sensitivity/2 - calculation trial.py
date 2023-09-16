@@ -19,12 +19,12 @@ calculation_folder = os.path.join(
 
 
 # %%------------   INITIALIZATION                         -----------------------------------------------------------> #
-a = 5
-b = 5
-multiplier = 2
+a = 4
+n_mesh = 2
+m_mesh = 5
 mo = MeshOptions(
 
-    n_points=a*multiplier, n_points_circle=a*b*multiplier, graph_r_ratio=15,
+    n_points=a * n_mesh, n_points_circle=a * m_mesh * n_mesh, graph_r_ratio=15,
     mesh_path=os.path.join(calculation_folder, "mesh_out.mesh"),
     retrieve_mesh=False, add_visualization_mesh=True
 
@@ -32,15 +32,16 @@ mo = MeshOptions(
 
 pdo = ProblemDefinitionOptions(
 
-    grad_rock=0.01, DT=40.,
-    time_range=[1e-3, 10], time_steps=2000,
+    grad_rock=0.01, DT=40., pe=1., vx=1, vy=1,
+    time_range=[1e-3, 10], time_steps=100,
     n_plot=20, n_save=300
 
 )
 
 tdo = TimeDependentOptions(mesh_options=mo, problem_definition_options=pdo, mesh_only=False)
 ffa = FreeFEMAnalyzer(options=tdo, calculation_folder=calculation_folder)
-gross_result = ffa.calculate()
+ffa.options.write_edp_file()
+#gross_result = ffa.calculate()
 
 
 # %%------------   PLOT RESULTS                           -----------------------------------------------------------> #
@@ -53,7 +54,7 @@ for line in gross_result:
     time_list.append(float(line_split[0].strip()))
     value_list.append(float(line_split[1].strip()))
 
-plt.plot(time_list, value_list, label="{}x - {}%".format(multiplier, round(100 / b)))
+plt.plot(time_list, value_list, label="{}x - {}%".format(n_mesh, round(100 / m_mesh)))
 
 
 # %%------------   PLOT RESULTS                           -----------------------------------------------------------> #

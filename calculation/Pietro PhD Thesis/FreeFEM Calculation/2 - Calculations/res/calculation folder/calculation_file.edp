@@ -1,0 +1,152 @@
+
+// Mesh Definition
+
+// Geometry Parameters
+real ratioL=1500.0, ratioH=500.0;
+real r=1., L=r*ratioL, H=r*ratioH;
+
+// Base Mesh Parameters
+int pointsH=12, pointsCircle=240;
+real refIndex=1.0;
+int pointsL = pointsH*L/H;
+
+
+// Visualization Mesh Parameters
+real ratioR=15;
+
+
+int Cside=99, Ctop=98, Cbottom=97,CMeshExt=96, CMeshInt=95, Ctube=94;
+
+// Define mesh boundary
+border C0(t=0, 2*pi){{x=r*sin(t); y=r*cos(t); label=Ctube;}}
+border C10(t=0, 2*pi){x=ratioR*r*sin(t); y=ratioR*r*cos(t); label=CMeshExt;}
+border C1(t=L, -L){{x=t; y=H; label=Ctop;}}
+border C2(t=H, -H){{x=-L; y=t; label=Cside;}}
+border C3(t=-L, L){{x=t; y=-H; label=Cbottom;}}
+border C4(t=-H, H){{x=L; y=t; label=Cside;}}
+
+mesh Th = buildmesh(C0(pointsCircle)+C10(pointsCircle)+C1(pointsL)+C2(pointsH)+C3(pointsL)+C4(pointsH));
+
+savemesh(Th,"C:\\Users\\Utente\\PycharmProjects\\BHEModel2.0\\calculation\\Pietro PhD Thesis\\FreeFEM Calculation\\2 - Calculations\\res\\calculation folder\\mesh_out.mesh");
+
+
+// Mesh for visualization purposes
+border C01(t=2*pi, 0){{x=ratioR*r*sin(t); y=ratioR*r*cos(t); label=CMeshExt;}}
+mesh ThPlot = buildmesh(C0(10)+C01(100));
+
+
+// Problem Definition
+
+real Tstart=0.001;
+real Tend=1000;
+int nT=10000;
+
+real logdeltat = (log10(Tend)-log10(Tstart)) / nT;
+real deltat = Tstart;
+
+
+// Problem Definition Parameters
+real gradRock=0.0, DT=40.0;
+real vxUnd=1, vyUnd=0.0;
+real Pe=10;
+
+// Speed Adimensionalization
+real modvUnd = sqrt(vxUnd ^ 2 + vyUnd^2);
+vxUnd = vxUnd / modvUnd;
+vyUnd = vyUnd / modvUnd;
+
+// Speed Field Definition 
+// (Potential Velocity Field)
+real cosAlphaV = vxUnd;
+real sinAlphaV = vyUnd;
+func cosThetaV = (x * vxUnd + y * vyUnd) / sqrt(x^2 + y^2);
+func sinThetaV = sqrt(1 - cosThetaV^2);
+
+func rInv = 1 / sqrt(x^2 + y^2);
+func potFieldFunc = (1/rInv + rInv) * cosThetaV;
+
+// The finite element space defined over Th is called here Vh
+fespace Vh(Th, P1);
+func u0 = -gradRock*y;
+Vh u, v, uPrev=u0, f=gradRock;	// Define u and v as piecewise-P1 continuous functions
+Vh potField=potFieldFunc;
+
+// The finite element space defined over ThPlot for visualization only
+fespace Vplot(ThPlot, P1);
+Vplot uplot = uPrev;
+
+// Define the PDE
+solve thermal(u, v, solver=LU)
+
+	= int2d(Th)(    // The bilinear part
+		u * v
+		+ deltat * (
+		
+            dx(u)*dx(v)	
+            + dy(u)*dy(v) +
+            Pe * (dx(potField) * dx(u) + dy(potField) * dy(u)) * v
+        
+        )
+		
+	) - int2d(Th)(
+	
+        uPrev * v
+
+	) - int1d(Th, Cbottom)(
+    
+		f*v*deltat
+	
+	)
+	+ on(Ctop, u=-gradRock*H)
+	+ on(Ctube, u=-DT);	   // The Dirichlet boundary condition
+
+
+real told=0, t=0;
+int nSections=1000;
+
+
+int saveevery = nT / 10000;
+real theta, sum=0;
+Vh fx, fy;
+
+
+ofstream ff("C:\\Users\\Utente\\PycharmProjects\\BHEModel2.0\\calculation\\Pietro PhD Thesis\\FreeFEM Calculation\\2 - Calculations\\res\\calculation folder\\result.txt");
+
+
+for (int i = 0; i <= nT; ++i){
+
+    told = t;
+    
+    t = 10^(logdeltat * i + log10(Tstart));
+    deltat = t - told;
+
+
+	thermal;
+
+    
+    
+    if (i%saveevery == 0){{
+
+        sum = 0;
+        fx = dx(u);
+        fy = dy(u);
+
+        for (int i = 0; i < nSections; i++){{
+
+            theta = pi * i / nSections;
+            x = r*sin(theta);
+            y = r*cos(theta);
+            sum = sum + (fx * sin(theta) + fy * cos(theta));
+
+        }}
+
+        ff << t << "; " << sum / nSections * 2*pi*r << endl;   
+
+    }}
+
+
+    uPrev=u;
+
+}
+
+
