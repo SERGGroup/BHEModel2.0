@@ -127,8 +127,8 @@ for i in range(len(t_in_points)):
 
             support_point.set_to_expansion_result(P_out, 0.7, bhe_CO2.points[-1])
 
-            dh_turb = support_point.evaluate_variable_variation(bhe_CO2.points[-1], "h")
-            dh_BHE = bhe_CO2.points[2].evaluate_variable_variation(bhe_CO2.points[1], "h")
+            dh_turb = support_point.dvar(bhe_CO2.points[-1], "h")
+            dh_BHE = bhe_CO2.points[2].dvar(bhe_CO2.points[1], "h")
 
             x_CO2.append(depth_points[j])
             y_CO2.append(abs(dh_turb/dh_BHE))

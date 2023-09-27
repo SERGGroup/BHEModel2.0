@@ -667,8 +667,8 @@ class WaterHeatPumpThermo(AbstractPythonHTHP):
         self.points[3].set_variable("T", self.points[5].get_variable("T"))
         self.points[6].set_variable("T", self.points[2].get_variable("T"))
 
-        HE_max_cold = self.points[3].evaluate_variable_variation(self.points[2], "h")
-        HE_max_hot = self.points[5].evaluate_variable_variation(self.points[6], "h")
+        HE_max_cold = self.points[3].dvar(self.points[2], "h")
+        HE_max_hot = self.points[5].dvar(self.points[6], "h")
         HE_max = min(abs(HE_max_cold), abs(HE_max_hot))
         HE = HE_max * self.eta_RH
 
@@ -683,10 +683,10 @@ class WaterHeatPumpThermo(AbstractPythonHTHP):
 
     def __evaluate_flow_rates(self):
 
-        dh_steam = self.points[9].evaluate_variable_variation(self.points[8], "h")
-        dh_COND = self.points[4].evaluate_variable_variation(self.points[5], "h")
-        dh_EVA = self.points[2].evaluate_variable_variation(self.points[7], "h")
-        dh_BHE_brine = self.points[0].evaluate_variable_variation(self.points[1], "h")
+        dh_steam = self.points[9].dvar(self.points[8], "h")
+        dh_COND = self.points[4].dvar(self.points[5], "h")
+        dh_EVA = self.points[2].dvar(self.points[7], "h")
+        dh_BHE_brine = self.points[0].dvar(self.points[1], "h")
 
         self.m_ORC = dh_steam / dh_COND * self.m_steam
         self.m_BHE = self.m_ORC * dh_EVA / dh_BHE_brine
@@ -704,10 +704,10 @@ class WaterHeatPumpThermo(AbstractPythonHTHP):
 
     def __calculate_power(self):
 
-        dh_BHE = self.points[0].evaluate_variable_variation(self.points[1], "h")
-        dh_RH = self.points[3].evaluate_variable_variation(self.points[2], "h")
-        dh_COND = self.points[4].evaluate_variable_variation(self.points[5], "h")
-        dh_COMP = self.points[4].evaluate_variable_variation(self.points[3], "h")
+        dh_BHE = self.points[0].dvar(self.points[1], "h")
+        dh_RH = self.points[3].dvar(self.points[2], "h")
+        dh_COND = self.points[4].dvar(self.points[5], "h")
+        dh_COMP = self.points[4].dvar(self.points[3], "h")
 
         self.Q_steam = self.m_ORC * dh_COND
         self.Q_BHE = self.m_BHE * dh_BHE

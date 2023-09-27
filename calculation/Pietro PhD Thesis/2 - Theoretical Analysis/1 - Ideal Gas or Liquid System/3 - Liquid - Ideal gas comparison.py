@@ -1,0 +1,187 @@
+# %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
+from main_code.constants import CALCULATION_FOLDER, os
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+# %%-------------------------------------   DEFINE WORKING FOLDERS                ------------------------------------->
+result_folder = os.path.join(
+
+    CALCULATION_FOLDER, "Pietro PhD Thesis",
+    "2 - Theoretical Analysis", "1 - Ideal Gas or Liquid System",
+    "res"
+
+)
+
+
+# %%-------------------------------------   RESULTS EVALUATION                  -------------------------------------> #
+grad_nd_list = np.logspace(0, 2, 1000)[1:]
+dz_nd_ext = np.logspace(-2, 2, 1000)
+
+dz_nd_list = [10 ** -2, 10 ** -1.5, 10 ** -1, 10 ** -0.5, 1]
+grad_nd, dz_nd = np.meshgrid(grad_nd_list, dz_nd_list)
+
+spc_work_liq = grad_nd * dz_nd
+spc_ex_liq = spc_work_liq - np.log(1 + spc_work_liq)
+carnot_factor = 1 - 1 / (1 + grad_nd * dz_nd)
+
+spc_work_gas = (grad_nd - 1) * dz_nd
+spc_ex_gas = spc_work_gas - np.log((1 + grad_nd * dz_nd)/(1 + dz_nd))
+
+ex_eta_liq = spc_ex_liq / (spc_work_liq * carnot_factor)
+ex_eta_gas = spc_ex_gas / (spc_work_gas * carnot_factor)
+
+dir_exp_perc_rel_min = (1 + dz_nd)/(1 + dz_nd*grad_nd)
+dir_exp_perc_rel_max = (1 + dz_nd)/((1 + dz_nd)*(1 + dz_nd*grad_nd - dz_nd))
+
+dir_exp_perc_base = dz_nd_ext / (1 + dz_nd_ext)
+
+
+# %%-------------------------------------   PLOT INITIAL COMPARISON             -------------------------------------> #
+colors = [
+
+    "tab:blue", "tab:orange",
+    "tab:green", "tab:red",
+    "tab:purple"
+
+]
+
+label_str = "${{\\Delta z}}^{{\\#}}\\ =\\ 10^{{ {order} }}$"
+fig, axs = plt.subplots(1, 2, dpi=300)
+fig.set_size_inches(10, 4)
+lines = [list(), list()]
+x_values = grad_nd - 1
+
+for i in range(len(dz_nd_list)):
+
+    color = colors[i]
+    dz_nd_curr = dz_nd_list[i]
+    label_curr = label_str.format(
+
+        order=np.round(np.log10(dz_nd_curr), 1)
+
+    )
+
+    axs[0].plot(x_values[i, :], spc_work_liq[i, :], "--", color=color)
+    axs[1].plot(x_values[i, :], ex_eta_liq[i, :], "--", color=color)
+
+    lines[0].append(
+
+        axs[0].plot(
+
+            x_values[i, :],
+            spc_work_gas[i, :],
+            "-", label=label_curr,
+            color=color
+
+        )[0]
+
+    )
+
+    lines[1].append(
+
+        axs[1].plot(
+
+            x_values[i, :],
+            ex_eta_gas[i, :],
+            "-", label=label_curr,
+            color=color
+
+        )[0]
+
+    )
+
+y_names = ["${\\dot{w}}^{\\#}$ [-]", "${\\eta}_{ex}$ [-]"]
+legend_locs = [2, 6]
+axs[0].set_yscale("log")
+for k in range(len(axs)):
+
+    axs[k].set_xscale("log")
+    axs[k].set_xlim((
+
+        np.min(x_values),
+        np.max(x_values)
+
+    ))
+
+    axs[k].set_ylabel(y_names[k])
+    axs[k].set_xlabel("${\\nabla T_{rocks}}^{\\#} - 1$ [-]")
+    axs[k].legend(handles=lines[k], fontsize="8", loc=legend_locs[k])
+
+plt.tight_layout(pad=2)
+plt.show()
+
+
+# %%-------------------------------------   PLOT EXPANSION WORK PERC            -------------------------------------> #
+colors = [
+
+    "tab:blue", "tab:orange",
+    "tab:green", "tab:red",
+    "tab:purple"
+
+]
+
+label_str = "${{\\Delta z}}^{{\\#}}\\ =\\ 10^{{ {order} }}$"
+fig, axs = plt.subplots(1, 2, dpi=300)
+fig.set_size_inches(10, 4)
+
+axs[0].plot(
+
+    dz_nd_ext,
+    dir_exp_perc_base,
+    "-", color="tab:blue"
+
+)
+
+lines = list()
+
+for i in range(len(dz_nd_list)):
+
+    color = colors[i]
+    dz_nd_curr = dz_nd_list[i]
+    label_curr = label_str.format(
+
+        order=np.round(np.log10(dz_nd_curr), 1)
+
+    )
+
+    axs[1].fill_between(
+
+        (grad_nd[i, :] - 1),
+        dir_exp_perc_rel_min[i, :],
+        dir_exp_perc_rel_max[i, :],
+        color=color, alpha=0.1
+    )
+    axs[1].plot((grad_nd[i, :] - 1), dir_exp_perc_rel_min[i, :], "-", color=color)
+    lines.append(
+
+        axs[1].plot(
+
+            (grad_nd[i, :] - 1),
+            dir_exp_perc_rel_max[i, :],
+            "-", label=label_curr,
+            color=color
+
+        )[0]
+
+    )
+
+y_names = ["$\\dot{w}_{{dex}_{base}}$ [-]", "$\\dot{w}_{{dex}_{rel}}$ [-]"]
+x_names = ["${\\Delta z}^{\\#}$ [-]", "${\\nabla T_{rocks}}^{\\#} - 1$ [-]"]
+x_values = [dz_nd_ext, grad_nd.ravel() - 1]
+
+for k in range(len(axs)):
+
+    axs[k].set_xscale("log")
+    axs[k].set_xlabel(x_names[k])
+    axs[k].set_ylabel(y_names[k])
+    axs[k].set_xlim((
+
+        np.min(x_values[k]),
+        np.max(x_values[k])
+
+    ))
+
+axs[1].legend(handles=lines, fontsize="8", loc=3)
+plt.tight_layout(pad=2)
+plt.show()

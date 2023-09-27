@@ -72,9 +72,28 @@ class PlantThermoPoint(ThermodynamicPoint):
         self.set_variable("P", P_value)
         self.set_variable("T", T_new)
 
-    def evaluate_variable_variation(self, input_state: ThermodynamicPoint, variable):
+    def dvar(self, input_state: ThermodynamicPoint, variable):
 
+        """
+        Evaluate Variable "variable" variation with respect to "input_state".
+        For example: point.dvar(other_point, "h") will evaluate the enthalpy variation between point and other_point
+        """
         return self.get_variable(variable) - input_state.get_variable(variable)
+
+    def dex(self, input_state: ThermodynamicPoint, T_ref):
+        """
+        Evaluate exergy variation with respect to "input_state". using "T_ref" as the reference temperature
+        """
+        dh = self.dvar(input_state, "h")
+        ds = self.dvar(input_state, "s")
+
+        if self.get_unit("T") == "K":
+
+            return dh - T_ref * ds
+
+        else:
+
+            return dh - (T_ref + 273.15) * ds
 
     def __str__(self):
 
