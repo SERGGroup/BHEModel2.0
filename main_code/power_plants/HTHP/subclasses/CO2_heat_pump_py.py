@@ -552,8 +552,8 @@ class CO2HeatPumpThermoRegeneration(AbstractPythonHTHP):
         self.points[3].set_variable("T", self.points[5].get_variable("T"))
         self.points[6].set_variable("T", self.points[2].get_variable("T"))
 
-        HE_max_cold = self.points[3].evaluate_variable_variation(self.points[2], "h")
-        HE_max_hot = self.points[5].evaluate_variable_variation(self.points[6], "h")
+        HE_max_cold = self.points[3].dvar(self.points[2], "h")
+        HE_max_hot = self.points[5].dvar(self.points[6], "h")
         HE_max = min(abs(HE_max_cold), abs(HE_max_hot))
         HE = HE_max * self.eta_RH
 

@@ -145,7 +145,7 @@ class BHEHeatingSection(AbstractHeatingSection):
     def __evaluate_section_length(self, tmp_point_old, tmp_point_next):
 
         dT_rock_curr = self.main_BHE.t_rocks - tmp_point_old.get_variable("T")
-        q_dot_need = self.m_dot_well * tmp_point_next.evaluate_variable_variation(tmp_point_old,"h")
+        q_dot_need = self.m_dot_well * tmp_point_next.dvar(tmp_point_old, "h")
 
         r_lin_ground = self.__calculate_ground_thermal_resistance()
         r_lin_fluid = self.__calculate_fluid_thermal_resistance(tmp_point_old)
