@@ -50,9 +50,17 @@ colors = [
 ]
 
 label_str = "${{\\Delta z}}^{{\\#}}\\ =\\ 10^{{ {order} }}$"
-fig, axs = plt.subplots(1, 2, dpi=300)
-fig.set_size_inches(10, 4)
-lines = [list(), list()]
+fig, base_axs = plt.subplots(2, 2, dpi=300)
+fig.set_size_inches(10, 5)
+gs = base_axs[0, 1].get_gridspec()
+# remove the underlying axes
+for ax in base_axs[:, 1]:
+    ax.remove()
+
+axbig = fig.add_subplot(gs[:, 1])
+axs = [base_axs[0, 0], base_axs[1, 0], axbig]
+
+lines = [list(), list(), list()]
 x_values = grad_nd - 1
 
 for i in range(len(dz_nd_list)):
@@ -66,7 +74,8 @@ for i in range(len(dz_nd_list)):
     )
 
     axs[0].plot(x_values[i, :], spc_work_liq[i, :], "--", color=color)
-    axs[1].plot(x_values[i, :], ex_eta_liq[i, :], "--", color=color)
+    axs[1].plot(x_values[i, :], spc_ex_liq[i, :], "--", color=color)
+    axs[2].plot(x_values[i, :], ex_eta_liq[i, :], "--", color=color)
 
     lines[0].append(
 
@@ -86,6 +95,19 @@ for i in range(len(dz_nd_list)):
         axs[1].plot(
 
             x_values[i, :],
+            spc_ex_gas[i, :],
+            "-", label=label_curr,
+            color=color
+
+        )[0]
+
+    )
+
+    lines[2].append(
+
+        axs[2].plot(
+
+            x_values[i, :],
             ex_eta_gas[i, :],
             "-", label=label_curr,
             color=color
@@ -94,12 +116,15 @@ for i in range(len(dz_nd_list)):
 
     )
 
-y_names = ["${\\dot{w}}^{\\#}$ [-]", "${\\eta}_{ex}$ [-]"]
-legend_locs = [2, 6]
-axs[0].set_yscale("log")
+y_names = ["${\\dot{w}}^{\\#}$ [-]", "${\\dot{e}_x}^{\\#}$ [-]", "${\\eta}_{ex}$ [-]"]
+axs[0].get_xaxis().set_visible(False)
+
 for k in range(len(axs)):
 
     axs[k].set_xscale("log")
+    axs[k].set_ylabel(y_names[k])
+    axs[k].set_xlabel("${\\nabla T_{rocks}}^{\\#} - 1$ [-]")
+
     axs[k].set_xlim((
 
         np.min(x_values),
@@ -107,11 +132,20 @@ for k in range(len(axs)):
 
     ))
 
-    axs[k].set_ylabel(y_names[k])
-    axs[k].set_xlabel("${\\nabla T_{rocks}}^{\\#} - 1$ [-]")
-    axs[k].legend(handles=lines[k], fontsize="8", loc=legend_locs[k])
+    if not y_names[k] == y_names[-1]:
+        axs[k].set_yscale("log")
+        axs[k].set_ylim((
+
+            np.min(spc_ex_gas) / 2,
+            np.max(spc_ex_gas) * 2
+
+        ))
+
+    if not y_names[k] == y_names[1]:
+        axs[k].legend(handles=lines[k], fontsize="8")
 
 plt.tight_layout(pad=2)
+plt.subplots_adjust(hspace=0)
 plt.show()
 
 
@@ -203,8 +237,8 @@ x_values = [grad_nd.ravel() - 1, dz_nd_ext, grad_nd.ravel() - 1]
 for k in range(len(all_axs)):
 
     all_axs[k].set_xscale("log")
-    all_axs[k].set_xlabel(x_names[k], fontsize = 12)
-    all_axs[k].set_ylabel(y_names[k], fontsize = 12)
+    all_axs[k].set_xlabel(x_names[k])
+    all_axs[k].set_ylabel(y_names[k])
     all_axs[k].set_xlim((
 
         np.min(x_values[k]),
