@@ -37,7 +37,8 @@ class SimplifiedWell(ABC):
         self.C0 = [0., 0.]
 
         self.integrators_profiler = list()
-        self.__init_points(input_thermo_point)
+        self.base_input_point = input_thermo_point
+        self.__init_points(input_thermo_point.get_alternative_unit_system("SI WITH C"))
         self.__init_heating_section(heating_section)
         self.__reset_control_elements(first_initialization=True)
 
@@ -215,6 +216,18 @@ class SimplifiedWell(ABC):
     def output_point(self):
 
         return self.points[-1]
+
+    @property
+    def original_unit_points(self):
+
+        original_unit_points = list()
+
+        for i in range(len(self.points)):
+
+            original_unit_points.append(self.base_input_point.duplicate())
+            self.points[i].copy_state_to(original_unit_points[-1])
+
+        return original_unit_points
 
     @heating_section.setter
     def heating_section(self, input_heating_section):

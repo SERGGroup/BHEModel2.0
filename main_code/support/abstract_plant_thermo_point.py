@@ -1,4 +1,4 @@
-from REFPROPConnector import ThermodynamicPoint
+from REFPROPConnector import ThermodynamicPoint, RefPropHandler
 from sty import ef
 
 
@@ -23,6 +23,30 @@ class PlantThermoPoint(ThermodynamicPoint):
             self.m_dot,
             rp_handler=self.RPHandler,
             unit_system=self.RPHandler.unit_system,
+            other_variables=self.inputs["other_variables"],
+            calculate_on_need=self.inputs["calculate_on_need"]
+
+        )
+
+        self.copy_state_to(tp)
+        return tp
+
+    def get_alternative_unit_system(self, new_unit_system):
+
+        rp_handler = RefPropHandler(
+
+            self.RPHandler.fluids,
+            self.RPHandler.composition,
+            new_unit_system
+
+        )
+
+        tp = PlantThermoPoint(
+
+            self.RPHandler.fluids,
+            self.RPHandler.composition,
+            rp_handler=rp_handler,
+            unit_system=new_unit_system,
             other_variables=self.inputs["other_variables"],
             calculate_on_need=self.inputs["calculate_on_need"]
 
