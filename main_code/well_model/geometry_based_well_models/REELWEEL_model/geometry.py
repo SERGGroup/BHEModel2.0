@@ -21,9 +21,10 @@ class REELWELLGeometry:
             self, l_hor,
             tub_id=0.085, tub_od=0.16,
             cas_id=0.224, cas_od=0.244,
-            k_insulation=0.15, ra_pipe=None, hot_in_tubing=False,
-            neglect_internal_heat_transfer=True, max_back_time=5,
-            alpha_old = 0.5,
+            k_insulation=0.15, ra_pipe=None,
+            max_back_time=5, alpha_old = 0.5,
+            nu_modifier=1, nu_modifier_only_externally=False,
+            hot_in_tubing=False, neglect_internal_heat_transfer=True,
             ignore_tubing_pressure_losses=False,
             ignore_annulus_pressure_losses=False
 
@@ -45,6 +46,17 @@ class REELWELLGeometry:
 
                 k_insulation -> thermal conductivity of the insulation between the tubing and the casing [W/(m*K)]
                 ra_pipe -> roughness of the pipe surface [m]
+
+            CALCULATION PARAMETERS:
+
+                1) Internal heat transfer calculation options
+                max_back_time -> maximum number of previous profiles conserved in memory
+                alpha_old -> exponential impact of old profiles on the calculation
+
+                2) Nusselt modification options
+                nu_modifier -> modifier which increase or decrease the nusselt
+                               number to simulate differences with heat transfer predictions
+
 
             OTHER ATTRIBUTES:
 
@@ -92,6 +104,11 @@ class REELWELLGeometry:
 
         self.r_ins = np.log(tub_od / tub_id) / (2 * np.pi * self.k)
 
+        self.nu_mod = nu_modifier
+        self.int_nu_mod = nu_modifier
+        if nu_modifier_only_externally:
+            self.int_nu_mod = 1
+
         self.hot_in_tubing = hot_in_tubing
         self.max_back_time = max_back_time
         self.alpha_old = alpha_old
@@ -123,23 +140,33 @@ class REELWELLGeometry:
             time = self.parent_class.time * 3.154e+7  # 3.154e+7 is a conversion factor: [year] -> [s]
             alpha = self.parent_class.main_BHE.alpha_rocks
 
-            t_rock = self.get_t_rock(depth)
-            dt = t_rock - point.get_variable("T")
-
             r0 = self.cas_od / 2
             td = alpha * time /  r0 ** 2
 
             if td < 2.8:
 
-                f = k / r0 * ((np.pi * td) ** -0.5 + 0.5 - (td / np.pi) ** 0.5 / 4 + td / 8)
+                f = ((np.pi * td) ** -0.5 + 0.5 - (td / np.pi) ** 0.5 / 4 + td / 8)
 
             else:
 
                 gamma = 0.57722
                 theta = (np.log(4 * td) - 2 * gamma)
-                f = 2 * k / r0 * (1 / theta - gamma / theta ** 2)
+                f = 2 * (1 / theta - gamma / theta ** 2)
 
-            q_rel = f * dt / 1e3        # 1e3 is a conversion factor: [W/m^2] -> [kW/m^2]
+            r_rocks = k * np.pi * f
+
+            h_ann = self.nu(
+
+                point, is_annulus=True,
+                nu_modifier=self.nu_mod
+
+            ) * (point.get_variable("k") / 1e3) / self.d_hyd_ann
+            r_fluid = 1 / (self.d_ann_int * h_ann)
+            r_tot = r_rocks + r_fluid
+
+            t_rock = self.get_t_rock(depth)
+            dt = t_rock - point.get_variable("T")
+            q_rel = dt / r_tot / 1e3  # 1e3 is a conversion factor: [W/m^2] -> [kW/m^2]
 
             return q_rel * (2 * np.pi * r0)
 
@@ -172,22 +199,34 @@ class REELWELLGeometry:
         else:
 
             dt = point_annulus.get_variable("T") - point_tubing.get_variable("T")
-            h_ann = self.nu(point_annulus, is_annulus=True) * (point_annulus.get_variable("k") / 1e3) / self.d_hyd_ann
-            h_tub = self.nu(point_tubing, is_annulus=False) * (point_tubing.get_variable("k") / 1e3) / self.d_tub
+            h_ann = self.nu(
+
+                point_annulus, is_annulus=True,
+                nu_modifier=self.int_nu_mod
+
+            ) * (point_annulus.get_variable("k") / 1e3) / self.d_hyd_ann
+
+            h_tub = self.nu(
+
+                point_tubing, is_annulus=False,
+                nu_modifier=self.int_nu_mod
+
+            ) * (point_tubing.get_variable("k") / 1e3) / self.d_tub
+
             r = (1 / (self.d_tub * h_tub) + 1 / (self.d_ann_int * h_ann)) / np.pi + self.r_ins
 
             return dt / r / 1e3
 
-    def nu(self, point, is_annulus):
+    def nu(self, point, is_annulus, nu_modifier=1):
 
         re = self.re(point, is_annulus)
         pr = point.get_variable("Pr")
 
         if type(pr) == float:
-            return 0.023 * np.power(re, 0.8) * np.power(pr, 0.4)
+            return (0.023 * np.power(re, 0.8) * np.power(pr, 0.4)) * nu_modifier
 
         else:
-            return 0.023 * np.power(re, 0.8) * np.power(0.7, 0.4)
+            return (0.023 * np.power(re, 0.8) * np.power(0.7, 0.4)) * nu_modifier
 
     def re(self, point, is_annulus):
 

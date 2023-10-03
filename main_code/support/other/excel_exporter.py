@@ -220,7 +220,13 @@ def __write_excel_specification(sheet, data_frame: dict, first_row, first_column
             row_offset += 2
 
 
-def export_profiles_to_excel(file_path, data_input, times_in_main_tab=None, reverse_time_position=False):
+def export_profiles_to_excel(
+
+        file_path, data_input,
+        times_in_main_tab=None, reverse_time_position=False,
+        sheet_name='Main Results'
+
+):
 
     well = data_input["well"]
     time_list = data_input["time_list"]
@@ -273,7 +279,7 @@ def export_profiles_to_excel(file_path, data_input, times_in_main_tab=None, reve
         'W_out': {"unit": ["kW"], "values": [main_w_out_list]}
 
     }
-    write_excel_sheet(excel_path=file_path, sheet_name='Main Results', data_frame=main_data, overwrite="hard")
+    write_excel_sheet(excel_path=file_path, sheet_name=sheet_name, data_frame=main_data, overwrite="hard")
 
     profile_data = {
 
