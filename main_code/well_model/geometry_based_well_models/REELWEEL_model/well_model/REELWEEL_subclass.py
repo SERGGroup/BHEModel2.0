@@ -20,6 +20,14 @@ class REELWEELBHE(SimplifiedBHE):
 
     ):
 
+        if rw_geometry is not None:
+
+            self.rw_geometry = rw_geometry
+
+        else:
+
+            self.rw_geometry = REELWELLGeometry(dz_well)
+
         if heating_section is None:
 
             heating_section = EmptyHeatingSection(self)
@@ -32,21 +40,11 @@ class REELWEELBHE(SimplifiedBHE):
 
         )
 
-        if rw_geometry is not None:
-
-            self.rw_geometry = rw_geometry
-
-        else:
-
-            self.rw_geometry = REELWELLGeometry(dz_well)
-
         self.__old_profiles = None
         self.__max_iteration = max_iteration
 
         self.__tmp_point_annulus = input_thermo_point.duplicate()
         self.__tmp_point_tubing = input_thermo_point.duplicate()
-
-        self.rw_geometry.parent_class = self.heating_section
 
     def evaluate_points(self):
 
@@ -160,3 +158,14 @@ class REELWEELBHE(SimplifiedBHE):
 
             profile = self.__old_profiles[get_index]
             return self.get_iteration_profile(position_list, profile)
+
+    @property
+    def heating_section(self):
+
+        return super().heating_section
+
+    @heating_section.setter
+    def heating_section(self, input_heating_section):
+
+        super(REELWEELBHE, self.__class__).heating_section.fset(self, input_heating_section)
+        self.rw_geometry.parent_class = self.heating_section

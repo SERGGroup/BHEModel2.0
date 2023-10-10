@@ -75,7 +75,6 @@ bhe_list = list()
 pbar = tqdm(desc="Calculating Points", total=len(v_rel_list) * len(grad_nd_list) * len(dz_nd_list))
 for i in range(len(v_rel_list)):
 
-
     v_in = v_rel_list[i] * v_crit
     t_in = t_rel * in_state.RPHandler.TC
     in_state.set_variable("T", t_in)
@@ -116,9 +115,11 @@ for i in range(len(v_rel_list)):
 
             if (not (w_dot < 0 or ex_dot < 0)) and (not states[-1].get_variable("H") < -1e6) and (grad_nd[j, k] < 25):
 
+                cf = 1 - states[0].get_variable("T") / states[2].get_variable("T")
+
                 w_dot_nds[i, j, k] = w_dot / (states[0].get_variable("CP") * states[0].get_variable("T"))
                 ex_dot_nds[i, j, k] = ex_dot / (states[0].get_variable("CP") * states[0].get_variable("T"))
-                eta_exs[i, j, k] = ex_dot / (w_dot * carnot_factor[j, k])
+                eta_exs[i, j, k] = ex_dot / (w_dot * cf)
 
                 w_dex_mins[i, j, k] = (surface_states[1].get_variable("H") - states[0].get_variable("H")) / w_dot
                 w_dex_maxs[i, j, k] = (states[3].get_variable("H") - surface_states[1].get_variable("H")) / w_dot
@@ -227,21 +228,33 @@ t_in = t_rel * in_state.RPHandler.TC
 p_in = 0.01 * in_state.RPHandler.PC
 in_state.set_variable("T", t_in)
 in_state.set_variable("P", p_in)
-in_state.copy_state_to(bhe_in)
 ig_comp = 1 - 1 / in_state.get_variable("CP/CV")
 
 k = 0
 min_grad_nd = list()
+min_grad_calc = list()
 comp_rel = r_cp_in_arr
+
 for i in range(len(v_rel_list)):
 
     arr = w_dot_nds[i, :, k]
     min_index = np.where(arr == np.nanmin(arr))[0]
     min_grad_nd.append(grad_nd[min_index[0], k])
 
-print(min_grad_nd)
+    v_in = v_rel_list[i] * v_crit
+    t_in = t_rel * in_state.RPHandler.TC
+    in_state.set_variable("T", t_in)
+    in_state.set_variable("rho", 1 / v_in)
+
+    dpdt_in = in_state.get_derivative("P", "T", "rho")
+    gamma_in = in_state.get_variable("CP/CV")
+    cp_in = in_state.get_variable("cp")
+    alpha_in = cp_in * (1 - 1 / gamma_in) / (v_in * dpdt_in)
+    min_grad_calc.append(alpha_in)
+
 n = 90
-plt.scatter(comp_rel, min_grad_nd)
+plt.plot(comp_rel, min_grad_nd)
+plt.scatter(comp_rel, min_grad_calc)
 plt.scatter(ig_comp, 1)
 plt.xscale("log")
 # plt.yscale("log")

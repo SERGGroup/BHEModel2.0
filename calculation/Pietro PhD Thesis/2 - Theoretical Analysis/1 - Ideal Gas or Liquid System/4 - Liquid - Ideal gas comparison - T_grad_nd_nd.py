@@ -43,7 +43,7 @@ dir_exp_perc_rel_max = (1 + dz_nd)/((1 + dz_nd)*(1 + dz_nd*grad_nd_vap - dz_nd))
 
 
 # %%-------------------------------------   PLOT INITIAL COMPARISON             -------------------------------------> #
-print_grad_nd_nd = True
+print_grad_nd_nd = False
 colors = [
 
     "tab:blue", "tab:orange",
@@ -135,21 +135,41 @@ for k in range(len(axs)):
 
     axs[k].set_xscale("log")
     axs[k].set_ylabel(y_names[k])
-    axs[k].set_xlabel("${\\nabla T_{rocks}}^{\\#\\#}$ [-]")
 
-    axs[k].set_xlim((
+    if print_grad_nd_nd:
 
-        np.min(x_values_vap),
-        np.max(x_values_vap)
+        axs[k].set_xlabel("${\\nabla T_{rocks}}^{\\#\\#}$ [-]")
 
-    ))
+        axs[k].set_xlim((
+
+            np.min(x_values_vap),
+            np.max(x_values_vap)
+
+        ))
+
+    else:
+
+        axs[k].set_xlabel("${\\nabla T_{rocks}}^{\\#}$ [-]")
+        axs[k].set_xlim((
+
+            np.min(x_values_vap)*0.75,
+            np.max(x_values_vap)*1.25
+
+        ))
 
     if not y_names[k] == y_names[-1]:
         axs[k].set_yscale("log")
+
+        if print_grad_nd_nd:
+            lim_value = spc_ex_liq
+
+        else:
+            lim_value = spc_ex_gas
+
         axs[k].set_ylim((
 
-            np.min(spc_ex_liq) / 2,
-            np.max(spc_ex_liq) * 2
+            np.min(lim_value) / 2,
+            np.max(lim_value) * 2
 
         ))
 

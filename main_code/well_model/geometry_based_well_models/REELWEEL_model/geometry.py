@@ -13,6 +13,64 @@ ITERATION_TOLLS = {
 
 }
 
+class REELWELLRocksInfo:
+
+    def __init__(self, k_rocks = None, alpha_rocks = None, geo_gradient = None):
+
+        self.__k_rocks = k_rocks
+        self.__alpha_rocks = alpha_rocks
+        self.__geo_gradient = geo_gradient
+
+        self.main_class = None
+
+    @property
+    def k_rocks(self):
+
+        if self.__k_rocks is not None:
+            return self.__k_rocks
+
+        if not self.main_class.parent_class is None:
+            return self.main_class.parent_class.main_BHE.k_rocks
+
+        return None
+
+    @property
+    def alpha_rocks(self):
+
+        if self.__alpha_rocks is not None:
+            return self.__alpha_rocks
+
+        if not self.main_class.parent_class is None:
+            return self.main_class.parent_class.main_BHE.alpha_rocks
+
+        return None
+
+    @property
+    def geo_gradient(self):
+
+        if self.__geo_gradient is not None:
+            return self.__geo_gradient
+
+        if not self.main_class.parent_class is None:
+            return self.main_class.parent_class.main_BHE.geo_gradient
+
+        return None
+
+    @k_rocks.setter
+    def k_rocks(self, k_rocks_in):
+
+        self.__k_rocks = k_rocks_in
+
+    @alpha_rocks.setter
+    def alpha_rocks(self, alpha_rocks_in):
+
+        self.__alpha_rocks = alpha_rocks_in
+
+    @geo_gradient.setter
+    def geo_gradient(self, geo_gradient_in):
+
+        self.__geo_gradient = geo_gradient_in
+
 
 class REELWELLGeometry:
 
@@ -23,8 +81,7 @@ class REELWELLGeometry:
             cas_id=0.224, cas_od=0.244,
             k_insulation=0.15, ra_pipe=None,
             max_back_time=5, alpha_old = 0.5,
-            nu_modifier=1, nu_modifier_only_externally=False,
-            hot_in_tubing=False, neglect_internal_heat_transfer=True,
+            rocks_info=None, hot_in_tubing=False, neglect_internal_heat_transfer=True,
             ignore_tubing_pressure_losses=False,
             ignore_annulus_pressure_losses=False
 
@@ -104,14 +161,15 @@ class REELWELLGeometry:
 
         self.r_ins = np.log(tub_od / tub_id) / (2 * np.pi * self.k)
 
-        self.nu_mod = nu_modifier
-        self.int_nu_mod = nu_modifier
-        if nu_modifier_only_externally:
-            self.int_nu_mod = 1
-
         self.hot_in_tubing = hot_in_tubing
         self.max_back_time = max_back_time
         self.alpha_old = alpha_old
+
+        if rocks_info is None:
+            self.rocks_info = REELWELLRocksInfo()
+        else:
+            self.rocks_info = rocks_info
+        self.rocks_info.main_class = self
 
         self.neglect_internal_heat_transfer = neglect_internal_heat_transfer
         self.ignore_tubing_pressure_losses = ignore_tubing_pressure_losses
@@ -136,9 +194,9 @@ class REELWELLGeometry:
 
         if self.parent_class is not None:
 
-            k = self.parent_class.main_BHE.k_rocks
+            k = self.rocks_info.k_rocks
             time = self.parent_class.time * 3.154e+7  # 3.154e+7 is a conversion factor: [year] -> [s]
-            alpha = self.parent_class.main_BHE.alpha_rocks
+            alpha = self.rocks_info.alpha_rocks
 
             r0 = self.cas_od / 2
             td = alpha * time /  r0 ** 2
@@ -153,15 +211,11 @@ class REELWELLGeometry:
                 theta = (np.log(4 * td) - 2 * gamma)
                 f = 2 * (1 / theta - gamma / theta ** 2)
 
-            r_rocks = k * np.pi * f
+            r_rocks = r0 / (k * f)
 
-            h_ann = self.nu(
+            k_fluid = point.get_variable("k") / 1e3
+            r_fluid = self.d_hyd_ann / (self.nu(point, is_annulus=True) * k_fluid)
 
-                point, is_annulus=True,
-                nu_modifier=self.nu_mod
-
-            ) * (point.get_variable("k") / 1e3) / self.d_hyd_ann
-            r_fluid = 1 / (self.d_ann_int * h_ann)
             r_tot = r_rocks + r_fluid
 
             t_rock = self.get_t_rock(depth)
@@ -199,34 +253,24 @@ class REELWELLGeometry:
         else:
 
             dt = point_annulus.get_variable("T") - point_tubing.get_variable("T")
-            h_ann = self.nu(
 
-                point_annulus, is_annulus=True,
-                nu_modifier=self.int_nu_mod
-
-            ) * (point_annulus.get_variable("k") / 1e3) / self.d_hyd_ann
-
-            h_tub = self.nu(
-
-                point_tubing, is_annulus=False,
-                nu_modifier=self.int_nu_mod
-
-            ) * (point_tubing.get_variable("k") / 1e3) / self.d_tub
+            h_ann = self.nu(point_annulus, is_annulus=True) * (point_annulus.get_variable("k") / 1e3) / self.d_hyd_ann
+            h_tub = self.nu(point_tubing, is_annulus=False) * (point_tubing.get_variable("k") / 1e3) / self.d_tub
 
             r = (1 / (self.d_tub * h_tub) + 1 / (self.d_ann_int * h_ann)) / np.pi + self.r_ins
 
             return dt / r / 1e3
 
-    def nu(self, point, is_annulus, nu_modifier=1):
+    def nu(self, point, is_annulus):
 
         re = self.re(point, is_annulus)
         pr = point.get_variable("Pr")
 
         if type(pr) == float:
-            return (0.023 * np.power(re, 0.8) * np.power(pr, 0.4)) * nu_modifier
+            return 0.023 * np.power(re, 0.8) * np.power(pr, 0.4)
 
         else:
-            return (0.023 * np.power(re, 0.8) * np.power(0.7, 0.4)) * nu_modifier
+            return 0.023 * np.power(re, 0.8) * np.power(0.7, 0.4)
 
     def re(self, point, is_annulus):
 
@@ -403,7 +447,7 @@ class REELWELLGeometry:
 
         if depth is not None:
 
-            grad = self.parent_class.main_BHE.geo_gradient
+            grad = self.rocks_info.geo_gradient
             t_rock -= (self.parent_class.main_BHE.dz_well - depth) * grad
 
         return t_rock

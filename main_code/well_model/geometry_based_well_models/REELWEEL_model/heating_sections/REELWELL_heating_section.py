@@ -1,5 +1,5 @@
+from main_code.well_model.geometry_based_well_models.REELWEEL_model.geometry import REELWELLGeometry, REELWELLRocksInfo
 from main_code.well_model.simplified_well.heating_sections.abstract_class import AbstractHeatingSection
-from main_code.well_model.geometry_based_well_models.REELWEEL_model.geometry import REELWELLGeometry
 from main_code.support.other.integration_profiler import IntegrationProfiler
 from main_code.support.other.simple_integrator import SimpleIntegrator
 from scipy.integrate import RK45

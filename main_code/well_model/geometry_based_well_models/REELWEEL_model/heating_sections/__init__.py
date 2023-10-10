@@ -2,6 +2,7 @@ from main_code.well_model.geometry_based_well_models.REELWEEL_model.heating_sect
 
     REELWELLInclinedHeatingSection,
     REELWELLHeatingSection,
-    REELWELLGeometry
+    REELWELLGeometry,
+    REELWELLRocksInfo
 
 )
