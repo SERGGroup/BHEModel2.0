@@ -144,7 +144,12 @@ plt.show()
 
 # %%------------   SAVE IMAGE                             -----------------------------------------------------------> #
 
-current_folder = os.path.join(os.path.dirname(constants.RES_FOLDER), "2023-02-02 - Turbine OD validation")
+current_folder = os.path.join(
+
+    os.path.dirname(constants.RES_FOLDER), "0 - Older Calculations",
+    "2023-02-02 - Turbine OD validation"
+
+)
 output_directory = os.path.join(current_folder, "res")
 
 if not os.path.isdir(output_directory):

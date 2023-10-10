@@ -27,7 +27,6 @@ p_sat = CO2_input.get_variable("P")
 CO2_input.set_variable("T", T_amb + dT_appr)
 CO2_input.set_variable("P", p_sat + dp_sat / 1e3)
 
-
 def evaluate_turbine_power(
 
         co2_in, t_amb, t_grad, dz_well,
@@ -201,7 +200,12 @@ plt.show()
 
 
 # %%------------   SAVE IMAGE                             -----------------------------------------------------------> #
-current_folder = os.path.join(os.path.dirname(constants.RES_FOLDER), "2022-10-04 - HTHP")
+current_folder = os.path.join(
+
+    os.path.dirname(constants.RES_FOLDER), "0 - Older Calculations",
+    "2022-10-04 - HTHP"
+
+)
 output_directory = os.path.join(current_folder, "outputs")
 
 if not os.path.isdir(output_directory):

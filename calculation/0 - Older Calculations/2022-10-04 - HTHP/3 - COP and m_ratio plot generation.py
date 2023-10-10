@@ -111,7 +111,7 @@ result_dict.update({
         "x": t_sg_perc_list,
         "COP": COP_list,
         "m_ratio": m_ratio_list,
-        "x_label": r'$T_{{SG\ \%}}\ [-]$',
+        "x_label": r'$T_{{HE\ \%}}\ [-]$',
         "x_lim": t_perc_lim,
 
     }
@@ -298,8 +298,12 @@ plt.tight_layout(pad=2)
 plt.show()
 
 # %%------------   SAVE IMAGE                             -----------------------------------------------------------> #
+current_folder = os.path.join(
 
-current_folder = os.path.join(os.path.dirname(constants.RES_FOLDER), "2022-10-04 - HTHP")
+    os.path.dirname(constants.RES_FOLDER), "0 - Older Calculations",
+    "2022-10-04 - HTHP"
+
+)
 output_directory = os.path.join(current_folder, "outputs")
 
 if not os.path.isdir(output_directory):

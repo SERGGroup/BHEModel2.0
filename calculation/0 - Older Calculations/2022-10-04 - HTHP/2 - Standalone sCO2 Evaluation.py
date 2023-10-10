@@ -164,8 +164,12 @@ for ax in [ax_1, ax_2]:
 plt.show()
 
 # %%------------   SAVE IMAGE                             -----------------------------------------------------------> #
+current_folder = os.path.join(
 
-current_folder = os.path.join(os.path.dirname(constants.RES_FOLDER), "2022-10-04 - HTHP")
+    os.path.dirname(constants.RES_FOLDER), "0 - Older Calculations",
+    "2022-10-04 - HTHP"
+
+)
 output_directory = os.path.join(current_folder, "outputs")
 
 if not os.path.isdir(output_directory):
