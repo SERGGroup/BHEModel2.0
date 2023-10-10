@@ -2,7 +2,6 @@
 from main_code.well_model.geometry_based_well_models.REELWEEL_model import (
 
     REELWELLHeatingSection,
-    REELWELLRocksInfo,
     REELWELLGeometry,
     REELWEELBHE,
 
@@ -15,93 +14,92 @@ import numpy as np
 import os
 
 
+class RelativeNUGeometry(REELWELLGeometry):
+
+    def nu(self, point, is_annulus):
+
+        base_nu = super().nu(point=point, is_annulus=is_annulus)
+        if not is_annulus:
+
+            return base_nu
+
+        else:
+
+            return base_nu * self.nu_modifier
+
+
 # %%------------   INPUT DATA DEFINITION                  -----------------------------------------------------------> #
 #   Input data from:
 #       "Optimization-T2.2&2.3.pptx" (in "0 - Resources" Folder)
 #
 
-# Fixed Values
+# Input Conditions
 p_in = 1.0          # [MPa]
-t_surf = 15         # [C]
-c_rock = 0.900      # [kJ/(kg K)]
+t_in = 45           # [C]
+mass_flow = 8.80149 # [kg/s]
+
+# Reservoir Conditions
+t_surf = 11         # [C]
+c_rock = 0.90267    # [kJ/(kg K)]
 rho_rock = 2600     # [kg/m^3]
+k_rock = 2.423      # [W/(m K)]
+t_grad = 0.0325     # [c/m]
 
-tub_id = 0.0850     # [m]
-tub_od = 0.1400     # [m]
+# Well Geometry
+depth = 3000        # [m]
+l_horiz = 6500      # [m]
+k_ins = 0.10        # [W/(m K)]
 
-# Variable Values (fixed for me)
-mass_flow = 5       # [kg/s]
-t_in = 30           # [C]
-depth = 4000        # [m]
-l_horiz = 5000      # [m]
+tub_id = 0.1000             # [m]
+tub_od = 0.1300             # [m]
+cas_id = 0.1617             # [m]
+cas_od = cas_id + 0.015     # [m]
 
-# horizontal section specific
-k_rock_horiz = 3.0       # [W/(m K)]
-cas_od_horiz = 0.1940    # [m]
-cas_id_horiz = 0.1750    # [m]
-
-#vertical section specific
-k_rock_vert = 2.0        # [W/(m K)]
-cas_od_vert = 0.2730     # [m]
-cas_id_vert = 0.2530     # [m]
-
-# Variable Values (variable for me)
-k_ins_list = [0.01, 0.1, 0.5]   # [W/(m K)]
-t_grad = 0.0300                 # [c/m]
+nu_modifiers = [1, 0.5, 0.1, 0.01]
 
 
 # %%------------   CALCULATION                            -----------------------------------------------------------> #
-for i in range(len(k_ins_list)):
+for i in range(len(nu_modifiers)):
 
-    k_ins = k_ins_list[i]
+    nu_modifier = nu_modifiers[i]
     t_rock = t_surf + t_grad * depth
 
-    hs_geometry_vert = REELWELLGeometry(
+    hs_geometry_vert = RelativeNUGeometry(
 
         depth,
         tub_id=tub_id,
         tub_od=tub_od,
-        cas_id=cas_id_vert,
-        cas_od=cas_od_vert,
+        cas_id=cas_id,
+        cas_od=cas_od,
         k_insulation=k_ins,
         hot_in_tubing=True,
         max_back_time=4,
         alpha_old=0.5,
         neglect_internal_heat_transfer=False,
         ignore_tubing_pressure_losses=False,
-        ignore_annulus_pressure_losses=False,
-
-        rocks_info=REELWELLRocksInfo(
-
-            k_rocks=k_rock_vert
-
-        )
+        ignore_annulus_pressure_losses=False
 
     )
 
-    hs_geometry_horiz = REELWELLGeometry(
+    hs_geometry_horiz = RelativeNUGeometry(
 
         l_horiz,
         tub_id=tub_id,
         tub_od=tub_od,
-        cas_id=cas_id_vert,
-        cas_od=cas_od_vert,
+        cas_id=cas_id,
+        cas_od=cas_od,
         k_insulation=k_ins,
         hot_in_tubing=True,
         max_back_time=4,
         alpha_old=0.5,
         neglect_internal_heat_transfer=False,
         ignore_tubing_pressure_losses=False,
-        ignore_annulus_pressure_losses=False,
-
-        rocks_info=REELWELLRocksInfo(
-
-            k_rocks=k_rock_horiz
-
-        )
+        ignore_annulus_pressure_losses=False
 
     )
 
+    hs_geometry_vert.nu_modifier = nu_modifier
+    hs_geometry_horiz.nu_modifier = nu_modifier
 
     bhe_in = PlantThermoPoint(["Water"], [1])
     bhe_in.set_variable("T", t_in)
@@ -111,7 +109,7 @@ for i in range(len(k_ins_list)):
     well = REELWEELBHE(
 
         bhe_in, dz_well=depth, t_rocks=t_rock, t_surf=t_surf,
-        k_rocks=k_rock_vert, c_rocks=c_rock, rho_rocks=rho_rock,
+        k_rocks=k_rock, c_rocks=c_rock, rho_rocks=rho_rock,
         rw_geometry=hs_geometry_vert, max_iteration=20
 
     )
@@ -142,7 +140,8 @@ for i in range(len(k_ins_list)):
     t_profile_list = list()
     p_profile_list = list()
 
-    pbar = tqdm(desc="Calculate k_ins={}".format(k_ins), total=len(time_points))
+    pbar_desc = "Calculate Nu_mod={} ({} of {})".format(nu_modifier, i+1, len(nu_modifiers))
+    pbar = tqdm(desc=pbar_desc, total=len(time_points))
     for time in time_points:
 
         well.heating_section.time = time / 365
@@ -165,11 +164,12 @@ for i in range(len(k_ins_list)):
     RES_FOLDER = os.path.join(
 
         constants.CALCULATION_FOLDER, "HOCLOOP Calculation",
-        "WP2", "Task2.3", "0 - Resources", "output", "optimization"
+        "WP2", "Task2.3", "0 - Resources", "output",
+        "nu_analysis", "variable nusselt"
 
     )
 
-    file_path = os.path.join(RES_FOLDER, "optimization k_ins={}.xlsx".format(k_ins))
+    file_path = os.path.join(RES_FOLDER, "Nu fixed analysis - Nu_mod={}.xlsx".format(nu_modifier))
 
     data_exporter = {
 

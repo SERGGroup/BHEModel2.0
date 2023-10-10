@@ -61,8 +61,8 @@ for i in range(len(t_grad_list)):
         depth,
         tub_id=tub_id,
         tub_od=tub_od,
-        cas_id=cas_od_vert,
-        cas_od=cas_id_vert,
+        cas_id=cas_id_vert,
+        cas_od=cas_od_vert,
         k_insulation=k_ins,
         hot_in_tubing=True,
         max_back_time=4,
@@ -84,8 +84,8 @@ for i in range(len(t_grad_list)):
         l_horiz,
         tub_id=tub_id,
         tub_od=tub_od,
-        cas_id=cas_od_vert,
-        cas_od=cas_id_vert,
+        cas_id=cas_id_vert,
+        cas_od=cas_od_vert,
         k_insulation=k_ins,
         hot_in_tubing=True,
         max_back_time=4,
@@ -165,7 +165,7 @@ for i in range(len(t_grad_list)):
     RES_FOLDER = os.path.join(
 
         constants.CALCULATION_FOLDER, "HOCLOOP Calculation",
-        "WP2", "Task2.3", "0 - Resources", "output"
+        "WP2", "Task2.3", "0 - Resources", "output", "optimization"
 
     )
 
