@@ -6,7 +6,6 @@ from main_code.well_model.ground_models.FreeFemAnalysis import (
 )
 from main_code.support.other.excel_exporter import write_excel_sheet
 from main_code.constants import CALCULATION_FOLDER, os
-from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,7 +14,7 @@ import numpy as np
 # %%------------   DEFINE WORKING FOLDERS                 -----------------------------------------------------------> #
 calculation_folder = os.path.join(
 
-    CALCULATION_FOLDER, "Pietro PhD Thesis",
+    CALCULATION_FOLDER, "Pietro PhD Thesis", "3 - Model Description",
     "FreeFEM Calculation", "2 - Calculations",
     "res", "calculation folder"
 
@@ -23,7 +22,7 @@ calculation_folder = os.path.join(
 
 result_folder = os.path.join(
 
-    CALCULATION_FOLDER, "Pietro PhD Thesis",
+    CALCULATION_FOLDER, "Pietro PhD Thesis", "3 - Model Description",
     "FreeFEM Calculation", "2 - Calculations",
     "res", "results"
 
@@ -39,14 +38,11 @@ m_mesh = 20
 time_steps = 1000
 n_save = time_steps
 results = dict()
-Pe_list = [0, 0.1, np.power(10, -0.5), 1,  np.power(10, 0.5), 10]
+nd_grads = [0, 0.1, 1, 10]
 
-for Pe in Pe_list:
+for nd_grad in nd_grads:
 
-    if Pe == 0:
-        key = "Pe={}".format(Pe)
-    else:
-        key = "Pe=10^{}".format(np.log10(Pe))
+    key = "nd_grad={}".format(nd_grad)
 
     mo = MeshOptions(
 
@@ -58,9 +54,9 @@ for Pe in Pe_list:
 
     pdo = ProblemDefinitionOptions(
 
-        grad_rock=0., DT=DT,
+        grad_rock=nd_grad*DT, DT=DT,
         time_range=[1e-3, 1000], time_steps=time_steps,
-        n_plot=0, n_save=n_save, pe=Pe, vx=1
+        n_plot=0, n_save=n_save
 
     )
 
@@ -89,7 +85,7 @@ for Pe in Pe_list:
 
 
 # %%------------   SAVE RESULTS                           -----------------------------------------------------------> #
-file_path = os.path.join(result_folder, "3 - effect of convection.xlsx")
+file_path = os.path.join(result_folder, "2 - gradient effect.xlsx")
 keys_list = list(results.keys())
 
 dataframe = {
@@ -98,26 +94,13 @@ dataframe = {
     'value': {"unit": list(), "values": list()},
 
 }
+for nd_grad in nd_grads:
 
-
-for Pe in Pe_list:
-
-    if Pe == 0:
-        key = "Pe={}".format(Pe)
-    else:
-        key = "Pe=10^{}".format(np.log10(Pe))
-
+    key = "nd_grad={}".format(nd_grad)
     dataframe["value"]["unit"].append(key)
     dataframe["value"]["values"].append(results[key]["value"])
 
 write_excel_sheet(excel_path=file_path, sheet_name="results", data_frame=dataframe, overwrite="hard")
-
-
-# %%------------   REMOVE ERRORS                          -----------------------------------------------------------> #
-nans = np.empty(len(results['Pe=10^1.0']['value']))
-nans[:] = np.nan
-results['Pe=10^1.0']['value'][875:] = nans[875:]
-results['Pe=10^0.5']['value'][975:] = nans[975:]
 
 
 # %%------------   PLOT RESULTS                           -----------------------------------------------------------> #
@@ -126,72 +109,74 @@ fig, (ax1, ax3) = plt.subplots(1, 2, dpi=300)
 fig.set_size_inches(10, 4)
 
 ax1.set_ylabel("$f$ [-]")
-ax1.set_xscale("log")
-ax1.set_yscale("log")
-ax1.set_xlabel("$t_d$ [-]")
+ax3.set_ylabel("$df$ [-]")
 
-key = "Pe={}".format(Pe_list[0])
+for ax in [ax1, ax3]:
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel("$t_d$ [-]")
+
+ax2 = ax1.inset_axes([0.5, 0.5, 0.4, 0.4])
+x1, x2, y1, y2 = 1e2, 1e3, 2.45e-1, 3.5e-1
+ax2.set_xlim(x1, x2)
+ax2.set_ylim(y1, y2)
+ax2.set_xticklabels([])
+ax2.set_yticklabels([])
+ax1.indicate_inset_zoom(ax2, edgecolor="black")
+
+key = "nd_grad={}".format(nd_grads[0])
 time_array = results[key]["time"]
 base_value_array = np.array(results[key]["value"])
-ax1.plot(time_array, base_value_array, "--", color="black", alpha=0.6, linewidth=2, label="${}$".format(key))
+ax1.plot(time_array, base_value_array, "--", color="black", alpha=0.6, linewidth=2, label=key)
+ax2.plot(time_array, base_value_array, "--", color="black", alpha=0.6, linewidth=2)
 
-steady_state_values = list()
+last_values_diff = list()
+for nd_grad in nd_grads[1:]:
 
-for Pe in Pe_list[1:]:
-
-    key = "Pe=10^{}".format(np.log10(Pe))
-    time_array_curr = results[key]["time"]
+    key = "nd_grad={}".format(nd_grad)
     value_array = np.array(results[key]["value"])
+    diff_array = value_array - base_value_array
+    last_values_diff.append(diff_array[-1])
 
-    i = -1
-    while np.isnan(value_array[i]):
-        i -= 1
-
-    steady_state_values.append(value_array[i])
-
-    ax1.plot(time_array_curr, value_array, label="${}}}$".format(key.replace("^", "^{")))
-
-#steady_state_values[-2] = value_array[974]
-#steady_state_values[-1] = value_array[874]
+    ax3.plot(time_array, diff_array, label=key)
+    ax1.plot(time_array, value_array, label=key)
+    ax2.plot(time_array, value_array)
 
 ax1.legend(fontsize="8", loc=3)
-ax1.set_title("Effect of Natural Convection")
+ax3.legend(fontsize="8")
+ax1.set_title("Effect of Geothermal Gradient")
+ax3.set_title("Difference with No Gradient")
+plt.tight_layout(pad=2)
+plt.show()
 
-poly = PolynomialFeatures(degree=2, include_bias=False)
-poly_features = poly.fit_transform(np.array([np.log10(Pe_list[1:])]).T)
+# %%------------   ADDITIONAL PLOT                        -----------------------------------------------------------> #
 
 l_reg = LinearRegression().fit(
 
-    poly_features, np.array([np.log10(steady_state_values)]).T
+    np.array([np.log10(nd_grads[1:])]).T, np.array([np.log10(last_values_diff)]).T
 
 )
 
+fig, ax = plt.subplots()
+
+ax.plot(nd_grads[1:], last_values_diff, "-x")
+ax.set_xscale("log")
+ax.set_yscale("log")
+ax.set_ylabel("$df$ [-]")
+ax.set_xlabel("${\\nabla T_{rocks}}_{d}$ [-]")
+ax.set_title("Difference-Gradient Correlation")
+
 props = dict(boxstyle='round', facecolor='white', alpha=0.5)
-ax3.text(
+ax.text(
 
     0.05, 0.925,
-    "$log_{{10}}(f)\\ =\\ {a}{{log_{{10}}(Pe)}}^2 + {b}log_{{10}}(Pe) {c}$".format(
+    "$df\\ =\\ {C}\\ {{{{\\nabla T_{{rocks}}}}_{{d}}}}$".format(
 
-        a="{:.2f}".format(l_reg.coef_[0][0]),
-        b="{:.3f}".format(l_reg.coef_[0][1]),
-        c="{:.3f}".format(l_reg.intercept_[0])
+        C="{:.3e}".format(10 ** l_reg.intercept_[0])
 
     ),
     verticalalignment='top', bbox=props,
-    fontsize = 8, transform=ax3.transAxes
-
+    fontsize = 14, transform=ax.transAxes
 )
 
-Pe_test_array = np.logspace(-1, 1, 100)
-poly_features = poly.fit_transform(np.log10(np.array([Pe_test_array])).T)
-ax3.plot(Pe_test_array, np.power(10, l_reg.predict(poly_features)))
-
-ax3.plot(Pe_list[1:], steady_state_values, "x", color="tab:blue")
-ax3.set_xscale("log")
-ax3.set_yscale("log")
-ax3.set_ylabel("$f$ [-]")
-ax3.set_xlabel("$Pe$ [-]")
-ax3.set_title("Steady State Conditions")
-
-plt.tight_layout(pad=2)
 plt.show()

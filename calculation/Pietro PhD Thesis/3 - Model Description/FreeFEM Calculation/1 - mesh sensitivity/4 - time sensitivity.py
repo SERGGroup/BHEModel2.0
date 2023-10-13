@@ -14,7 +14,7 @@ import numpy as np
 # %%------------   DEFINE WORKING FOLDERS                 -----------------------------------------------------------> #
 calculation_folder = os.path.join(
 
-    CALCULATION_FOLDER, "Pietro PhD Thesis",
+    CALCULATION_FOLDER, "Pietro PhD Thesis", "3 - Model Description",
     "FreeFEM Calculation", "1 - mesh sensitivity",
     "res", "calculation folder"
 
@@ -22,7 +22,7 @@ calculation_folder = os.path.join(
 
 result_folder = os.path.join(
 
-    CALCULATION_FOLDER, "Pietro PhD Thesis",
+    CALCULATION_FOLDER, "Pietro PhD Thesis", "3 - Model Description",
     "FreeFEM Calculation", "1 - mesh sensitivity",
     "res", "results"
 
