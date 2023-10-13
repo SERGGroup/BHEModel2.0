@@ -638,14 +638,12 @@ print(cite_pruess - cite_both)
 # %%-------------------------------------   INIT NETWORK                        -------------------------------------> #
 @article_tree.list_values
 def article_list(current_node):
-    # return current_node.year < 2016
     return True
 
 
 @author_tree.list_values
 def author_list(current_node):
     return len(current_node.surname) > 3
-    #return True
 
 
 network = AuthorsNetwork(
