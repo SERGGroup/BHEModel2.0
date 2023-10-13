@@ -17,3 +17,4 @@ sty~=1.0.4
 tqdm~=4.64.1
 xlsxwriter
 openpyxl~=3.0.10
+pyvis
