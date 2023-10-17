@@ -384,19 +384,19 @@ class ArticleTree(BaseTree):
         # enables comparison
         # self > other
 
-        if self.title == other.title:
-            return self.citations > self.citations
+        if self.citations == other.citations:
+            return self.title > self.title
 
-        return self.title > other.title
+        return self.citations < other.citations
 
     def __lt__(self, other):
 
         # enables comparison
         # self < other
-        if self.title == other.title:
-            return self.citations < self.citations
+        if self.citations == other.citations:
+            return self.title < self.title
 
-        return self.title < other.title
+        return self.citations > other.citations
 
     def __le__(self, other):
 
@@ -655,3 +655,47 @@ network = AuthorsNetwork(
 
 network.init_network(min_connections=2)
 network.show()
+
+
+# %%-------------------------------------   PRINT ARTICLES                      -------------------------------------> #
+min_citations = -1
+@author_tree.list_values
+def author_saar_list(current_node):
+    return current_node.surname in ["Saar", "Adams", "Randolph", "Bielicki"]
+
+@article_tree.list_values
+def article_saar_list(current_node):
+
+    for author_saar in author_saar_list:
+
+        if author_saar.init_value in current_node.authors:
+
+            if current_node.citations > min_citations:
+                return True
+
+    return False
+
+# %%-------------------------------------   PRINT ARTICLES                      -------------------------------------> #
+min_citations = -1
+@author_tree.list_values
+def author_yao_list(current_node):
+    return current_node.init_value in [["F", "Sun"]]
+
+@article_tree.list_values
+def article_yao_list(current_node):
+
+    for author_yao in author_yao_list:
+
+        if author_yao.init_value in current_node.authors:
+
+            if current_node.citations > min_citations:
+                return True
+
+    return False
+
+citations = 0.
+for article in article_yao_list:
+
+    citations += article.citations
+
+print(citations)

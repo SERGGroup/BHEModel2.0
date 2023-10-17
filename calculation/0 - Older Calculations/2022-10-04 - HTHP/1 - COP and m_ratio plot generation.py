@@ -14,8 +14,8 @@ from tqdm import tqdm
 import numpy as np
 import os
 
-# %%------------   INITIALIZE CALCULATIONS                -----------------------------------------------------------> #
 
+# %%------------   INITIALIZE CALCULATIONS                -----------------------------------------------------------> #
 depth = 800     # [m]
 t_rock = 90     # [°C]
 
@@ -74,7 +74,6 @@ HTTP_dict = {
 
 
 # %%------------   CALCULATION                            -----------------------------------------------------------> #
-
 n_points = 20
 result_dict = dict()
 
@@ -215,7 +214,6 @@ result_dict.update({
 pbar.close()
 
 # %%------------   DATA PLOT                              -----------------------------------------------------------> #
-
 # Figure initialization
 fig, ax_list = plt.subplots(2, 2, dpi=150)
 fig.set_size_inches(12, 8)

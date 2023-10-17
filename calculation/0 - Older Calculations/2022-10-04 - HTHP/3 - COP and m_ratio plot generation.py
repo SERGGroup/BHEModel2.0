@@ -14,8 +14,8 @@ from tqdm import tqdm
 import numpy as np
 import os
 
-# %%------------   INITIALIZE CALCULATIONS                -----------------------------------------------------------> #
 
+# %%------------   INITIALIZE CALCULATIONS                -----------------------------------------------------------> #
 depth = 800     # [m]
 t_rock = 90     # [°C]
 
@@ -74,7 +74,6 @@ HTTP_dict = {
 
 
 # %%------------   CALCULATION                            -----------------------------------------------------------> #
-
 n_points = 20
 result_dict = dict()
 

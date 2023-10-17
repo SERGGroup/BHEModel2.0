@@ -15,15 +15,15 @@ class AbstractSurfacePlant(ABC):
         self.env_cost = 0.
         self.points = list()
 
-        self.__BHE_well_points = list()
+        self.BHE_well_points = list()
         self.__ambient_condition = None
         self.__thermo_calculated = False
 
     def append_BHE_well_points(self, BHE_output: PlantThermoPoint, BHE_input: PlantThermoPoint):
 
-        self.__BHE_well_points = list()
-        self.__BHE_well_points.append(BHE_output)
-        self.__BHE_well_points.append(BHE_input)
+        self.BHE_well_points = list()
+        self.BHE_well_points.append(BHE_output)
+        self.BHE_well_points.append(BHE_input)
 
     def append_ambient_condition(self, ambient_condition: PlantThermoPoint):
 
@@ -59,7 +59,7 @@ class AbstractSurfacePlant(ABC):
     @property
     def calculation_ready(self):
 
-        return len(self.__BHE_well_points) == 2 and self.__ambient_condition is not None
+        return len(self.BHE_well_points) == 2 and self.__ambient_condition is not None
 
     @property
     def thermo_calculated(self):
@@ -69,12 +69,12 @@ class AbstractSurfacePlant(ABC):
     @property
     def BHE_input(self):
 
-        return self.__BHE_well_points[1]
+        return self.BHE_well_points[1]
 
     @property
     def BHE_output(self):
 
-        return self.__BHE_well_points[0]
+        return self.BHE_well_points[0]
 
     @property
     def ambient(self):

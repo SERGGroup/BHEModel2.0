@@ -1,6 +1,5 @@
 import numpy as np
 
-
 def TURTON_PEC_calculator(S, K_1, K_2, K_3, B_1=1., B_2=1., F_M=1., P=1., C_1=0., C_2=0., C_3=0.):
 
     CEPCI_turton = 397

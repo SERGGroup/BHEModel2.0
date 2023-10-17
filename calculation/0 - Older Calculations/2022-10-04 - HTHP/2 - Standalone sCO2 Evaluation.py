@@ -9,6 +9,7 @@ from tqdm import tqdm
 import numpy as np
 import os
 
+
 # %%------------   INITIALIZATION AND FIRST TESTS         -----------------------------------------------------------> #
 
 hthp = StandaloneCO2HeatPump(
