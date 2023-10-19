@@ -27,7 +27,7 @@ t_in_wells = [10, 50]
 omegas = [0.5, 1, 2]
 n_temp = len(t_in_wells)
 
-n_points = 75
+n_points = 3
 depths_list = np.logspace(np.log10(250), np.log10(5000), n_points)
 grads_list = np.logspace(np.log10(25), 2, n_points)
 depths, grads = np.meshgrid(depths_list, grads_list, indexing="ij")
@@ -39,7 +39,7 @@ bhe_in.set_variable("P", bhe_in.RPHandler.PC)
 rho_crit = bhe_in.get_variable("rho")
 
 
-def update_values(depth, t_rock, t_amb, p_in, t_sc_perc):
+def update_values(depth, t_rock, t_amb, p_in, T_SG_perc_in):
 
     new_hthp = CO2HeatPumpThermo(
 
@@ -50,16 +50,44 @@ def update_values(depth, t_rock, t_amb, p_in, t_sc_perc):
 
     )
 
-    new_hthp.T_sc_perc = t_sc_perc
+    new_hthp.T_SG_perc = T_SG_perc_in
     new_hthp.calculate(calculate_thermo_only=True)
 
     return new_hthp
 
 
-def evaluate_part(i, j):
+# if __name__ == "__main__":
+#
+#     bhe_in.set_variable("T", t_in_wells[0])
+#     bhe_in.set_variable("rho", rho_crit)
+#     p_ref = bhe_in.get_variable("P")
+#     t_rocks = t_in_wells[0] + grads[0, 0] * depths[0, 0] / 1000
+#
+#     print(t_rocks)
+#     print(t_in_wells[0])
+#     print(grads[0, 0])
+#     print(depths[0, 0])
+#     print()
+#
+#     opt_hthp = update_values(
+#
+#         depth=depths[0, 0],
+#         t_rock=t_rocks,
+#         t_amb=t_in_wells[0],
+#         p_in=p_ref * 2,
+#         T_SG_perc_in=0.5
+#
+#     )
+#
+#     print(opt_hthp)
+#     print(opt_hthp.COP)
+#     print(opt_hthp.m_dot_ratio)
+
+
+def evaluate_part(i_in, j_in):
 
     rep_pos = 0
-    curr_value = i * n_points + j + 1
+    curr_value = i_in * n_points + j_in + 1
     max_digits = math.ceil(np.log10(n_points*n_temp))
     current_name = "{{:{}d}} of {{}}".format(max_digits).format(curr_value, n_points*n_temp)
 
@@ -70,61 +98,75 @@ def evaluate_part(i, j):
     sub_results = np.empty([4 * len(omegas), n_points])
     sub_results[:] = np.nan
 
-    bhe_in.set_variable("T", t_in_wells[i])
+    bhe_in.set_variable("T", t_in_wells[i_in])
     bhe_in.set_variable("rho", rho_crit)
     p_ref = bhe_in.get_variable("P")
 
+    x0 = [2, 1]
     for k in range(n_points):
 
-        t_rocks = t_in_wells[i] + grads[j, k] * depths[j, k] / 1000
+        t_rocks = t_in_wells[i_in] + grads[j_in, k] * depths[j_in, k] / 1000
 
-        def opt_func(x, omega=(1,)):
+        base_hthp = update_values(
 
-            p_curr = p_ref * x[0]
-            base_hthp = update_values(
+            depth=depths[j_in, k],
+            t_rock=t_rocks,
+            t_amb=t_in_wells[i_in],
+            p_in=p_ref * x0[0],
+            T_SG_perc_in=x0[1]
 
-                depth=depths[j, k],
-                t_rock=t_rocks,
-                t_amb=t_in_wells[i],
-                p_in=p_curr,
-                t_sc_perc=x[1]
+        )
 
-            )
+        if base_hthp.m_dot_ratio > 0:
 
-            return 1 / (20 * base_hthp.m_dot_ratio) + omega * 3 / base_hthp.COP
+            def opt_func(x, omega=(1,)):
 
-        x0 = [2, 0.5]
-        for n in range(len(omegas)):
+                base_hthp = update_values(
 
-            res = minimize(opt_func, np.array(x0), args=[n], bounds=[(None, None), (0, 1)])
-            opt_res = -res.fun
-            opt_res_x = res.x[0]
+                    depth=depths[j_in, k],
+                    t_rock=t_rocks,
+                    t_amb=t_in_wells[i_in],
+                    p_in=p_ref * x[0],
+                    T_SG_perc_in=x[1]
 
-            res_test = -opt_func([0.9999, res.x[1]], omega=(n,))
-            if res_test > opt_res:
-                opt_res_x = [0.9999, res.x[1]]
-                opt_res = res_test
+                )
 
-            res_test = -opt_func([1.00001, res.x[1]], omega=(n,))
-            if res_test > opt_res:
-                opt_res_x = [1.00001, res.x[1]]
+                min_value = 1 / (20 * base_hthp.m_dot_ratio) + omega[0] * 3 / base_hthp.COP
+                return abs(min_value)
 
-            opt_hthp = update_values(
+            for n in range(len(omegas)):
 
-                depth= depths[j, k],
-                t_rock= t_rocks,
-                t_amb= t_in_wells[i],
-                p_in= p_ref * opt_res_x[0],
-                t_sc_perc= opt_res_x[1]
+                res = minimize(opt_func, np.array(x0), args=[n], bounds=[(None, None), (0, 1)])
+                opt_res = -res.fun
+                opt_res_x = res.x
 
-            )
+                if res.success:
 
-            sub_results[n, k] = opt_res_x[0]
-            sub_results[n + 3, k] = opt_res_x[1]
-            sub_results[n + 6, k] = opt_hthp.COP
-            sub_results[n + 9, k] = opt_hthp.m_dot_ratio
+                    res_test = -opt_func([0.9999, res.x[1]], omega=(n,))
+                    if res_test > opt_res:
+                        opt_res_x = [0.9999, res.x[1]]
+                        opt_res = res_test
 
-        gc.collect()
+                    res_test = -opt_func([1.00001, res.x[1]], omega=(n,))
+                    if res_test > opt_res:
+                        opt_res_x = [1.00001, res.x[1]]
+
+                    opt_hthp = update_values(
+
+                        depth=depths[j_in, k],
+                        t_rock=t_rocks,
+                        t_amb=t_in_wells[i_in],
+                        p_in=p_ref * opt_res_x[0],
+                        T_SG_perc_in=opt_res_x[1]
+
+                    )
+
+                    results = [opt_res_x[0], opt_res_x[1], opt_hthp.COP, opt_hthp.m_dot_ratio]
+                    for m in range(len(results)):
+
+                        sub_results[n + m * len(omegas), k] = results[m]
+
+            gc.collect()
 
         if k / n_points > reporting_points[rep_pos]:
 
@@ -141,8 +183,8 @@ def evaluate_part(i, j):
 
             rep_pos += 1
 
-    filename = os.path.join(support_folder, base_filename.format(i=i, j=j))
-    np.save(filename, sub_results)
+    curr_filename = os.path.join(support_folder, base_filename.format(i=i_in, j=j_in))
+    np.save(curr_filename, sub_results)
 
     time_elapsed = time.time() - sub_start
 

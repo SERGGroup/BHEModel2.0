@@ -38,8 +38,9 @@ class CO2HeatPumpThermo(AbstractPythonHTHP):
 
         self.T_SG_perc = 0.5  # Value to be optimized that control the temperature of the sCO2 (Limited Between 0-1)
         self.dT_SG_pinch = 8  # Temperature difference between water and sCO2 in the SG heat exchanger [°C]
-        self.P_CO2_max = 100  # Maximum CO2 pressure allowed in the system [MPa] (overestimated to extend the optimization range)
-        self.rho_in = 800     # BHE input density [kg/m3]
+        self.P_CO2_max = 50   # Maximum CO2 pressure allowed in the system [MPa] (overestimated to extend the optimization range)
+
+        self.rho_in = self.BHE_input.get_variable("rho")     # BHE input density [kg/m3]
 
         self.__init_fixed_parameters()
         self.__init_points()
@@ -132,7 +133,6 @@ class CO2HeatPumpThermo(AbstractPythonHTHP):
         # STEP - 2
         # P_SG_HE evaluation (5% more than the saturation pressure for the selected temperature or, in case, more than
         # the critical pressure, in order to assure liquid condition) - Point 6 used as a abstract_classes point
-
         if T_SG_HE_out < self.points[5].RPHandler.TC:
 
             self.points[6].set_variable("T", T_SG_HE_out)
@@ -209,13 +209,27 @@ class CO2HeatPumpThermo(AbstractPythonHTHP):
 
     def __evaluate_flow_rates(self):
 
-        steam_water_flow_ratio = self.points[8].get_variable("x")
+        if 0 < self.points[8].get_variable("x") < 1:
+            steam_water_flow_ratio = self.points[8].get_variable("x")
+
+        elif self.points[8].get_variable("T") > self.points[5].get_variable("T"):
+            steam_water_flow_ratio = 1
+
+        else:
+            steam_water_flow_ratio = -1
 
         dh_CO2 = self.points[1].get_variable("h") - self.points[2].get_variable("h")
         dh_water = self.points[7].get_variable("h") - self.points[6].get_variable("h")
-
         self.steam_CO2_flow_ratio = dh_CO2 / dh_water * steam_water_flow_ratio
-        self.m_BHE = self.m_steam / self.steam_CO2_flow_ratio
+
+        if self.steam_CO2_flow_ratio == 0:
+
+            self.m_BHE = 99999999999999999
+
+        else:
+
+            self.m_BHE = self.m_steam / self.steam_CO2_flow_ratio
+
         self.m_dot_ratio_real = self.m_steam / self.m_BHE
         self.m_dot_ratio = 2.45 * self.m_steam / self.m_BHE
 
