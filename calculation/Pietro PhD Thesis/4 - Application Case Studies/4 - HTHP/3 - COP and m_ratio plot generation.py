@@ -87,7 +87,7 @@ range_eva_list = np.linspace(range_lim[0], range_lim[1], n_points)
 pbar = tqdm(desc="calculation", total=n_points * len(HTTP_dict.keys()))
 
 # 1 - Direct sCO2 Heat Pump
-key = "1) Direct sCO2 Heat Pump"
+key = "A) Direct sCO2 Heat Pump"
 HTTP = HTTP_dict[key]
 
 COP_list = list()
@@ -110,7 +110,7 @@ result_dict.update({
         "x": t_sg_perc_list,
         "COP": COP_list,
         "m_ratio": m_ratio_list,
-        "x_label": r'$T_{{SG\ \%}}\ [-]$',
+        "x_label": r'$T_{{HE\ \%}}\ [-]$',
         "x_lim": t_perc_lim,
 
     }
@@ -118,7 +118,7 @@ result_dict.update({
 })
 
 # 2 - Direct Steam Generation
-key = "2) Direct Steam Generation"
+key = "B) Direct Steam Generation"
 HTTP = HTTP_dict[key]
 
 COP_list = list()
@@ -149,7 +149,7 @@ result_dict.update({
 })
 
 # 3 - Indirect Water Heat Pump - nPentane
-key = "3) Indirect Water Heat Pump\nnPentane"
+key = "C) Indirect Water Heat Pump\nnPentane"
 HTTP = HTTP_dict[key]
 
 COP_list = list()
@@ -180,7 +180,7 @@ result_dict.update({
 })
 
 # 4 - Indirect Water Heat Pump - Water
-key = "4) Indirect Water Heat Pump\nWater"
+key = "D) Indirect Water Heat Pump\nWater"
 HTTP = HTTP_dict[key]
 range_eva_list = np.linspace(5, 35, 20)
 
@@ -214,6 +214,7 @@ result_dict.update({
 pbar.close()
 
 # %%------------   DATA PLOT                              -----------------------------------------------------------> #
+
 # Figure initialization
 fig, ax_list = plt.subplots(2, 2, dpi=150)
 fig.set_size_inches(12, 8)

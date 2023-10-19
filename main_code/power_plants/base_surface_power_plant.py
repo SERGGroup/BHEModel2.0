@@ -49,7 +49,7 @@ class BaseSurfacePlant(AbstractSurfacePlant):
         self.w_dot = self.points[0].get_variable("H") - self.points[-1].get_variable("H")
         self.ex_dot = self.w_dot - t_amb_k * (self.points[0].get_variable("S") - self.points[-1].get_variable("S"))
 
-        if (not (self.w_dot < 0 or self.ex_dot < 0)) and (not self.points[0].get_variable("H") < -1e6):
+        if (not (self.w_dot <= 0 or self.ex_dot <= 0)) and (not self.points[0].get_variable("H") < -1e6):
 
             cf = 1 -  t_amb_k / (self.bhe_well.t_rocks + 273.15)
 

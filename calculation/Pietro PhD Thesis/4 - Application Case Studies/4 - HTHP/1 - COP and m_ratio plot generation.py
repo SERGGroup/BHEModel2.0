@@ -8,19 +8,16 @@ from main_code.power_plants.HTHP.subclasses.GEO_heat_pump_py import (
 from main_code.power_plants.HTHP.subclasses.CO2_heat_pump_py import CO2HeatPumpThermo
 from main_code.support.other.matplolib_stiles import BASE_COLORS, format_title_from_key
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
-from main_code import constants
+from main_code.constants import CALCULATION_FOLDER, os
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import numpy as np
-import os
 
 
 # %%------------   INITIALIZE CALCULATIONS                -----------------------------------------------------------> #
 depth = 800     # [m]
 t_rock = 90     # [°C]
-
 p_steam = 1     # [MPa]
-
 t_in_BHE = 20   # [°C]
 
 tmp_co2 = PlantThermoPoint(["CarbonDioxide"], [1])
@@ -36,7 +33,7 @@ t_in_BHE_h20 = tmp_h2o.get_variable("P") + 0.1
 
 HTTP_dict = {
 
-    "A) Direct sCO2 Heat Pump": CO2HeatPumpThermo(
+    "1) Direct sCO2 Heat Pump": CO2HeatPumpThermo(
 
         P_steam=p_steam,
         BHE_depth=depth, T_rock=t_rock,
@@ -44,7 +41,7 @@ HTTP_dict = {
 
     ),
 
-    "B) Direct Steam Generation": DirectWaterHeatPumpThermo(
+    "2) Direct Steam Generation": DirectWaterHeatPumpThermo(
 
         P_steam=p_steam,
         BHE_depth=depth, T_rock=t_rock,
@@ -52,7 +49,7 @@ HTTP_dict = {
 
     ),
 
-    "C) Indirect Water Heat Pump\nnPentane": WaterHeatPumpThermo(
+    "3) Indirect Water Heat Pump\nnPentane": WaterHeatPumpThermo(
 
         P_steam=p_steam,
         BHE_depth=depth, T_rock=t_rock,
@@ -61,7 +58,7 @@ HTTP_dict = {
 
     ),
 
-    "D) Indirect Water Heat Pump\nWater": WaterHeatPumpThermo(
+    "4) Indirect Water Heat Pump\nWater": WaterHeatPumpThermo(
 
         P_steam=p_steam,
         BHE_depth=depth, T_rock=t_rock,
@@ -99,7 +96,7 @@ for t_sg_perc in t_sg_perc_list:
     HTTP.calculate(calculate_thermo_only=True)
 
     COP_list.append(HTTP.COP)
-    m_ratio_list.append(HTTP.m_dot_ratio)
+    m_ratio_list.append(2.45*HTTP.m_dot_ratio)
 
     pbar.update(1)
 
@@ -213,6 +210,7 @@ result_dict.update({
 
 pbar.close()
 
+
 # %%------------   DATA PLOT                              -----------------------------------------------------------> #
 # Figure initialization
 fig, ax_list = plt.subplots(2, 2, dpi=150)
@@ -295,11 +293,12 @@ for key in HTTP_dict.keys():
 plt.tight_layout(pad=2)
 plt.show()
 
+
 # %%------------   SAVE IMAGE                             -----------------------------------------------------------> #
 current_folder = os.path.join(
 
-    os.path.dirname(constants.RES_FOLDER), "0 - Older Calculations",
-    "2022-10-04 - HTHP"
+    CALCULATION_FOLDER, "Pietro PhD Thesis",
+    "4 - Application Case Studies", "4 - HTHP"
 
 )
 output_directory = os.path.join(current_folder, "outputs")

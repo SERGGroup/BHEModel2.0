@@ -2,6 +2,7 @@
 from main_code.constants import CALCULATION_FOLDER, os
 import matplotlib.pyplot as plt
 import numpy as np
+import copy
 
 
 # %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
@@ -28,12 +29,12 @@ res_shape = results.shape
 n_points = res_shape[-1]
 n_temp = res_shape[1]
 
-# error_max = np.where(results[5] > 1)
-# error_zeros = np.where(results[5] <= 0.2)
-#
-# for i in range(6):
-#     results[i][error_max] = np.nan
-#     results[i][error_zeros] = np.nan
+error_max = np.where(results[5] > 1)
+error_zeros = np.where(results[5] <= 0.2)
+
+for i in range(6):
+    results[i][error_max] = np.nan
+    results[i][error_zeros] = np.nan
 
 
 # %%-------------------------------------   PLOT LINES                          -------------------------------------> #
@@ -62,16 +63,62 @@ plt.show()
 
 # %%-------------------------------------   PLOT CONTOURS                       -------------------------------------> #
 fig, axs = plt.subplots(1, 2, dpi=300)
-fig.set_size_inches(10, 5)
+fig.set_size_inches(10, 4)
 
-i = 1
-k = 0
+i = 0
+k = 2
+titles = ["Optimal $P_{mod}$ [-]"]
 k_mod = [0, 3]
+n_levels = 20
+
+if k < 2:
+
+    base_level = np.linspace(1, 5, n_levels)
+
+    if k == 0:
+        titles.append("Optimal Work Extraction [kJ/kg]")
+
+    else:
+        titles.append("Optimal Exergy Extraction [kJ/kg]")
+
+else:
+
+    titles.append("Optimal Efficiency [-]")
+    base_level = np.linspace(
+
+        np.nanmin(results[k, i]),
+        np.nanmax(results[k, i]),
+        n_levels
+
+    )
+
+levels = [
+
+    base_level,
+    np.linspace(
+
+        np.nanmin(results[k + 3, i]),
+        np.nanmax(results[k + 3, i]),
+        n_levels
+
+    )
+
+]
+
+norm = plt.Normalize(0, 1)
+cmap_copy = copy.copy(plt.cm.viridis_r)
+
 for n in range(2):
 
-    axs[n].contourf(depths, grads, results[k + k_mod[n], i], extend='both')
+    cs = axs[n].contourf(depths, grads, results[k + k_mod[n], i], levels=levels[n], extend='both', cmap=cmap_copy)
+    fig.colorbar(cs, ax=axs[n], orientation='vertical')
+
+    axs[n].set_xlabel("Depth [m]")
+    axs[n].set_ylabel("Gradient [°C/km]")
+    axs[n].set_title(titles[n])
     axs[n].set_xscale("log")
-    axs[n].set_xlim((200, 10000))
+    axs[n].set_xlim((500, 5000))
     axs[n].set_ylim((25, 100))
 
+plt.tight_layout(pad=2)
 plt.show()
