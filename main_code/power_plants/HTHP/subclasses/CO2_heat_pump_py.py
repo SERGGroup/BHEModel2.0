@@ -216,7 +216,8 @@ class CO2HeatPumpThermo(AbstractPythonHTHP):
 
         self.steam_CO2_flow_ratio = dh_CO2 / dh_water * steam_water_flow_ratio
         self.m_BHE = self.m_steam / self.steam_CO2_flow_ratio
-        self.m_dot_ratio = self.m_steam / self.m_BHE
+        self.m_dot_ratio_real = self.m_steam / self.m_BHE
+        self.m_dot_ratio = 2.45 * self.m_steam / self.m_BHE
 
         # set flow rates to points
 
@@ -795,7 +796,8 @@ class StandaloneCO2HeatPump(CO2HeatPumpThermo):
         self.m_dot_HTHP = self.m_BHE
 
         self.m_BHE = self.m_dot_HTHP + self.m_dot_turb_LP
-        self.m_dot_ratio = self.m_steam / self.m_BHE
+        self.m_dot_ratio_real = self.m_steam / self.m_BHE
+        self.m_dot_ratio = 2.45 * self.m_steam / self.m_BHE
 
         # set flow rates to points
 
