@@ -119,6 +119,11 @@ class PlantThermoPoint(ThermodynamicPoint):
 
             return dh - (T_ref + 273.15) * ds
 
+    @property
+    def is_bifase(self):
+
+        return 0 < self.get_variable("Q") < 1
+
     def __str__(self):
 
         class Formats:

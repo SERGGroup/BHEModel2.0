@@ -70,7 +70,7 @@ class BaseSurfacePlant(AbstractSurfacePlant):
 
 class BaseCO2HTHP(AbstractSurfacePlant):
 
-    def __init__(self, bhe_well, p_steam, q_rel=0, p_max=50):
+    def __init__(self, bhe_well, p_steam, q_rel=0, p_max=50, fix_max_pressure=False):
 
         super().__init__()
         self.bhe_well = bhe_well
@@ -84,6 +84,7 @@ class BaseCO2HTHP(AbstractSurfacePlant):
         self.eta_pump = 0.8
         self.dt_he = 8
 
+        self.fix_max_pressure = fix_max_pressure
         self.is_p_max_limited = False
         self.is_physical = True
 
@@ -127,6 +128,10 @@ class BaseCO2HTHP(AbstractSurfacePlant):
         self.points[9].set_variable("P", self.p_steam)
         self.points[9].set_variable("x", 1)
 
+        # Point 6 - Circulation Pump Output
+        p_water = self.points[5].RPHandler.PC
+        self.points[6].set_to_compression_result(p_water, self.eta_pump, input_state=self.points[5])
+
     def prepare_calculation(self):
 
         self.bhe_well.update_simplified()
@@ -142,14 +147,56 @@ class BaseCO2HTHP(AbstractSurfacePlant):
 
     def thermo_analysis(self):
 
+        if not self.fix_max_pressure:
+
+            self.__thermo_analysis_base()
+
+        else:
+
+            self.__thermo_analysis_fixed()
+
+        self.is_physical = self.points[6].get_variable("T") < self.points[2].get_variable("T")
+        self.__evaluate_flow_rates()
+        self.__calculate_power()
+
+    def __thermo_analysis_fixed(self):
+
+        # STEP - 1
+        # Calculate point 2
+        self.points[2].set_variable("P", self.p_max)
+        self.points[2].set_variable("T", self.points[6].get_variable("T") + self.dt_he)
+
+        # STEP - 2
+        # Calculate Iterate p_down BHE
+        p_down, t_goal = self.__iterate_p_down()
+        self.points[3].set_to_expansion_result(p_down, self.eta_turb, self.points[2])
+
+        self.points[4].set_variable("T", t_goal)
+        self.points[4].set_variable("p", p_down)
+
+        self.points[4].copy_state_to(self.bhe_well.points[0])
+        self.bhe_well.update_simplified()
+
+        self.bhe_well.points[-1].copy_state_to(self.points[0])
+
+        # STEP - 3
+        # Evaluate point 1
+        self.points[1].set_to_compression_result(self.p_max, self.eta_comp, self.points[0])
+
+        # Point 7 - Water Main HE Output
+        self.points[7].set_variable("T", self.points[1].get_variable("T") - self.dt_he)
+        self.points[7].set_variable("P", self.points[6].get_variable("P"))
+
+        # Point 8 - Lamination Valve Output
+        self.points[8].set_variable("h", self.points[7].get_variable("h"))
+        self.points[8].set_variable("P", self.p_steam)
+
+    def __thermo_analysis_base(self):
+
         # STEP - 1
         # Calculate point 3 given q_rel
         self.points[3].set_variable("P", self.points[4].get_variable("P"))
         self.points[3].set_variable("H", self.points[4].get_variable("H") - self.q_rel)
-
-        # Point 6 - Circulation Pump Output
-        p_water = self.points[5].RPHandler.PC
-        self.points[6].set_to_compression_result(p_water, self.eta_pump, input_state=self.points[5])
 
         # STEP - 2
         # Iterate point 2 and retrieve pressure
@@ -163,15 +210,11 @@ class BaseCO2HTHP(AbstractSurfacePlant):
 
         # Point 7 - Water Main HE Output
         self.points[7].set_variable("T", self.points[1].get_variable("T") - self.dt_he)
-        self.points[7].set_variable("P", p_water)
+        self.points[7].set_variable("P", self.points[6].get_variable("P"))
 
         # Point 8 - Lamination Valve Output
         self.points[8].set_variable("h", self.points[7].get_variable("h"))
         self.points[8].set_variable("P", self.p_steam)
-
-        self.is_physical = self.points[6].get_variable("T") < self.points[2].get_variable("T")
-        self.__evaluate_flow_rates()
-        self.__calculate_power()
 
     def __evaluate_flow_rates(self):
 
@@ -318,6 +361,45 @@ class BaseCO2HTHP(AbstractSurfacePlant):
                 break
 
         return p_mean, t_mean
+
+    def __iterate_p_down(self):
+
+        # iteration uses bisection method for speed, P_up initial is p_max P_down initial is 0.01.
+        t_goal = self.points[4].get_variable("T")
+
+        toll = 1e-15
+        error = 10 * toll
+        self.iter = 0
+        p_in_limit = [0.01, self.p_max]
+        p_mean = sum(p_in_limit) / 2
+        tmp_exp_point = self.points[2].duplicate()
+        tmp_out_point = self.points[2].duplicate()
+
+        while error > toll:
+
+            tmp_exp_point.set_to_expansion_result(p_mean, self.eta_turb, self.points[2])
+            tmp_out_point.set_variable("P", p_mean)
+            tmp_out_point.set_variable("H", tmp_exp_point.get_variable("H") + self.q_rel)
+
+            t_res = tmp_out_point.get_variable("T")
+
+            if t_res < t_goal:
+
+                p_in_limit[0] = p_mean
+
+            else:
+
+                p_in_limit[1] = p_mean
+
+            error = abs(t_res - t_goal)
+            p_mean = sum(p_in_limit) / 2
+
+            self.iter += 1
+
+            if self.iter > 200:
+                break
+
+        return p_mean, t_goal
 
     def economic_analysis(self):
         pass

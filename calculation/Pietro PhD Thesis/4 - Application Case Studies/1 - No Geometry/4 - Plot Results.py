@@ -65,7 +65,7 @@ plt.show()
 fig, axs = plt.subplots(1, 2, dpi=300)
 fig.set_size_inches(10, 4)
 
-i = 0
+i = 1
 k = 2
 titles = ["Optimal $P_{mod}$ [-]"]
 k_mod = [0, 3]
