@@ -13,7 +13,7 @@ n_depth = 3
 n_t_rel = 40
 n_p_rel = 40
 
-p_rel_list = np.logspace(0.5, 2, n_p_rel)
+p_rel_list = np.logspace(0, 2, n_p_rel)
 t_rel_list = np.linspace(0.5, 2, n_t_rel)
 
 # p_rel_list = [1, 10**1, 10**2]
@@ -42,7 +42,7 @@ result_folder = os.path.join(
 support_folder = os.path.join(result_folder, "support")
 
 base_filename = "res_{key}_{a}_{i}.npy"
-reporting_points = [0.05, 0.25, 0.5, 0.75, 1]
+reporting_points = [0.01, 0.05, 0.25, 0.5, 0.75, 1]
 
 
 def init_result_dict(res_shape):
@@ -176,6 +176,8 @@ def evaluate_points(a_curr, i_curr):
     time_elapsed = time.time() - sub_start
 
     print("{} - Done! -> {:.0f}s ({:.0f}min) elapsed".format(current_name, time_elapsed, time_elapsed / 60))
+
+    return time_elapsed
 
 
 if __name__ == '__main__':
