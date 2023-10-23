@@ -10,7 +10,7 @@ result_folder = os.path.join(
 
     CALCULATION_FOLDER, "Pietro PhD Thesis",
     "2 - Theoretical Analysis", "2 - Real Gas Systems",
-    "0.support res"
+    "0.support"
 
 )
 

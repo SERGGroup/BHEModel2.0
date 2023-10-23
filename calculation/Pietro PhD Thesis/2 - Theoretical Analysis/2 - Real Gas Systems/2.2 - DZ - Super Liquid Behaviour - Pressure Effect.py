@@ -5,12 +5,12 @@ import matplotlib.pyplot as plt
 import scipy.constants
 from tqdm import tqdm
 import numpy as np
+import gc
 
 
 # %%-------------------------------------   INIT ARRAYS                         -------------------------------------> #
 n_grad = 350
 n_depth = 5
-n_t_rel = 3
 
 grad_nd_nd_list = np.logspace(-2, 4.5, n_grad)
 dz_nd_list = np.logspace(-2, 0, n_depth)
@@ -41,6 +41,7 @@ res_shape = np.append([len(p_rel_list), len(t_rel_list)], base_shape)
 grad_nd_rocks = np.empty(res_shape)
 grad_rocks = np.empty(res_shape)
 depth = np.empty(res_shape)
+alpha_in = np.empty(res_shape)
 t_rocks = np.empty(res_shape)
 w_dot_nds = np.empty(res_shape)
 ex_dot_nds = np.empty(res_shape)
@@ -51,6 +52,7 @@ w_dex_maxs = np.empty(res_shape)
 grad_nd_rocks[:] = np.nan
 grad_rocks[:] = np.nan
 depth[:] = np.nan
+alpha_in[:] = np.nan
 t_rocks[:] = np.nan
 w_dot_nds[:] = np.nan
 ex_dot_nds[:] = np.nan
@@ -86,18 +88,24 @@ for a in range(len(p_rel_list)):
         gamma_in = in_state.get_variable("CP/CV")
         v_in = 1 / in_state.get_variable("rho")
         cp_in = in_state.get_variable("cp")
-        alpha_in = cp_in * (1 - 1 / gamma_in) / (v_in * dpdt_in)
-
-        grad_nd_rocks[a, i, :, :] = grad_nd_nd + alpha_in
-        grad_rocks[a, i, :, :] = grad_nd_rocks[a, i, :, :] * scipy.constants.g / in_state.get_variable("cp")
         depth[a, i, :, :] = dz_nd * in_state.get_variable("cp") * t_in / scipy.constants.g
-        t_rocks[a, i, :, :] = t_in + depth[a, i, :, :] * grad_rocks[a, i, :, :]
 
         bhe_sub_list = list()
-        for j in range(len(grad_nd_nd_list)):
+        for k in range(len(dz_nd_list)):
+
+            bhe = SimplifiedBHE(bhe_in, dz_well=depth[a, i, 0, k], t_rocks=50)
+            bhe.update()
+
+            t_input = bhe.points[0].get_variable("T")
+            t_down = bhe.points[1].get_variable("T")
+            alpha_in[a, i, :, k] = cp_in * (t_down - t_input) / (scipy.constants.g * depth[a, i, 0, k])
+
+            grad_nd_rocks[a, i, :, k] = grad_nd_nd[:, k] + alpha_in[a, i, :, k]
+            grad_rocks[a, i, :, k] = grad_nd_rocks[a, i, :, k] * scipy.constants.g / in_state.get_variable("cp")
+            t_rocks[a, i, :, k] = t_in + depth[a, i, :, k] * grad_rocks[a, i, :, k]
 
             bhe_subsub_list = list()
-            for k in range(len(dz_nd_list)):
+            for j in range(len(grad_nd_nd_list)):
 
                 bhe = SimplifiedBHE(bhe_in, dz_well=depth[a, i, j, k], t_rocks=t_rocks[a, i, j, k]-273.15)
                 bhe.update()
@@ -132,11 +140,11 @@ for a in range(len(p_rel_list)):
                     w_dex_maxs[a, i, j, k] = (states[3].get_variable("H") - surface_states[1].get_variable("H")) / w_dot
 
                 pbar.update(1)
-
             bhe_sub_list.append(bhe_subsub_list)
+            gc.collect()
+
         bhe_semi_list.append(bhe_sub_list)
     bhe_list.append(bhe_semi_list)
-
 pbar.close()
 
 
@@ -146,7 +154,7 @@ fig.set_size_inches(10, 5)
 cmap = plt.get_cmap('viridis')
 norm = plt.Normalize(0, 1)
 dz_label = "${{\\Delta z}}^{{\\#}} = 10^{{ {:0.1f} }}$"
-line_styles = ["-", "--", "-."]
+line_styles = ["-", "--", "-.", "-"]
 w_dot_rel = w_dot_nds / spc_work_liq
 dw_dot_rel = w_dot_rel[:, 1:, :] - w_dot_rel[:, :-1, :]
 
@@ -154,11 +162,12 @@ for i in range(len(t_rel_list[:])):
 
     lines = list()
     for k in range(len(dz_nd_list)):
+
         lines.append(
 
             ax.plot(
 
-                grad_nd_nd[:-1, k], dw_dot_rel[a, i, :, k], line_styles[i],
+                grad_nd_rocks[a, i, :, k], w_dot_nds[a, i, :, k], line_styles[i],
                 label=dz_label.format(np.log10(dz_nd_list[k])),
                 color=cmap(norm((k + 1) / (len(dz_nd_list) + 1)))
 
@@ -166,13 +175,29 @@ for i in range(len(t_rel_list[:])):
 
         )
 
-ax.set_ylim((-np.nanmax(dw_dot_rel)*1.25, np.nanmax(dw_dot_rel)*1.25))
-ax.set_xlim((0.75 * 10 ** -2, 1.25 * 10 ** 4))
+        ax.plot(
+
+            grad_nd_nd[:, k], spc_work_liq[:, k], line_styles[i],
+            label=dz_label.format(np.log10(dz_nd_list[k])),
+            color=cmap(norm((k + 1) / (len(dz_nd_list) + 1)))
+
+        )
+
+        ax.plot(
+
+            grad_nd_nd[:, k] + 1, spc_work_gas[:, k], line_styles[i],
+            label=dz_label.format(np.log10(dz_nd_list[k])),
+            color=cmap(norm((k + 1) / (len(dz_nd_list) + 1)))
+
+        )
+
+# ax.set_ylim((-np.nanmax(dw_dot_rel)*1.25, np.nanmax(dw_dot_rel)*1.25))
+# ax.set_xlim((0.75 * 10 ** -2, 1.25 * 10 ** 4))
 ax.set_xscale("log")
+ax.set_yscale("log")
 ax.set_ylabel("d(${\\dot{w}}^{\\#}$ / ${{\\dot{w}}^{\\#}}_{liq}$) [-]")
 ax.set_xlabel("${\\nabla T_{rocks}}^{\\# \\#}$ [-]")
 ax.legend(handles=lines, fontsize="12")
-ax.set_xscale("log")
 plt.show()
 
 
