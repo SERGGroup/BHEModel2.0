@@ -4,7 +4,6 @@ from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
 from main_code.constants import CALCULATION_FOLDER, os
 from scipy.optimize import minimize
 import concurrent.futures
-import multiprocessing
 import numpy as np
 import math
 import time

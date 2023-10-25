@@ -84,16 +84,21 @@ for i in range(len(t_rel_list)):
     cp_in = in_state.get_variable("cp")
     alpha_in = cp_in * (1 - 1 / gamma_in) / (v_in * dpdt_in)
 
-    grad_nd_rocks[i, :, :] = grad_nd_nd + alpha_in
-    grad_rocks[i, :, :] = grad_nd_rocks[i, :, :] * scipy.constants.g / in_state.get_variable("cp")
     depth[i, :, :] = dz_nd * in_state.get_variable("cp") * t_in / scipy.constants.g
     t_rocks[i, :, :] = t_in + depth[i, :, :] * grad_rocks[i, :, :]
 
     bhe_sub_list = list()
-    for j in range(len(grad_nd_nd_list)):
+    for k in range(len(dz_nd_list)):
+
+        bhe = SimplifiedBHE(bhe_in, dz_well=depth[i, 0, k], t_rocks=50)
+        bhe.update()
+
+        alpha_in = cp_in * (bhe.points[1].get_variable("T") - bhe.points[0].get_variable("T")) / (scipy.constants.g * depth[i, 0, k])
+        grad_nd_rocks[i, :, k] = grad_nd_nd[:, k] + alpha_in
+        grad_rocks[i, :, k] = grad_nd_rocks[i, :, k] * scipy.constants.g / in_state.get_variable("cp")
 
         bhe_subsub_list = list()
-        for k in range(len(dz_nd_list)):
+        for j in range(len(grad_nd_nd_list)):
 
             bhe = SimplifiedBHE(bhe_in, dz_well=depth[i, j, k], t_rocks=t_rocks[i, j, k]-273.15)
             bhe.update()
@@ -116,7 +121,7 @@ for i in range(len(t_rel_list)):
             ex_dot = w_dot - states[0].get_variable("T") * (states[3].get_variable("S") - states[0].get_variable("S"))
             ex_dot_nd = ex_dot / (states[0].get_variable("CP") * states[0].get_variable("T"))
 
-            if (not (w_dot < 0 or ex_dot < 0)) and (not states[-1].get_variable("H") < -1e6):
+            if True: # (not (w_dot < 0 or ex_dot < 0)) and (not states[-1].get_variable("H") < -1e6):
 
                 cf = 1 - states[0].get_variable("T") / states[2].get_variable("T")
 
@@ -135,9 +140,21 @@ for i in range(len(t_rel_list)):
 
 pbar.close()
 
+# %%-------------------------------------   REMOVE WRONG VALUES                 -------------------------------------> #
+for i in range(len(t_rel_list)):
+
+    for k in range(len(dz_nd_list)):
+
+        wrong_indices = np.where(eta_exs[i, :, k] < 0)
+        w_dot_nds[i, wrong_indices, k] = np.nan
+        ex_dot_nds[i, wrong_indices, k] = np.nan
+        eta_exs[i, wrong_indices, k] = np.nan
+        w_dex_mins[i, wrong_indices, k] = np.nan
+        w_dex_maxs[i, wrong_indices, k] = np.nan
+
 
 # %%-------------------------------------   PLOT INITIAL COMPARISON             -------------------------------------> #
-i = 3
+i = 0
 x_grad_nd = True
 
 fig, base_axs = plt.subplots(2, 2, dpi=300)
@@ -238,6 +255,7 @@ plt.show()
 
 # %%-------------------------------------   PLOT DIFFERENCE WITH LIQUID         -------------------------------------> #
 i = 0
+x_grad_nd = False
 
 fig, base_axs = plt.subplots(2, 2, dpi=300)
 fig.set_size_inches(10, 5)
@@ -264,13 +282,33 @@ print(t_rel_list[i])
 lines = [list(), list(), list()]
 for m in range(len(cmp_y_values[0])):
 
+    if x_grad_nd:
+        x_values = grad_nd_rocks[i, :, :]
+        grad_nd_liq = x_values
+    else:
+        x_values = grad_nd_nd
+
+    grad_nd_liq = x_values
+
+    if m == 0:
+        liq_value = grad_nd_liq * dz_nd
+
+    elif m == 1:
+        liq_value = spc_work_liq - np.log(1 + spc_work_liq)
+
+    else:
+        carnot_factor_liq = 1 - 1 / (1 + grad_nd_liq * dz_nd)
+        liq_value = spc_ex_liq / (spc_work_liq * carnot_factor_liq)
+
+
+
     for k in range(len(dz_nd_list)):
 
         lines[m].append(
 
             axs[m].plot(
 
-                grad_nd_nd[:, k], cmp_y_values[0][m][i, :, k] / cmp_y_values[1][m][:, k], "-",
+                x_values[:, k], cmp_y_values[0][m][i, :, k] / liq_value[:, k], "-",
                 label=dz_label.format(np.log10(dz_nd_list[k])),
                 color=cmap(norm((k + 1) / (len(dz_nd_list) + 1)))
 
@@ -278,14 +316,31 @@ for m in range(len(cmp_y_values[0])):
 
         )
 
+    if x_grad_nd:
+        x_values = grad_nd_nd + 1
 
-        line = axs[m].plot(
+    else:
+        x_values = grad_nd_nd
 
-            grad_nd_nd[:, k], cmp_y_values[2][m][:, k] / cmp_y_values[1][m][:, k], "-",
-            label="Ideal Gas", color=cmap(norm(1)),
-            linewidth=2
+    grad_nd_liq = x_values
 
-        )[0]
+    if m == 0:
+        liq_value = grad_nd_liq * dz_nd
+
+    elif m == 1:
+        liq_value = spc_work_liq - np.log(1 + spc_work_liq)
+
+    else:
+        carnot_factor_liq = 1 - 1 / (1 + grad_nd_liq * dz_nd)
+        liq_value = spc_ex_liq / (spc_work_liq * carnot_factor_liq)
+
+    line = axs[m].plot(
+
+        x_values[:, 0], cmp_y_values[2][m][:, 0] / liq_value[:, 0], "-",
+        label="Ideal Gas", color=cmap(norm(1)),
+        linewidth=2
+
+    )[0]
 
     lines[m].append(line)
 
@@ -304,6 +359,9 @@ for k in range(len(axs)):
     axs[k].set_ylabel(y_names[k])
     axs[k].set_xlabel("${\\nabla T_{rocks}}^{\\# \\#}$ [-]")
 
+    if x_grad_nd:
+        axs[k].set_xlabel("${\\nabla T_{rocks}}^{\\#}$ [-]")
+
     if y_names[k] == y_names[-1]:
         axs[k].legend(handles=lines[k], fontsize="8")
 
@@ -314,6 +372,91 @@ plt.tight_layout(pad=2)
 plt.subplots_adjust(hspace=0)
 plt.show()
 
+# %%-------------------------------------   PLOT DIFFERENCE WITH LIQUID V2.0    -------------------------------------> #
+i = 0
+m = 0
+x_grad_nd = True
+
+fig, axs = plt.subplots(1, 2, dpi=300)
+fig.set_size_inches(10, 4)
+cmap = plt.get_cmap('viridis')
+norm = plt.Normalize(0, 1)
+
+dz_label = "${{\\Delta z}}^{{\\#}} = 10^{{ {:0.1f} }}$"
+cmp_y_values = [
+
+    [w_dot_nds, ex_dot_nds, eta_exs],
+    [spc_work_liq, spc_ex_liq, ex_eta_liq],
+    [spc_work_gas, spc_ex_gas, ex_eta_gas]
+
+]
+print(t_rel_list[i])
+lines = [list(), list(), list()]
+if x_grad_nd:
+    x_values = grad_nd_rocks[i, :, :]
+    grad_nd_liq = x_values
+else:
+    x_values = grad_nd_nd
+
+grad_nd_liq = x_values
+
+if m == 0:
+    liq_value = grad_nd_liq * dz_nd
+
+elif m == 1:
+    liq_value = spc_work_liq - np.log(1 + spc_work_liq)
+
+else:
+    carnot_factor_liq = 1 - 1 / (1 + grad_nd_liq * dz_nd)
+    liq_value = spc_ex_liq / (spc_work_liq * carnot_factor_liq)
+
+for k in range(len(dz_nd_list)):
+    lines[m].append(
+
+        axs[0].plot(
+
+            x_values[:, k], cmp_y_values[0][m][i, :, k] / liq_value[:, k], "-",
+            label=dz_label.format(np.log10(dz_nd_list[k])),
+            color=cmap(norm((k + 1) / (len(dz_nd_list) + 1)))
+
+        )[0]
+
+    )
+
+    axs[1].plot(
+
+        x_values[:, k] * dz_nd[:, k], cmp_y_values[0][m][i, :, k] / liq_value[:, k], "-",
+        label=dz_label.format(np.log10(dz_nd_list[k])),
+        color=cmap(norm((k + 1) / (len(dz_nd_list) + 1)))
+
+    )
+
+
+y_names = [
+
+    "${\\dot{w}}^{\\#}$ / ${{\\dot{w}}^{\\#}}_{liq}$ [-]",
+    "${\\dot{e}_x}^{\\#}$ / ${{\\dot{e}_x}^{\\#}}_{liq}$ [-]",
+    "${\\eta}_{ex}$ / ${{\\eta}_{ex}}_{liq}$ [-]"
+
+]
+
+axs[0].legend(handles=lines[m], fontsize="8")
+base_x_label = "${\\nabla T_{rocks}}^{\\# \\#}$"
+if x_grad_nd:
+    base_x_label = "${\\nabla T_{rocks}}^{\\#}$"
+
+for k in range(len(axs)):
+
+    axs[k].set_xscale("log")
+    # axs[k].set_yscale("log")
+    axs[k].set_ylabel(y_names[m])
+    axs[k].set_xlabel("{} [-]".format(base_x_label))
+    base_x_label += "${\\Delta z}^{\\#}$"
+
+
+plt.tight_layout(pad=2)
+plt.subplots_adjust(hspace=0)
+plt.show()
 
 # %%-------------------------------------   IDENTIFY INITIAL RISE               -------------------------------------> #
 fig, ax = plt.subplots(1, 1, dpi=300)
