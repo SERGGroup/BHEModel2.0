@@ -45,15 +45,15 @@ cas_od_vert = 0.2730     # [m]
 cas_id_vert = 0.2530     # [m]
 
 # Variable Values (variable for me)
-t_in = 30                       # [C]
-k_ins_list = [0.0264, 0.1, 0.5] # [W/(m K)]
-t_grad = 0.0300                 # [c/m]
+t_in_list = [25, 30, 35]    # [C]
+k_ins = 0.0264              # [W/(m K)]
+t_grad = 0.03               # [C/m]
 
 
 # %%------------   CALCULATION                            -----------------------------------------------------------> #
-for i in range(len(k_ins_list)):
+for i in range(len(t_in_list)):
 
-    k_ins = k_ins_list[i]
+    t_in = t_in_list[i]
     t_rock = t_surf + t_grad * depth
 
     hs_geometry_vert = REELWELLGeometry(
@@ -142,7 +142,7 @@ for i in range(len(k_ins_list)):
     t_profile_list = list()
     p_profile_list = list()
 
-    pbar = tqdm(desc="Calculate k_ins={}".format(k_ins), total=len(time_points))
+    pbar = tqdm(desc="Calculate t_in={}".format(t_in), total=len(time_points))
     for time in time_points:
 
         well.heating_section.time = time / 365
@@ -169,7 +169,7 @@ for i in range(len(k_ins_list)):
 
     )
 
-    file_path = os.path.join(RES_FOLDER, "optimization k_ins={}.xlsx".format(k_ins))
+    file_path = os.path.join(RES_FOLDER, "optimization t_in={:.0f}.xlsx".format(t_in))
 
     data_exporter = {
 

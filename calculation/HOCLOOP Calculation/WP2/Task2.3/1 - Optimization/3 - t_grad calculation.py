@@ -31,7 +31,6 @@ tub_od = 0.1400     # [m]
 
 # Variable Values (fixed for me)
 mass_flow = 5       # [kg/s]
-t_in = 30           # [C]
 depth = 4000        # [m]
 l_horiz = 5000      # [m]
 
@@ -46,7 +45,8 @@ cas_od_vert = 0.2730     # [m]
 cas_id_vert = 0.2530     # [m]
 
 # Variable Values (variable for me)
-k_ins = 0.01  # [W/(m K)]
+t_in = 30                         # [C]
+k_ins = 0.0264                    # [W/(m K)]
 t_grad_list = [0.02, 0.03, 0.04]  # [c/m]
 
 

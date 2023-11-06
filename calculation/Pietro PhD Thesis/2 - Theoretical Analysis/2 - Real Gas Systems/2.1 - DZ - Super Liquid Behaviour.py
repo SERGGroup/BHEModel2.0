@@ -1,9 +1,11 @@
 # %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
 from main_code.well_model.simplified_well.simplified_well import SimplifiedBHE
 from main_code.support.abstract_plant_thermo_point import PlantThermoPoint
+from scipy.signal import argrelextrema
 import matplotlib.pyplot as plt
 import scipy.constants
 from tqdm import tqdm
+import pandas as pd
 import numpy as np
 
 
@@ -59,7 +61,7 @@ w_dex_maxs[:] = np.nan
 
 
 # %%-------------------------------------   CALCULATE                           -------------------------------------> #
-p_rel = 2*10**1
+p_rel = 0.25
 
 in_state = PlantThermoPoint(["Ethane"], [1], unit_system="MASS BASE SI")
 bhe_in = PlantThermoPoint(["Ethane"], [1])
@@ -82,10 +84,8 @@ for i in range(len(t_rel_list)):
     gamma_in = in_state.get_variable("CP/CV")
     v_in = 1 / in_state.get_variable("rho")
     cp_in = in_state.get_variable("cp")
-    alpha_in = cp_in * (1 - 1 / gamma_in) / (v_in * dpdt_in)
 
     depth[i, :, :] = dz_nd * in_state.get_variable("cp") * t_in / scipy.constants.g
-    t_rocks[i, :, :] = t_in + depth[i, :, :] * grad_rocks[i, :, :]
 
     bhe_sub_list = list()
     for k in range(len(dz_nd_list)):
@@ -96,6 +96,7 @@ for i in range(len(t_rel_list)):
         alpha_in = cp_in * (bhe.points[1].get_variable("T") - bhe.points[0].get_variable("T")) / (scipy.constants.g * depth[i, 0, k])
         grad_nd_rocks[i, :, k] = grad_nd_nd[:, k] + alpha_in
         grad_rocks[i, :, k] = grad_nd_rocks[i, :, k] * scipy.constants.g / in_state.get_variable("cp")
+        t_rocks[i, :, k] = t_in + depth[i, :, k] * grad_rocks[i, :, k]
 
         bhe_subsub_list = list()
         for j in range(len(grad_nd_nd_list)):
@@ -119,18 +120,14 @@ for i in range(len(t_rel_list)):
 
             w_dot = states[3].get_variable("H") - states[0].get_variable("H")
             ex_dot = w_dot - states[0].get_variable("T") * (states[3].get_variable("S") - states[0].get_variable("S"))
-            ex_dot_nd = ex_dot / (states[0].get_variable("CP") * states[0].get_variable("T"))
+            cf = 1 - states[0].get_variable("T") / states[2].get_variable("T")
 
-            if True: # (not (w_dot < 0 or ex_dot < 0)) and (not states[-1].get_variable("H") < -1e6):
+            w_dot_nds[i, j, k] = w_dot / (states[0].get_variable("CP") * states[0].get_variable("T"))
+            ex_dot_nds[i, j, k] = ex_dot / (states[0].get_variable("CP") * states[0].get_variable("T"))
+            eta_exs[i, j, k] = ex_dot / (w_dot * cf)
 
-                cf = 1 - states[0].get_variable("T") / states[2].get_variable("T")
-
-                w_dot_nds[i, j, k] = w_dot / (states[0].get_variable("CP") * states[0].get_variable("T"))
-                ex_dot_nds[i, j, k] = ex_dot / (states[0].get_variable("CP") * states[0].get_variable("T"))
-                eta_exs[i, j, k] = ex_dot / (w_dot * cf)
-
-                w_dex_mins[i, j, k] = (surface_states[1].get_variable("H") - states[0].get_variable("H")) / w_dot
-                w_dex_maxs[i, j, k] = (states[3].get_variable("H") - surface_states[1].get_variable("H")) / w_dot
+            w_dex_mins[i, j, k] = (surface_states[1].get_variable("H") - states[0].get_variable("H")) / w_dot
+            w_dex_maxs[i, j, k] = (states[3].get_variable("H") - surface_states[1].get_variable("H")) / w_dot
 
             pbar.update(1)
 
@@ -154,7 +151,7 @@ for i in range(len(t_rel_list)):
 
 
 # %%-------------------------------------   PLOT INITIAL COMPARISON             -------------------------------------> #
-i = 0
+i = 1
 x_grad_nd = True
 
 fig, base_axs = plt.subplots(2, 2, dpi=300)
@@ -458,6 +455,7 @@ plt.tight_layout(pad=2)
 plt.subplots_adjust(hspace=0)
 plt.show()
 
+
 # %%-------------------------------------   IDENTIFY INITIAL RISE               -------------------------------------> #
 fig, ax = plt.subplots(1, 1, dpi=300)
 fig.set_size_inches(10, 5)
@@ -491,6 +489,104 @@ ax.set_ylabel("d(${\\dot{w}}^{\\#}$ / ${{\\dot{w}}^{\\#}}_{liq}$) [-]")
 ax.set_xlabel("${\\nabla T_{rocks}}^{\\# \\#}$ [-]")
 ax.legend(handles=lines, fontsize="12")
 ax.set_xscale("log")
+plt.show()
+
+# %%-------------------------------------   IDENTIFY INITIAL RISE V2.0          -------------------------------------> #
+i = 0
+m = 0
+mean_window = 1
+x_grad_nd = False
+
+fig, axs = plt.subplots(1, 2, dpi=300)
+fig.set_size_inches(10, 4)
+cmap = plt.get_cmap('viridis')
+norm = plt.Normalize(0, 1)
+
+dz_label = "${{\\Delta z}}^{{\\#}} = 10^{{ {:0.1f} }}$"
+cmp_y_values = [
+
+    [w_dot_nds, ex_dot_nds, eta_exs],
+    [spc_work_liq, spc_ex_liq, ex_eta_liq],
+    [spc_work_gas, spc_ex_gas, ex_eta_gas]
+
+]
+print(t_rel_list[i])
+lines = [list(), list(), list()]
+if x_grad_nd:
+    x_values = grad_nd_rocks[i, :, :]
+    grad_nd_liq = x_values
+else:
+    x_values = grad_nd_nd
+
+grad_nd_liq = x_values
+
+if m == 0:
+    liq_value = grad_nd_liq * dz_nd
+
+elif m == 1:
+    liq_value = spc_work_liq - np.log(1 + spc_work_liq)
+
+else:
+    carnot_factor_liq = 1 - 1 / (1 + grad_nd_liq * dz_nd)
+    liq_value = spc_ex_liq / (spc_work_liq * carnot_factor_liq)
+
+j_min = np.min(np.where(grad_nd_nd[:, 0] > 1))
+liq_difference = cmp_y_values[0][m][i, :, :] / liq_value[:, :]
+
+for k in range(len(dz_nd_list)):
+
+    liq_difference_mean = pd.Series(liq_difference[:, k]).rolling(mean_window, center=True).mean().iloc[:].values
+    delta_liq_diff = liq_difference_mean[1:] - liq_difference_mean[:-1]
+    delta_liq_diff_var = (k/2+1)*(np.nanmax(delta_liq_diff) - np.nanmin(delta_liq_diff))
+    delta_liq_diff_norm = delta_liq_diff / delta_liq_diff_var
+    print(argrelextrema(delta_liq_diff_norm, np.greater))
+    lines[m].append(
+
+        axs[0].plot(
+
+            x_values[:-1, k], delta_liq_diff_norm, "-",
+            label=dz_label.format(np.log10(dz_nd_list[k])),
+            color=cmap(norm((k + 1) / (len(dz_nd_list) + 1)))
+
+        )[0]
+
+    )
+
+    axs[1].plot(
+
+        x_values[:-1, k] * dz_nd[:-1, k], delta_liq_diff_norm, "-",
+        label=dz_label.format(np.log10(dz_nd_list[k])),
+        color=cmap(norm((k + 1) / (len(dz_nd_list) + 1)))
+
+    )
+
+
+y_names = [
+
+    "{\\dot{w}}^{\\#} / {{\\dot{w}}^{\\#}}_{liq}",
+    "{\\dot{e}_x}^{\\#} / {{\\dot{e}_x}^{\\#}}_{liq}",
+    "{\\eta}_{ex} / {{\\eta}_{ex}}_{liq}"
+
+]
+
+derivative_append = "$d({y_value}) / d({x_value})$"
+
+axs[0].legend(handles=lines[m], fontsize="8")
+base_x_label = "{\\nabla T_{rocks}}^{\\# \\#}"
+if x_grad_nd:
+    base_x_label = "{\\nabla T_{rocks}}^{\\#}"
+
+for k in range(len(axs)):
+
+    axs[k].set_xscale("log")
+    # axs[k].set_yscale("log")
+    axs[k].set_ylabel(derivative_append.format(y_value=y_names[m], x_value=base_x_label))
+    axs[k].set_xlabel("{} [-]".format("${}$".format(base_x_label)))
+    base_x_label += "{\\Delta z}^{\\#}"
+
+
+plt.tight_layout(pad=2)
+plt.subplots_adjust(hspace=0)
 plt.show()
 
 
