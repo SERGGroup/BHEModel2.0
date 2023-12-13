@@ -1,3 +1,4 @@
+from main_code.well_model.ground_models import evaluate_ground_f
 import numpy as np
 
 
@@ -15,13 +16,43 @@ ITERATION_TOLLS = {
 
 class REELWELLRocksInfo:
 
-    def __init__(self, k_rocks = None, alpha_rocks = None, geo_gradient = None):
+    def __init__(
 
+            self, t_rocks = None,
+            k_rocks = None, alpha_rocks = None,
+            c_rocks = None, rho_rocks = None,
+            geo_gradient = None, thermal_profile = None
+
+    ):
+
+        self.__t_rocks = t_rocks
         self.__k_rocks = k_rocks
-        self.__alpha_rocks = alpha_rocks
+        self.__c_rocks = c_rocks
+        self.__rho_rocks = rho_rocks
+
+        if (alpha_rocks is None) and (not None in [k_rocks, c_rocks, rho_rocks]):
+
+            self.__alpha_rocks = k_rocks / (rho_rocks * c_rocks * 1e3)
+
+        else:
+
+            self.__alpha_rocks = alpha_rocks
+
         self.__geo_gradient = geo_gradient
+        self.__thermal_profile = thermal_profile
 
         self.main_class = None
+
+    @property
+    def t_rocks(self):
+
+        if self.__t_rocks is not None:
+            return self.__t_rocks
+
+        if not self.main_class.parent_class is None:
+            return self.main_class.parent_class.main_BHE.t_rocks
+
+        return None
 
     @property
     def k_rocks(self):
@@ -56,6 +87,11 @@ class REELWELLRocksInfo:
 
         return None
 
+    @t_rocks.setter
+    def t_rocks(self, t_rocks_in):
+
+        self.__t_rocks = t_rocks_in
+
     @k_rocks.setter
     def k_rocks(self, k_rocks_in):
 
@@ -70,6 +106,39 @@ class REELWELLRocksInfo:
     def geo_gradient(self, geo_gradient_in):
 
         self.__geo_gradient = geo_gradient_in
+
+    def get_t_rock(self, depth = None):
+
+        t_rock = self.t_rocks
+
+        if depth is not None:
+
+            if self.__thermal_profile is not None:
+
+                depths = list(self.__thermal_profile.keys())
+                temperatures = list(self.__thermal_profile.values())
+
+                if depth > depths[-1]:
+
+                    grad = self.geo_gradient
+                    t_rock = grad * (depth - depths[-1]) + temperatures[-1]
+
+                else:
+
+                    for i in range(len(depths)):
+
+                        if depths[i] > depth:
+
+                            grad = (temperatures[i] - temperatures[i - 1]) / (depths[i] - depths[i - 1])
+                            t_rock = grad * (depth - depths[i - 1]) + temperatures[i - 1]
+                            break
+
+            else:
+
+                grad = self.geo_gradient
+                t_rock -= (self.main_class.parent_class.main_BHE.dz_well - depth) * grad
+
+        return t_rock
 
 
 class REELWELLGeometry:
@@ -181,17 +250,6 @@ class REELWELLGeometry:
 
     def q_ground(self, point, depth=None):
 
-        """
-
-            This function returns the heat transfer between the annulus and the ground [kW/m]
-            The implemented model is derived from:
-
-                Y. Zhang, L. Pan, K. Pruess, S. Finsterle, Geothermics (2011), "A time-convolution approach for modeling heat
-                exchange between a wellbore and surrounding formation"
-                doi: 10.1016/j.geothermics.2011.08.003
-
-        """
-
         if self.parent_class is not None:
 
             k = self.rocks_info.k_rocks
@@ -201,15 +259,7 @@ class REELWELLGeometry:
             r0 = self.cas_od / 2
             td = alpha * time /  r0 ** 2
 
-            if td < 2.8:
-
-                f = ((np.pi * td) ** -0.5 + 0.5 - (td / np.pi) ** 0.5 / 4 + td / 8)
-
-            else:
-
-                gamma = 0.57722
-                theta = (np.log(4 * td) - 2 * gamma)
-                f = 2 * (1 / theta - gamma / theta ** 2)
+            f = evaluate_ground_f(td)
 
             r_rocks = r0 / (k * f)
 
@@ -218,7 +268,7 @@ class REELWELLGeometry:
 
             r_tot = r_rocks + r_fluid
 
-            t_rock = self.get_t_rock(depth)
+            t_rock = self.rocks_info.get_t_rock(depth)
             dt = t_rock - point.get_variable("T")
             q_rel = dt / r_tot / 1e3  # 1e3 is a conversion factor: [W/m^2] -> [kW/m^2]
 
@@ -440,17 +490,6 @@ class REELWELLGeometry:
         except:
 
             return 0.
-
-    def get_t_rock(self, depth):
-
-        t_rock = self.parent_class.main_BHE.t_rocks
-
-        if depth is not None:
-
-            grad = self.rocks_info.geo_gradient
-            t_rock -= (self.parent_class.main_BHE.dz_well - depth) * grad
-
-        return t_rock
 
     def additional_setup_data(self, data_frame: dict, is_well=True):
 

@@ -246,11 +246,10 @@ class SimplifiedWell(ABC):
 
     def update(self, ambient_condition=None):
 
-        self.__set_reference_state(ambient_condition)
-
         self.integrators_profiler = list()
         self.evaluate_points()
 
+        # self.__set_reference_state(ambient_condition)
         self.__evaluate_parameters()
         self.__evaluate_performance_parameters()
         self.__perform_exergy_analysis()
