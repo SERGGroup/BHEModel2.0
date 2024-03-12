@@ -1,20 +1,21 @@
 3ETool >= 0.4.0
 ctREFPROP == 0.8.2
-matplotlib~=3.6.2
-numpy~=1.23.5
-scipy~=1.9.3
-requests~=2.28.1
+matplotlib
+numpy
+scipy
+requests
 pyrebase4
 smt~=1.0.0
 fortranformat
 UNISIM_connector
 EES_connector>=0.2.5
 REFPROP_connector
-pandas~=1.2.5
+pandas
 lhsmdu~=1.1
-future~=0.18.2
-sty~=1.0.4
-tqdm~=4.64.1
+future
+sty
+tqdm
 xlsxwriter
-openpyxl~=3.0.10
+openpyxl
 pyvis
+scikit-learn

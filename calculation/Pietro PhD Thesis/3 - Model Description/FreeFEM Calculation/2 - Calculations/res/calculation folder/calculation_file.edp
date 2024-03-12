@@ -27,7 +27,7 @@ border C4(t=-H, H){{x=L; y=t; label=Cside;}}
 
 mesh Th = buildmesh(C0(pointsCircle)+C10(pointsCircle)+C1(pointsL)+C2(pointsH)+C3(pointsL)+C4(pointsH));
 
-savemesh(Th,"C:\\Users\\Utente\\PycharmProjects\\BHEModel2.0\\calculation\\Pietro PhD Thesis\\FreeFEM Calculation\\2 - Calculations\\res\\calculation folder\\mesh_out.mesh");
+savemesh(Th,"C:\\Users\\Utente\\PycharmProjects\\BHEModel2.0\\calculation\\Pietro PhD Thesis\\3 - Model Description\\FreeFEM Calculation\\2 - Calculations\\res\\calculation folder\\mesh_out.mesh");
 
 
 // Mesh for visualization purposes
@@ -110,7 +110,7 @@ real theta, sum=0;
 Vh fx, fy;
 
 
-ofstream ff("C:\\Users\\Utente\\PycharmProjects\\BHEModel2.0\\calculation\\Pietro PhD Thesis\\FreeFEM Calculation\\2 - Calculations\\res\\calculation folder\\result.txt");
+ofstream ff("C:\\Users\\Utente\\PycharmProjects\\BHEModel2.0\\calculation\\Pietro PhD Thesis\\3 - Model Description\\FreeFEM Calculation\\2 - Calculations\\res\\calculation folder\\result.txt");
 
 
 for (int i = 0; i <= nT; ++i){
