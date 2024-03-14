@@ -35,7 +35,7 @@ depth = 3000        # [m]
 l_overall = 6500    # [m]
 
 t_surf = 11         # [C]
-t_grad = 0.0325     # [c/m]
+t_grad = 0.030      # [C/m]
 k_rock = 2.423      # [W/(m K)]
 c_rock = 0.90267    # [kJ/(kg K)]
 rho_rock = 2600     # [kg/m^3]
@@ -69,7 +69,7 @@ well = REELWEELBHE(
 
     bhe_in, dz_well=depth, t_rocks=t_rock, t_surf=t_surf,
     k_rocks=k_rock, c_rocks=c_rock, rho_rocks=rho_rock,
-    rw_geometry=hs_geometry, max_iteration=20
+    rw_geometry=hs_geometry, max_iteration=30
 
 )
 
@@ -132,11 +132,11 @@ pbar.close()
 RES_FOLDER = os.path.join(
 
     constants.CALCULATION_FOLDER, "HOCLOOP Calculation",
-    "WP2", "Task2.2", "0 - Resources", "output"
+    "WP4", "1 - Balmatt Case", "0 - Resources", "results"
 
 )
 
-file_path = os.path.join(RES_FOLDER, "case_f.xlsx")
+file_path = os.path.join(RES_FOLDER, "horizontal well.xlsx")
 data_exporter = {
 
     "well": well,
@@ -157,6 +157,6 @@ export_profiles_to_excel(file_path, data_exporter, reverse_time_position=False)
 fig, ax = plt.subplots()
 time_array = np.array(time_list) / 365
 
-ax.plot(time_array, p_out_list)
+ax.plot(time_array, t_out_list)
 plt.xscale("log")
 plt.show()

@@ -124,8 +124,8 @@ class REELWEELBHE(SimplifiedBHE):
         if len(self.__old_profiles) > 0:
 
             check_points = np.linspace(start=0, stop=1, num=50) * self.dz_well
-            curr_profiles = self.get_iteration_points(check_points)
             old_profiles = self.get_iteration_points(check_points, self.__old_profiles[-1])
+            curr_profiles = self.get_iteration_points(check_points)
 
             for i in range(len(check_points)):
 
