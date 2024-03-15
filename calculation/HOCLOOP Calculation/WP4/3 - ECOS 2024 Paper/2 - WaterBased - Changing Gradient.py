@@ -19,7 +19,7 @@ import os
 #       "slides-case-2.2-b.pdf" (in "0 - Resources\Case Studies" Folder)
 #
 
-mass_flow_base = 8.80149 # [kg/s]
+mass_flow_base = 6.50149 # [kg/s]
 mass_flow_modifier = 1
 mass_flow = mass_flow_base * mass_flow_modifier
 
@@ -35,14 +35,10 @@ k_rock = 2.423      # [W/(m K)]
 c_rock = 0.90267    # [kJ/(kg K)]
 rho_rock = 2600     # [kg/m^3]
 
-t_in = 25           # [C]
-bhe_in = PlantThermoPoint(["Carbon Dioxide"], [1])
+t_in = 45           # [C]
+bhe_in = PlantThermoPoint(["Water"], [1])
 bhe_in.set_variable("T", t_in)
-bhe_in.set_variable("Q", 0.)
-
-p_sat = bhe_in.get_variable("P")
-bhe_in.set_variable("T", t_in)
-bhe_in.set_variable("P", p_sat * 1.1)
+bhe_in.set_variable("P", 1)
 
 
 # %%------------   CALCULATIONS                           -----------------------------------------------------------> #
@@ -52,7 +48,7 @@ RES_FOLDER = os.path.join(
 
     constants.CALCULATION_FOLDER, "HOCLOOP Calculation",
     "WP4", "3 - ECOS 2024 Paper", "0 - results",
-    "Well Calculations"
+    "Well Calculations", "Water-Based"
 
 )
 
@@ -70,7 +66,7 @@ for t_grad in gradients:
         cas_id=cas_id,
         cas_od=cas_id + 0.015,
         k_insulation=0.1,
-        hot_in_tubing=False,
+        hot_in_tubing=True,
         max_back_time=4,
         alpha_old=0.5,
         neglect_internal_heat_transfer=True,
