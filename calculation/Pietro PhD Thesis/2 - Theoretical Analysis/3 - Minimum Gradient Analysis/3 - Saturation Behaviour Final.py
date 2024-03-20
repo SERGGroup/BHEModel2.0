@@ -95,7 +95,7 @@ for i in range(len(fluids)-1):
 
     line = ax.plot(t_sat_arr[i, :], p_list, label=fluids[i])[0]
     ax.plot(t_sat_approx[i, :], p_list, "--", color=line.get_color(), alpha=0.75)
-    ax_err.plot(t_sat_approx[i, :], rel_error[i, :] * 100, "-.", color=line.get_color(), alpha=0.50)
+    # ax_err.plot(t_sat_approx[i, :], rel_error[i, :] * 100, "-.", color=line.get_color(), alpha=0.50)
 
 ax.set_title("Saturation Line - Approximation")
 ax.set_xlabel("$T_{rel}$ [-]")
@@ -104,6 +104,7 @@ ax_err.set_ylabel("Error $T_{sat}}$ [%]")
 ax.set_yscale("log")
 ax.legend()
 plt.show()
+
 
 # %%-------------------------------------   PLOT RATIOS                         -------------------------------------> #
 plt.scatter(acntr_factors, ratios)
