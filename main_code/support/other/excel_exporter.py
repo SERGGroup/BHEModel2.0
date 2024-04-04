@@ -233,8 +233,6 @@ def export_profiles_to_excel(
     t_out_list = data_input["t_out_list"]
     w_out_list = data_input["w_out_list"]
     p_out_list = data_input["p_out_list"]
-    t_profile_list = data_input["t_profile_list"]
-    p_profile_list = data_input["p_profile_list"]
     profile_positions = data_input["profile_positions"]
 
     # Write Specification Data Sheet
@@ -285,10 +283,18 @@ def export_profiles_to_excel(
 
         "time_list": time_list,
         "profile_positions": profile_positions,
-        "profiles_names": ['Temperature Profiles', 'Pressure Profiles'],
-        "profiles_list": [t_profile_list, p_profile_list],
+        "profiles_names": [],
+        "profiles_list": [],
 
     }
+
+    for key in data_input.keys():
+
+        if "profile_list" in key:
+
+            profile_data["profiles_list"].append(data_input[key])
+            profile_data["profiles_names"].append('{} Profiles'.format(key.replace("_profile_list", "")))
+
     __write_profiles(file_path, profile_data, reverse_time_position=reverse_time_position)
 
 

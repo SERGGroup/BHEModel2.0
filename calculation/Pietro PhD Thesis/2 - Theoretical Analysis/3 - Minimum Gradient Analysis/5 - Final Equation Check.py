@@ -21,6 +21,51 @@ dz_nd_list = np.logspace(-5, -1, n_depth)
 t_rel_list = [0.4, 0.5, 0.75]
 
 
+# %%-------------------------------------   OPTIMIZE RATIO                      -------------------------------------> #
+tp_vap = PlantThermoPoint([fluid], [1], unit_system="MASS BASE SI")
+tp_liq = tp_vap.duplicate()
+
+tp_vap.set_variable("P", tp_vap.RPHandler.PC)
+tp_vap.set_variable("T", tp_vap.RPHandler.TC)
+acntr_factor = tp_vap.evaluate_RP_code("ACF")
+p_list = np.logspace(-3, 0, 40000)
+p_crit = tp_vap.RPHandler.PC
+t_crit = tp_vap.RPHandler.PC
+t_sat_arr = np.empty(np.array([len(p_list)]))
+t_sat_arr[:] = np.nan
+
+for j in range(len(p_list)):
+
+    tp_vap.set_variable("P", p_list[j] * p_crit)
+    tp_vap.set_variable("Q", 1)
+    tp_liq.set_variable("P", p_list[j] * p_crit)
+    tp_liq.set_variable("Q", 0)
+
+    if tp_vap.get_variable("T") / t_crit > 0.4:
+        t_sat_arr[j] = tp_vap.get_variable("T") / t_crit
+
+def opt_function(minimise_max=False):
+
+    def funct(x):
+
+        a = x[0]
+        b = np.log(0.7) * a / (np.power(10, - a * (acntr_factor + 1)) - 1)
+        t_sat_actr = np.exp(b / a * (np.power(p_list, a) - 1))
+
+        if minimise_max:
+            return np.nanmax(np.power(t_sat_actr - t_sat_arr, 2) / t_sat_arr)
+
+        return np.nanmean(np.power(t_sat_actr - t_sat_arr, 2) / t_sat_arr)
+
+    return funct
+
+res = minimize(opt_function(), np.array([0.11]))
+ratio = res.x[0]
+a = res.x[0]
+b = np.log(0.7) * a / (np.power(10, - a * (acntr_factor + 1)) - 1)
+
+
+
 # %%-------------------------------------   EVALUATE COEFFICIENTS               -------------------------------------> #
 p_sat_list = np.logspace(-3, 0, 40000)
 pbar = tqdm(desc="Calculating Saturation Points", total=len(p_sat_list))
@@ -89,6 +134,11 @@ if np.isnan(ex_eta_gas[0, 0]):
 
 base_shape = np.array(grad_nd_nd.shape)
 res_shape = np.append([len(t_rel_list)], base_shape)
+coef_shape = [len(t_rel_list), len(dz_nd_list)]
+
+beta_preds = np.zeros(coef_shape)
+phi_preds = np.zeros(coef_shape)
+grad_t_nd_lim = np.zeros(coef_shape)
 
 grad_nd_rocks = np.empty(res_shape)
 grad_rocks = np.empty(res_shape)
@@ -119,8 +169,6 @@ calc_coefficients = list()
 p_in_list = list()
 dz_coeff = list()
 
-pbar = tqdm(desc="Calculating Correlation Coefficients", total=len(t_rel_list))
-
 for i in range(len(t_rel_list)):
 
     t_in = t_rel_list[i] * in_state.RPHandler.TC
@@ -131,34 +179,13 @@ for i in range(len(t_rel_list)):
     in_state.set_variable("T", t_in)
     in_state.set_variable("P", p_in)
 
-    dpdt_in = in_state.get_derivative("P", "T", "rho")
-    gamma_in = in_state.get_variable("CP/CV")
-    v_in = 1 / in_state.get_variable("rho")
-    cp_in = in_state.get_variable("cp")
-
     rho_in = in_state.get_variable("rho")
-    dpdrho_t = in_state.get_derivative("P", "rho", "T")
+    cp_in = in_state.get_variable("cp")
+    gamma_in = rho_in * cp_in * t_in / p_in
 
-    dpdv_t = - rho_in ** 2 * dpdrho_t
-    dvdp = 1 / (gamma_in * dpdv_t)
-
-    alpha_nd = cp_in * rho_in * t_in / p_in
-    beta_nd = (p_in * rho_in * dvdp + 1) / a_fluid
-
-    p_in_list.append(p_in)
-    dz_coeff.append(rho_in * cp_in * t_in / p_in)
-    calc_coefficients.append([
-
-        alpha_nd * b_fluid * np.power(p_in / in_state.RPHandler.PC, a_fluid),
-        a_fluid * alpha_nd * (1 - beta_nd),
-        3 * a_fluid * alpha_nd * beta_nd / (beta_nd - 1),
-        - a_fluid * alpha_nd * beta_nd
-
-    ])
-
-    pbar.update(1)
-
-pbar.close()
+    beta_preds[i, :] = (gamma_in * np.log(dz_nd_list + 1) / (dz_nd_list + 1)) + 1
+    phi_preds[i, :] = b * p_in ** a * (np.power(beta_preds[i, :], a) - 1)
+    grad_t_nd_lim[i, :] = (np.exp(phi_preds[i, :]) - 1)
 
 
 # %%-------------------------------------   CALCULATE POINTS                    -------------------------------------> #
@@ -480,14 +507,11 @@ for k in range(len(dz_nd_list)):
 
     axs[1].plot(
 
-        x_values[:-1, k] * dz_nd[:-1, k] + 1, delta_liq_diff_norm, "-",
+        x_values[:-1, k] * dz_nd[:-1, k], delta_liq_diff_norm, "-",
         label=dz_label.format(np.log10(dz_nd_list[k])),
         color=cmap(norm((k + 1) / (len(dz_nd_list) + 1)))
 
     )
-
-min_values = calc_coefficients[i][0] * dz_nd[0, :]
-y_values = np.zeros(min_values.shape)
 
 y_names = [
 
@@ -542,31 +566,6 @@ for i in range(len(sub_t_rel_list)):
     max_grad_dz_all.append(max_grad)
     max_grad = np.array(max_grad)
 
-    coeff = calc_coefficients[i]
-    approx = coeff[0] * dz_nd_list[: -2]
-
-    for n in range(0):
-        approx = approx * (1 + coeff[n + 1] * dz_nd_list[: -2] / (n + 2))
-
-    betas_pred = np.log(dz_nd_list[:-2] + 1) * dz_coeff[i] / (dz_nd_list[:-2] + 1) + 1
-    pred = b_fluid * p_in_list[i] ** a_fluid * (np.power(betas_pred, a_fluid) - 1) * 1.15
-    line = ax.plot(np.log(dz_nd_list[:-2] + 1), np.log(max_grad), label=t_rel_label.format(sub_t_rel_list[i]))[0]
-    # ax.plot(np.log(dz_nd_list[:-2] + 1), pred, label="Prova")
-
-    # ax.plot(np.log(dz_nd_list[:-2] + 1), approx, "--", color=line.get_color())
-
-    # x_values = np.power(betas_des[i, 0, :-2], a_fluid) - 1
-    x_values = np.power(betas_pred, a_fluid) - 1
-    y_values = np.log(max_grad) / (b_fluid * np.power(p_in_list[i], a_fluid))
-    #ax.plot(x_values, y_values, label=t_rel_label.format(sub_t_rel_list[i]))
-    # print(np.mean(y_values / x_values))
-    # ax.plot(np.log(dz_nd_list+1) * (dz_coeff[i]*(dz_nd_list + 1)) + 1, betas_des[i, 0, :], label=t_rel_label.format(sub_t_rel_list[i]))
-
-#ax.set_ylim([0, 1])
-#ax.set_xlim([0, 0.010])
-
-ax.set_xlabel("$ln({\\Delta z}^{\\#} + 1)$")
-ax.set_ylabel("$ln({\\nabla T_{lim}}^{\\#}{\\Delta z}^{\\#} + 1)$")
 plt.legend()
 plt.tight_layout()
 plt.show()

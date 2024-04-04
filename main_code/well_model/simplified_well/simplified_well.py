@@ -745,16 +745,13 @@ class SimplifiedWell(ABC):
 
         return [point_in_list, point_out_list]
 
-    def get_iteration_profile(self, position_list, profile=None):
+    def get_property_profile(self, properties_list, position_list, profile=None):
 
         if profile is None:
             profile = self.integrators_profiler
 
         __tmp_point = self.points[0].duplicate()
-        t_list = np.full((2, len(position_list)), np.nan)
-        p_list = np.full((2, len(position_list)), np.nan)
-        rho_list = np.full((2, len(position_list)), np.nan)
-        h_list = np.full((2, len(position_list)), np.nan)
+        return_list = np.full((2, len(properties_list), len(position_list)), np.nan)
 
         for i in range(len(position_list)):
 
@@ -763,18 +760,35 @@ class SimplifiedWell(ABC):
             p, rho = profile[0].get_iteration_value(pos)
             __tmp_point.set_variable("P", p)
             __tmp_point.set_variable("rho", rho)
-            t_list[0, i] = __tmp_point.get_variable("T")
-            p_list[0, i] = __tmp_point.get_variable("P")
-            rho_list[0, i] = __tmp_point.get_variable("rho")
-            h_list[0, i] = __tmp_point.get_variable("H")
+
+            for j in range(len(properties_list)):
+                return_list[0, j, i] = __tmp_point.get_variable(properties_list[j])
 
             p, rho = profile[1].get_iteration_value(pos)
             __tmp_point.set_variable("P", p)
             __tmp_point.set_variable("rho", rho)
-            t_list[1, i] = __tmp_point.get_variable("T")
-            p_list[1, i] = __tmp_point.get_variable("P")
-            rho_list[1, i] = __tmp_point.get_variable("rho")
-            h_list[1, i] = __tmp_point.get_variable("H")
+            for j in range(len(properties_list)):
+                return_list[1, j, i] = __tmp_point.get_variable(properties_list[j])
+
+        return np.array(return_list)
+
+    def get_iteration_profile(self, position_list, profile=None):
+
+        if profile is None:
+            profile = self.integrators_profiler
+
+        results = self.get_property_profile(
+
+            properties_list=["T", "P", "rho", "h"],
+            position_list=position_list,
+            profile=profile
+
+        )
+
+        t_list = results[:, 0, :]
+        p_list = results[:, 1, :]
+        rho_list = results[:, 2, :]
+        h_list = results[:, 3, :]
 
         return np.array(t_list), np.array(p_list), np.array(rho_list), np.array(h_list)
 

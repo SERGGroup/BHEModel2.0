@@ -500,54 +500,72 @@ class REELWELLHeatingSection(AbstractHeatingSection):
     # <------------------------------------------------------------------------->
     # <------------------------------------------------------------------------->
 
+    def get_property_profile(self, properties_list, position_list, profile=None):
+
+        if profile is None:
+            profile = self.integrators_profiler
+
+        return_list = np.full((2, len(properties_list), len(position_list)), np.nan)
+
+        i_annulus = self.geom.i_annulus
+        i_tubing = self.geom.i_tubing
+
+        for i in range(len(position_list)):
+
+            pos = position_list[i]
+
+            if self.integrate_temperature:
+
+                p, t = profile[i_annulus].get_iteration_value(pos)
+                self.__tmp_ann.set_variable("P", p)
+                self.__tmp_ann.set_variable("T", t)
+
+                p, t = profile[i_tubing].get_iteration_value(pos)
+                self.__tmp_tub.set_variable("P", p)
+                self.__tmp_tub.set_variable("T", t)
+
+            else:
+
+                p, h = profile[i_annulus].get_iteration_value(pos)
+                self.__tmp_ann.set_variable("P", p)
+                self.__tmp_ann.set_variable("H", h)
+
+                p, h = profile[i_tubing].get_iteration_value(pos)
+                self.__tmp_tub.set_variable("P", p)
+                self.__tmp_tub.set_variable("H", h)
+
+            for j in range(len(properties_list)):
+                return_list[i_annulus, j, i] = self.__tmp_ann.get_variable(properties_list[j])
+                return_list[i_tubing, j, i] = self.__tmp_tub.get_variable(properties_list[j])
+
+        return np.array(return_list)
+
     def get_heating_section_profile(self, position_list, profile=None):
 
         if profile is None:
             profile = self.integrators_profiler
 
-        t_list = np.full((2, len(position_list)), np.nan)
-        p_list = np.full((2, len(position_list)), np.nan)
-        rho_list = np.full((2, len(position_list)), np.nan)
-        h_list = np.full((2, len(position_list)), np.nan)
-
         if self.solve_sequentially:
 
-            i_annulus = self.geom.i_annulus
-            i_tubing = self.geom.i_tubing
+            results = self.get_property_profile(
 
-            for i in range(len(position_list)):
+                properties_list=["T", "P", "rho", "h"],
+                position_list=position_list,
+                profile=profile
 
-                pos = position_list[i]
+            )
 
-                if self.integrate_temperature:
+            t_list = results[:, 0, :]
+            p_list = results[:, 1, :]
+            rho_list = results[:, 2, :]
+            h_list = results[:, 3, :]
 
-                    p, t = profile[i_annulus].get_iteration_value(pos)
-                    self.__tmp_ann.set_variable("P", p)
-                    self.__tmp_ann.set_variable("T", t)
+        else:
 
-                    p, t = profile[i_tubing].get_iteration_value(pos)
-                    self.__tmp_tub.set_variable("P", p)
-                    self.__tmp_tub.set_variable("T", t)
-
-                else:
-
-                    p, h = profile[i_annulus].get_iteration_value(pos)
-                    self.__tmp_ann.set_variable("P", p)
-                    self.__tmp_ann.set_variable("H", h)
-
-                    p, h = profile[i_tubing].get_iteration_value(pos)
-                    self.__tmp_tub.set_variable("P", p)
-                    self.__tmp_tub.set_variable("H", h)
-
-                t_list[0, i] = self.__tmp_ann.get_variable("T")
-                t_list[1, i] = self.__tmp_tub.get_variable("T")
-                p_list[0, i] = self.__tmp_ann.get_variable("P")
-                p_list[1, i] = self.__tmp_tub.get_variable("P")
-
-                rho_list[0, i] = self.__tmp_ann.get_variable("rho")
-                rho_list[1, i] = self.__tmp_tub.get_variable("rho")
-                h_list[0, i] = self.__tmp_ann.get_variable("H")
-                h_list[1, i] = self.__tmp_tub.get_variable("H")
+            t_list = np.full((2, len(position_list)), np.nan)
+            p_list = np.full((2, len(position_list)), np.nan)
+            rho_list = np.full((2, len(position_list)), np.nan)
+            h_list = np.full((2, len(position_list)), np.nan)
 
         return np.array(t_list), np.array(p_list), np.array(rho_list), np.array(h_list)
 

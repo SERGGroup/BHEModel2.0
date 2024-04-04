@@ -315,12 +315,15 @@ class REELWELLGeometry:
 
         re = self.re(point, is_annulus)
         pr = point.get_variable("Pr")
+        re_pow = np.sign(re) * np.power(np.abs(re), 0.8)
 
         if type(pr) == float:
-            return 0.023 * np.power(re, 0.8) * np.power(pr, 0.4)
+
+            pr_pow = np.sign(pr) * np.power(np.abs(pr), 0.4)
+            return 0.023 * re_pow * pr_pow
 
         else:
-            return 0.023 * np.power(re, 0.8) * np.power(0.7, 0.4)
+            return 0.023 * re_pow * np.power(0.7, 0.4)
 
     def re(self, point, is_annulus):
 
