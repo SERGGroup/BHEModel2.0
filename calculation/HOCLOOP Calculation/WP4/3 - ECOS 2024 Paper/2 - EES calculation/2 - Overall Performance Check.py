@@ -53,7 +53,7 @@ RES_FOLDER = os.path.join(
 
 EES_FILE = os.path.join(RES_FOLDER, "0 - EES Files", "base heat pump - python.EES")
 
-with EESConnector(EES_FILE, ees_decimal_separator=",", display_progress_bar=True) as ees:
+with EESConnector(EES_FILE, ees_decimal_separator=".", display_progress_bar=True) as ees:
 
     try:
         result = ees.calculate(calculation_dict)
@@ -68,7 +68,7 @@ now_str = "{}-{:02}-{:02} - {:02}.{:02}".format(now.year, now.month, now.day, no
 file_path = os.path.join(RES_FOLDER, "00 - Results", "calculation results files", "{}.xlsx".format(now_str))
 df_results = list()
 
-results_names = ["LCOH", "Q_DH", "w_net", "t_max_reach"]
+results_names = ["LCOH", "Q_DH", "w_net", "T_max", "P_max", "T_well", "P_well"]
 
 for i in range(n_T_max):
 
