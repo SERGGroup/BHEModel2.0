@@ -1,5 +1,5 @@
-3ETool >= 0.4.0
-ctREFPROP == 0.8.2
+3ETool
+ctREFPROP
 matplotlib
 numpy
 scipy
@@ -8,7 +8,7 @@ pyrebase4
 smt~=1.0.0
 fortranformat
 UNISIM_connector
-EES_connector>=0.2.5
+EES_connector
 REFPROP_connector
 pandas
 lhsmdu~=1.1
@@ -19,3 +19,4 @@ xlsxwriter
 openpyxl
 pyvis
 scikit-learn
+pandas

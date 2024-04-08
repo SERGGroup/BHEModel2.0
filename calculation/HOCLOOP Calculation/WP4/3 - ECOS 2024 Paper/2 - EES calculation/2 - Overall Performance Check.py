@@ -14,11 +14,11 @@ eta_comp = 0.8
 eta_turb = 0.75
 
 n_T_max = 10
-n_grad_T = 6
+n_grad_T = 1
 n_m_dot = 11
 
 t_max_arr = np.linspace(80, 120, n_T_max)
-grad_T_arr = np.linspace(50, 75, n_grad_T)
+grad_T_arr = np.linspace(35, 75, n_grad_T)
 m_dot_well_arr = np.linspace(5, 15, n_m_dot)
 
 t_max_arr, grad_T_arr, m_dot_well_arr = np.meshgrid(t_max_arr, grad_T_arr, m_dot_well_arr, indexing='ij')
@@ -53,7 +53,7 @@ RES_FOLDER = os.path.join(
 
 EES_FILE = os.path.join(RES_FOLDER, "0 - EES Files", "base heat pump - python.EES")
 
-with EESConnector(EES_FILE, ees_decimal_separator=".", display_progress_bar=True) as ees:
+with EESConnector(EES_FILE, ees_decimal_separator=",", display_progress_bar=True) as ees:
 
     try:
         result = ees.calculate(calculation_dict)

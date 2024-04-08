@@ -35,7 +35,7 @@ c_rock = 0.90267    # [kJ/(kg K)]
 rho_rock = 2600     # [kg/m^3]
 
 t_in = 10           # [C]
-p_in = 3            # [MPa]
+p_in = 5            # [MPa]
 eta_HP = 0.4
 eta_pump = 0.8
 
@@ -60,12 +60,12 @@ T_0 = t_in + 273.15
 time = 3650
 
 n_T_max = 10
-n_grad_T = 6
+n_grad_T = 1
 n_m_dot = 9
 n_t_in_water = 16
 
 t_max_arr = np.linspace(80, 120, n_T_max)
-grad_T_arr = np.linspace(50, 75, n_grad_T)
+grad_T_arr = np.linspace(35, 75, n_grad_T)
 mass_flow_arr = np.linspace(4, 12, n_m_dot)
 t_in_water = np.linspace(20, 80, n_t_in_water)
 
@@ -177,6 +177,7 @@ for key in calculation_dict.keys():
     pbar.update(1)
 
 pbar.close()
+
 # %%
 RES_FOLDER = os.path.join(
 
@@ -207,5 +208,5 @@ for i in range(n_T_max):
 names = inputs_names
 names.extend(results_names)
 df = DataFrame(df_results)
-df.columns = names
+#df.columns = names
 df.to_excel(file_path, index=False, startrow=1, startcol=1)
