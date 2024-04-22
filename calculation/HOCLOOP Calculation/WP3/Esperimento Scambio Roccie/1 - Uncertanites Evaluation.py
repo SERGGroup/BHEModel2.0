@@ -8,15 +8,51 @@ import numpy as np
 n_points = 10000000
 
 alpha_mu = -6
-alpha_sd = 1
+alpha_sd = 0.25
 exp_alpha = np.random.normal(alpha_mu, alpha_sd, n_points)
 alpha_rand = np.power(10, exp_alpha)
 
 k_mu = -10
-k_sd = 2
+k_sd = 0.5
 exp_k = np.random.normal(k_mu, k_sd, n_points)
 k_rand = np.power(10, exp_k)
 
+
+# %%------------   PLOT RANDOM VARIABLES                           -----------------------------------------------------------> #
+plot_linear = False
+plt.figure(figsize=(10,4))
+
+plt.subplot(121)
+plt_array = alpha_rand
+hist, logbins = np.histogram(plt_array, bins=300, density=True)
+
+if not plot_linear:
+    logbins = np.logspace(np.log10(logbins[0]),np.log10(logbins[-1]),len(logbins))
+    plt.xscale("log")
+
+plt.hist(plt_array, bins=logbins, alpha=0.5)
+ax = plt.gca()
+ax.get_yaxis().set_visible(False)
+plt.ylabel("probability density [-]")
+plt.title("$\\alpha$ uncertainty")
+
+plt.subplot(122)
+plt_array = k_rand
+hist, logbins = np.histogram(plt_array, bins=300, density=True)
+
+if not plot_linear:
+    logbins = np.logspace(np.log10(logbins[0]),np.log10(logbins[-1]),len(logbins))
+    plt.xscale("log")
+
+plt.hist(plt_array, bins=logbins, alpha=0.5)
+ax = plt.gca()
+ax.get_yaxis().set_visible(False)
+plt.ylabel("probability density [-]")
+plt.title("$k$ uncertainty")
+
+
+plt.tight_layout(pad=2)
+plt.show()
 
 # %%------------   EVALUATE Pe_MAX                        -----------------------------------------------------------> #
 r_list = np.array([0.001, 0.01, 0.1])
@@ -91,12 +127,13 @@ for i in range(len(r_list)):
 
 plt.xlabel("${t_d}_{pos\%}$")
 plt.ylabel("probability density [-]")
-plt.title("$r_0$ effect")
+plt.title("$r_0$ effect ($Pe_\% = 1$)")
 plt.legend()
 
 plt.subplot(122)
-for i in range(len(Pe_perc_list)):
+for j in range(len(Pe_perc_list)):
 
+    i = len(Pe_perc_list) - j - 1
     plt_array = t_d_perc_list_ovr[i][0]
     if plot_linear:
         hist, logbins = np.histogram(plt_array, bins=np.linspace(0, 1, 500), density=True)
@@ -110,7 +147,7 @@ for i in range(len(Pe_perc_list)):
 plt.xlabel("${t_d}_{pos\%}$")
 ax = plt.gca()
 ax.get_yaxis().set_visible(False)
-plt.title("$Pe_\%$ effect")
+plt.title("$Pe_\%$ effect ($r_0 = 0.1cm$)")
 plt.legend()
 
 plt.tight_layout(pad=2)
