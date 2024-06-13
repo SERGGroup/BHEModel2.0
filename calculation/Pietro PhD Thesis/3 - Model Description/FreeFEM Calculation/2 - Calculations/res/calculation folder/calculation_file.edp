@@ -14,7 +14,6 @@ int pointsL = pointsH*L/H;
 // Visualization Mesh Parameters
 real ratioR=15;
 
-
 int Cside=99, Ctop=98, Cbottom=97,CMeshExt=96, CMeshInt=95, Ctube=94;
 
 // Define mesh boundary
@@ -39,7 +38,7 @@ mesh ThPlot = buildmesh(C0(10)+C01(100));
 
 real Tstart=0.001;
 real Tend=1000;
-int nT=1000;
+int nT=200;
 
 real logdeltat = (log10(Tend)-log10(Tstart)) / nT;
 real deltat = Tstart;
@@ -48,7 +47,7 @@ real deltat = Tstart;
 // Problem Definition Parameters
 real gradRock=0.0, DT=40.0;
 real vxUnd=1, vyUnd=0.0;
-real Pe=10;
+real Pe=0;
 
 // Speed Adimensionalization
 real modvUnd = sqrt(vxUnd ^ 2 + vyUnd^2);
@@ -105,7 +104,8 @@ real told=0, t=0;
 int nSections=1000;
 
 
-int saveevery = nT / 1000;
+int plotevery = nT / 200;
+int saveevery = nT / 200;
 real theta, sum=0;
 Vh fx, fy;
 
@@ -122,8 +122,17 @@ for (int i = 0; i <= nT; ++i){
 
 
 	thermal;
+    cout << "Current Time" << t << endl;
 
-    
+    if (i%plotevery == 0){{
+
+        uplot = u;
+        plot(uplot, value=true, grey=true, fill=true);   
+		cout << "Plotted" << endl;
+
+
+    }}
+
     
     if (i%saveevery == 0){{
 
@@ -143,7 +152,6 @@ for (int i = 0; i <= nT; ++i){
         ff << t << "; " << sum / nSections * 2*pi*r << endl;   
 
     }}
-
 
     uPrev=u;
 

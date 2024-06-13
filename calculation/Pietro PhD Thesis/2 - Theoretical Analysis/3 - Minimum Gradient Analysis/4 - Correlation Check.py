@@ -13,12 +13,13 @@ import numpy as np
 # %%-------------------------------------   DEFINE CONDITIONS                   -------------------------------------> #
 fluid = "Ethane"
 n_grad = 350
-n_depth = 20
-n_t_rel = 3
+n_depth = 10
+n_t_rel = 1
 
 grad_nd_nd_list = np.logspace(-2, 4.5, n_grad)
 dz_nd_list = np.logspace(-5, -1, n_depth)
-t_rel_list = [0.4, 0.5, 0.75]
+# t_rel_list = [0.4, 0.5, 0.75]
+t_rel_list = [0.4]
 
 
 # %%-------------------------------------   EVALUATE COEFFICIENTS               -------------------------------------> #
@@ -279,14 +280,24 @@ axbig = fig.add_subplot(gs[:, 1])
 axs = [base_axs[0, 0], base_axs[1, 0], axbig]
 
 dz_label = "${{\\Delta z}}^{{\\#}} = 10^{{ {:0.1f} }}$"
-cmp_labels = ["Liquid", dz_label, "Ideal Gas"]
+cmp_labels = ["Liquid", "Ideal Gas", dz_label]
 cmp_y_values = [
 
     [spc_work_liq, spc_ex_liq, ex_eta_liq],
-    [w_dot_nds, ex_dot_nds, eta_exs],
     [spc_work_gas, spc_ex_gas, ex_eta_gas],
+    [w_dot_nds, ex_dot_nds, eta_exs],
 
 ]
+alphas = [0.25, 0.25, 1]
+
+# cmp_labels = ["Liquid", dz_label]
+# cmp_y_values = [
+#
+#     [spc_work_liq, spc_ex_liq, ex_eta_liq],
+#     [w_dot_nds, ex_dot_nds, eta_exs]
+#
+# ]
+# alphas = [0.25, 1]
 
 print(t_rel_list[i])
 lines = [list(), list(), list()]
@@ -306,7 +317,8 @@ for m in range(len(cmp_y_values[0])):
 
                         x_values[:, k], cmp_y_values[n][m][i, :, k], "-",
                         label=dz_label.format(np.log10(dz_nd_list[k])),
-                        color=cmap(norm((k + 1) / (len(dz_nd_list) + 1)))
+                        color=cmap(norm((k + 1) / (len(dz_nd_list) + 1))),
+                        alpha=alphas[n]
 
                     )[0]
 
@@ -326,7 +338,7 @@ for m in range(len(cmp_y_values[0])):
 
                     x_values[:, k], cmp_y_values[n][m][:, k], "-",
                     label=cmp_labels[n], color=cmap(norm(n)),
-                    linewidth=2
+                    linewidth=2, alpha=alphas[n]
 
                 )[0]
 
@@ -346,8 +358,8 @@ for k in range(len(axs)):
     if not y_names[k] == y_names[-1]:
         axs[k].set_yscale("log")
 
-    else:
-        axs[k].legend(handles=lines[k], fontsize="8")
+    # else:
+    #     axs[k].legend(handles=lines[k], fontsize="8")
 
 plt.tight_layout(pad=2)
 plt.subplots_adjust(hspace=0)
@@ -387,6 +399,7 @@ else:
     liq_value = spc_ex_liq / (spc_work_liq * carnot_factor_liq)
 
 for k in range(len(dz_nd_list)):
+
     lines[m].append(
 
         axs[0].plot(

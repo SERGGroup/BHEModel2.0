@@ -36,10 +36,10 @@ DT = 40.
 
 n_mesh = 3
 m_mesh = 20
-time_steps = 200
+time_steps = 1000
 n_save = time_steps
 results = dict()
-Pe_list = [0]
+Pe_list = [np.power(10, 0.75)]
 
 for Pe in Pe_list:
 
