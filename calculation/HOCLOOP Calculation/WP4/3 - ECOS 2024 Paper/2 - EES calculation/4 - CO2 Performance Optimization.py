@@ -30,7 +30,7 @@ t_max = 90          # [C]
 t_sat = 10          # [C]
 
 # Geological Data
-grad_T = 50         # [C/km]
+grad_T = 75         # [C/km]
 t_surf = 10         # [C]
 k_rock = 2.423      # [W/(m K)]
 c_rock = 0.90267    # [kJ/(kg K)]
@@ -153,7 +153,12 @@ RES_FOLDER = os.path.join(
 
 EES_FILE = os.path.join(RES_FOLDER, "0 - EES Files", "base heat pump V2 - python.EES")
 
-with EESConnector(EES_FILE, ees_decimal_separator=",", display_progress_bar=True) as ees:
+with EESConnector(
+
+        ees_file_path=EES_FILE, ees_decimal_separator=",",
+        display_progress_bar=True, timeout=20
+
+) as ees:
 
     try:
         result = ees.calculate(calculation_dict)
@@ -163,6 +168,8 @@ with EESConnector(EES_FILE, ees_decimal_separator=",", display_progress_bar=True
 
 print("Done!")
 
+
+# %%------------   EXPORT RESULT                          -----------------------------------------------------------> #
 now = datetime.now()
 now_str = "{}-{:02}-{:02} - {:02}.{:02}".format(now.year, now.month, now.day, now.hour, now.minute)
 file_path = os.path.join(RES_FOLDER, "00 - Results", "calculation results files", "co2-opt-{}.xlsx".format(now_str))
@@ -186,9 +193,11 @@ for i in range(len(l_hor_well_arr)):
             key = "{}-{}-{}".format(i, j, k)
             if key in calculation_dict.keys():
 
-                sub_list = calculation_dict[key]
-                sub_list.extend(result[key])
-                df_results.append(sub_list)
+                if result[key] is not None:
+
+                    sub_list = calculation_dict[key]
+                    sub_list.extend(result[key])
+                    df_results.append(sub_list)
 
 names = inputs_names
 names.extend(results_names)
