@@ -60,12 +60,12 @@ T_0 = t_in + 273.15
 time = 3650
 
 n_T_max = 10
-n_grad_T = 1
+n_grad_T = 2
 n_m_dot = 9
 n_t_in_water = 16
 
 t_max_arr = np.linspace(80, 120, n_T_max)
-grad_T_arr = np.linspace(35, 75, n_grad_T)
+grad_T_arr = np.linspace(50, 75, n_grad_T)
 mass_flow_arr = np.linspace(4, 12, n_m_dot)
 t_in_water = np.linspace(20, 80, n_t_in_water)
 
@@ -156,7 +156,7 @@ for key in calculation_dict.keys():
             rho = well.points[-1].get_variable("rho")
             c_well = 1.15 * 1.05 * 2.86 * (0.105 * l_overall ** 2 + 1776 * l_overall * cas_id + 2.735E5)
 
-            w_dot_hp = (1 - (t_in + 273.15)/(t_max + 273.15)) / eta_HP * well.power
+            w_dot_hp = well.power / ((t_max + 273.15)/(t_max - t_in) * eta_HP)
             w_dot_hp = max(w_dot_hp, 0)
             c_HP = 0.33667 * w_dot_hp / 1000
 
@@ -167,7 +167,8 @@ for key in calculation_dict.keys():
             q_dh = w_dot_hp + well.power
 
             LCOH = ((c_HP + c_well) * beta + w_dot_tot * c_el) / q_dh
-            results_list = [LCOH, q_dh, w_dot_tot, t_max]
+            COP = q_dh / w_dot_tot
+            results_list = [LCOH, q_dh, w_dot_tot, COP]
 
     except:
 
