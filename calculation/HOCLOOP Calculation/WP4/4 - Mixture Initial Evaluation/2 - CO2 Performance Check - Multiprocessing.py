@@ -205,7 +205,6 @@ def evaluate_well(i, n):
 
                 if len(well.points) > 2 and well.points[-1].get_variable("rho") > 0:
 
-                    print(well.points[-1].m_dot)
                     beta_well = well.points[-1].get_variable("P") / well.points[0].get_variable("P")
                     dt_well = well.points[-1].get_variable("T") - well.points[0].get_variable("T")
                     c_well = 1.15 * 1.05 * 2.86 * (0.105 * l_tot ** 2 + 1776 * l_tot * cas_id + 2.735E5)
@@ -237,11 +236,11 @@ def evaluate_well(i, n):
     results_np = np.empty([len(results), max_len])
     results_np[:] = np.nan
 
-    for k in range(len(results)):
+    for a in range(len(results)):
 
-        for j in range(len(results[k])):
+        for b in range(len(results[a])):
 
-            results_np[k, n] = results[k][n]
+            results_np[a, b] = results[a][b]
 
     curr_filename = os.path.join(support_folder, base_filename.format(i=i, j=n))
     np.save(curr_filename, results_np)
@@ -273,9 +272,9 @@ if __name__ == '__main__':
 
     for i in range(n_grad_T):
 
-        for j in range(n_time):
+        for n in range(n_time):
 
-            filename = os.path.join(support_folder, base_filename.format(i=i, j=j))
+            filename = os.path.join(support_folder, base_filename.format(i=i, j=n))
 
             if os.path.exists(filename):
 
