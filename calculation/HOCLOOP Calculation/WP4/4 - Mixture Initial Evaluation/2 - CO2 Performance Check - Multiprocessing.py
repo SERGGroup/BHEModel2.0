@@ -56,11 +56,11 @@ c_el = 0.075
 alpha = (1 - (1 + i_rate) ** (-Le)) / i_rate
 beta = (1 + alpha * om_ratio) / (alpha * hy)
 
-time_arr = [3.6] #[3.6, 36, 360, 3600]
+time_arr = [3.6, 36, 360, 3600]
 
-n_grad_T = 2#7
-n_m_dot = 2#11
-n_conc = 1#11
+n_grad_T = 7
+n_m_dot = 11
+n_conc = 11
 n_time = len(time_arr)
 
 grad_T_arr = np.linspace(35, 75, n_grad_T)
@@ -158,7 +158,7 @@ for key in calculation_dict.keys():
 pbar.close()
 
 def evaluate_well(i, j):
-    global calculation_dict
+
     results = list()
     max_len = 0
     print("i={i} - j={j} - Calculation Started".format(i=i, j=j))
