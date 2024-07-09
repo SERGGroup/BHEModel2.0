@@ -58,14 +58,14 @@ beta = (1 + alpha * om_ratio) / (alpha * hy)
 
 time_arr = [3.6, 36, 360, 3600]
 
-n_grad_T = 7
-n_m_dot = 11
-n_conc = 11
+n_grad_T = 2
+n_m_dot = 1
+n_conc = 2
 n_time = len(time_arr)
 
 grad_T_arr = np.linspace(35, 75, n_grad_T)
 m_dot_well_arr = np.linspace(5, 15, n_m_dot)
-conc_arr = np.linspace(0, 0.1, n_conc)
+conc_arr = np.linspace(0, 0.3, n_conc)
 
 grad_T_arr, m_dot_well_arr, conc_arr, time_arr = np.meshgrid(grad_T_arr, m_dot_well_arr, conc_arr, time_arr, indexing='ij')
 
@@ -157,15 +157,15 @@ for key in calculation_dict.keys():
 
 pbar.close()
 
-def evaluate_well(i, j):
+def evaluate_well(i, n):
 
     results = list()
     max_len = 0
-    print("i={i} - j={j} - Calculation Started".format(i=i, j=j))
+    print("i={i} - j={j} - Calculation Started".format(i=i, j=n))
 
     for k in range(n_conc):
 
-        for n in range(n_time):
+        for j in range(n_m_dot):
 
             key = "{}-{}-{}-{}".format(i, j, k, n)
             grad_T = calculation_dict[key][0]
@@ -239,14 +239,14 @@ def evaluate_well(i, j):
 
     for k in range(len(results)):
 
-        for n in range(len(results[k])):
+        for j in range(len(results[k])):
 
             results_np[k, n] = results[k][n]
 
-    curr_filename = os.path.join(support_folder, base_filename.format(i=i, j=j))
+    curr_filename = os.path.join(support_folder, base_filename.format(i=i, j=n))
     np.save(curr_filename, results_np)
 
-    print("i={i} - j={j} - Calculation Completed".format(i=i, j=j))
+    print("i={i} - j={j} - Calculation Completed".format(i=i, j=n))
 
 
 if __name__ == '__main__':
@@ -259,7 +259,7 @@ if __name__ == '__main__':
 
         for i in range(n_grad_T):
 
-            for j in range(n_m_dot):
+            for j in range(n_time):
 
                 time.sleep(0.5)
                 future_list.append(executor.submit(evaluate_well, i, j))
@@ -273,7 +273,7 @@ if __name__ == '__main__':
 
     for i in range(n_grad_T):
 
-        for j in range(n_m_dot):
+        for j in range(n_time):
 
             filename = os.path.join(support_folder, base_filename.format(i=i, j=j))
 
