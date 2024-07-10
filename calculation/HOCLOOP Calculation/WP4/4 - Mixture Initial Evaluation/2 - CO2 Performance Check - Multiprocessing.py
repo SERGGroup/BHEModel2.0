@@ -58,14 +58,14 @@ beta = (1 + alpha * om_ratio) / (alpha * hy)
 
 time_arr = [3.6, 36, 360, 3600]
 
-n_grad_T = 7
-n_m_dot = 11
-n_conc = 11
+n_grad_T = 9
+n_m_dot = 1
+n_conc = 50
 n_time = len(time_arr)
 
 grad_T_arr = np.linspace(35, 75, n_grad_T)
-m_dot_well_arr = np.linspace(5, 15, n_m_dot)
-conc_arr = np.linspace(0, 0.1, n_conc)
+m_dot_well_arr = np.linspace(15, 15, n_m_dot)
+conc_arr = np.linspace(0, 0.3, n_conc)
 
 grad_T_arr, m_dot_well_arr, conc_arr, time_arr = np.meshgrid(grad_T_arr, m_dot_well_arr, conc_arr, time_arr, indexing='ij')
 
@@ -183,6 +183,8 @@ def evaluate_well(i, j):
                 bhe_in = PlantThermoPoint(["Carbon Dioxide", other_comp], [1 - conc, conc])
                 bhe_in.set_variable("T", t_sat)
                 bhe_in.set_variable("P", calculation_dict[key][4])
+                bhe_in.m_dot = mass_flow
+
                 well = REELWEELBHE(
 
                     bhe_in, dz_well=depth, t_rocks=t_rock, t_surf=t_surf,
@@ -198,8 +200,6 @@ def evaluate_well(i, j):
 
                 )
                 well.heating_section = heating_section
-
-                bhe_in.m_dot = mass_flow
                 well.heating_section.time = time / 365
                 well.update()
 
@@ -211,16 +211,18 @@ def evaluate_well(i, j):
                     LCOH = (c_well * beta) / well.power
                     LCOex = (c_well * beta) / (well.dex * mass_flow)
 
-                    sub_results.append(beta_well)
-                    sub_results.append(dt_well)
+                    if dt_well > 0:
 
-                    sub_results.append(well.dh)
-                    sub_results.append(well.dex)
-                    sub_results.append(well.dex_bottom)
-                    sub_results.append(well.power)
-                    sub_results.append(well.dex * mass_flow)
-                    sub_results.append(LCOH)
-                    sub_results.append(LCOex)
+                        sub_results.append(beta_well)
+                        sub_results.append(dt_well)
+
+                        sub_results.append(well.dh)
+                        sub_results.append(well.dex)
+                        sub_results.append(well.dex_bottom)
+                        sub_results.append(well.power)
+                        sub_results.append(well.dex * mass_flow)
+                        sub_results.append(LCOH)
+                        sub_results.append(LCOex)
 
             except:
 
