@@ -306,8 +306,12 @@ class SimplifiedWell(ABC):
         self.dh = h_list[3] - h_list[0]
         self.ds = s_list[3] - s_list[0]
 
+        dh_bott = h_list[2] - h_list[1]
+        ds_bott = s_list[2] - s_list[1]
+
+        self.q_bottom = dh_bott
+        self.dex_bottom = dh_bott - self.points[0].RPHandler.T_0_in_K * self.ds
         self.dex = self.dh - self.points[0].RPHandler.T_0_in_K * self.ds
-        self.q_bottom = h_list[2] - h_list[1]
         self.Q_bottom = self.q_bottom * self.points[0].m_dot
         self.power = self.dh * self.points[0].m_dot
 
@@ -342,38 +346,15 @@ class SimplifiedWell(ABC):
 
         if self.q_bottom > 0:
 
-            excel_path = os.path.join(constants.RES_FOLDER, "3ETool_Excel-Files", "BHE_simple_analysis.xlsx")
             T_rocks_K = self.t_rocks + 273.15
-
-            new_exergy_list = [
-
-                {"index": 20, "value": self.dz_well * g / 1000},
-                {"index": 21, "value": (1 - self.points[0].RPHandler.T_0_in_K / T_rocks_K) * self.q_bottom},
-                {"index": 22, "value": self.dex}
-
-            ]
-
-            for index in range(len(self.points)):
-                new_exergy_list.append({
-
-                    "index": index + 1,
-                    "value": self.points[index].get_variable("exergy")
-
-                })
-
-            with warnings.catch_warnings():
-
-                warnings.simplefilter("ignore")
-
-                array_handler = calculate_excel(excel_path, new_exergy_list=new_exergy_list, export_solution=False)
-                result = get_result_data_frames(array_handler)
-
-            self.comp_results = result["Comp Out"]
-            self.eta_II = array_handler.overall_efficiency
+            ex_in_bottom = self.q_bottom * (1 - self.points[0].RPHandler.T_0_in_K / T_rocks_K)
+            ex_in = self.dh * (1 - self.points[0].RPHandler.T_0_in_K / T_rocks_K)
+            self.eta_II_bottom = self.dex_bottom / ex_in_bottom
+            self.eta_II = self.dex / ex_in      # this can be wrong
 
         else:
 
-            self.comp_results = 0.
+            self.eta_II_bottom = 0.
             self.eta_II = 0.
 
     # <------------------------------------------------------------------------->
