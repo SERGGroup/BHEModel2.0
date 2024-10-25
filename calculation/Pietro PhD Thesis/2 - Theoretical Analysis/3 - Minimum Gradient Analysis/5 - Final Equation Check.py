@@ -277,6 +277,7 @@ for i in range(len(t_rel_list)):
         w_dot_nds[i, wrong_indices, k] = np.nan
         ex_dot_nds[i, wrong_indices, k] = np.nan
         eta_exs[i, wrong_indices, k] = np.nan
+        betas_des[i, wrong_indices, k] = np.nan
         w_dex_mins[i, wrong_indices, k] = np.nan
         w_dex_maxs[i, wrong_indices, k] = np.nan
 
@@ -284,13 +285,13 @@ for i in range(len(t_rel_list)):
         w_dot_nds[i, wrong_indices, k] = np.nan
         ex_dot_nds[i, wrong_indices, k] = np.nan
         eta_exs[i, wrong_indices, k] = np.nan
+        betas_des[i, wrong_indices, k] = np.nan
         w_dex_mins[i, wrong_indices, k] = np.nan
         w_dex_maxs[i, wrong_indices, k] = np.nan
 
 
-
 # %%-------------------------------------   PLOT INITIAL COMPARISON             -------------------------------------> #
-i = 0
+i = 2
 
 fig, base_axs = plt.subplots(2, 2, dpi=300)
 fig.set_size_inches(10, 5)
@@ -307,11 +308,13 @@ axs = [base_axs[0, 0], base_axs[1, 0], axbig]
 
 dz_label = "${{\\Delta z}}^{{\\#}} = 10^{{ {:0.1f} }}$"
 cmp_labels = ["Liquid", dz_label, "Ideal Gas"]
+filler = np.empty(np.array(spc_work_gas).shape)
+filler[:] = np.nan
 cmp_y_values = [
 
-    [spc_work_liq, spc_ex_liq, ex_eta_liq],
-    [w_dot_nds, ex_dot_nds, eta_exs],
-    [spc_work_gas, spc_ex_gas, ex_eta_gas],
+    [spc_work_liq, spc_ex_liq, filler],
+    [w_dot_nds, ex_dot_nds, w_dex_maxs],
+    [spc_work_gas, spc_ex_gas, filler],
 
 ]
 
@@ -370,11 +373,11 @@ for k in range(len(axs)):
     axs[k].set_ylabel(y_names[k])
     axs[k].set_xlabel("${\\nabla T_{rocks}}^{\\#}$ [-]")
 
-    if not y_names[k] == y_names[-1]:
-        axs[k].set_yscale("log")
+    # if not y_names[k] == y_names[-1]:
+    axs[k].set_yscale("log")
 
-    else:
-        axs[k].legend(handles=lines[k], fontsize="8")
+    # else:
+    axs[k].legend(handles=lines[k], fontsize="8")
 
 plt.tight_layout(pad=2)
 plt.subplots_adjust(hspace=0)

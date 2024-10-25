@@ -7,7 +7,8 @@ import numpy as np
 
 
 # %%-------------------------------------   OPT FUNCTION INITIALIZATION         -------------------------------------> #
-fluids = ["Carbon Dioxide", "Water", "Propane", "R1234yf", "Ethane"]
+# fluids = ["Carbon Dioxide", "Water", "Propane", "R1234yf", "Ethane"]
+fluids = ["Carbon Dioxide", "Ethane"]
 acntr_factors = list()
 gamma_in_list = list()
 p_in_list = list()
@@ -140,7 +141,7 @@ plt.show()
 # %%-------------------------------------   PLOT RATIOS                         -------------------------------------> #
 fig, ax = plt.subplots(1, 1, dpi=300)
 fig.set_size_inches(10, 5)
-logy = True
+logy = False
 
 for i in range(len(fluids)):
 

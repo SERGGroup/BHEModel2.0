@@ -21,7 +21,7 @@ class SimplifiedWell(ABC):
 
             self, input_thermo_point: PlantThermoPoint, dz_well,
             t_rocks=None, t_surf=None, geo_flux=None,
-            k_rocks=0.2, c_rocks=1, rho_rocks=2500,
+            k_rocks=2, c_rocks=1, rho_rocks=2500,
             heating_section=None, PPI=None,
             use_rk=True
 
@@ -50,7 +50,7 @@ class SimplifiedWell(ABC):
     def __init_geological_data(self, dz_well, t_rocks, t_surf, geo_flux, k_rocks, c_rocks, rho_rocks):
 
         self.dz_well = dz_well  # unit: m .............. default: NONE (REQUIRED)
-        self.k_rocks = k_rocks  # unit: W / (m K) ...... default: 0.2 W / (m K)
+        self.k_rocks = k_rocks  # unit: W / (m K) ...... default: 2 W / (m K)
         self.c_rocks = c_rocks  # unit: kJ / (kg K) .... default: 1 kJ / (kg K)
         self.rho_rocks = rho_rocks  # unit: kg / m^3 ....... default: 2500 kg / m^3
 

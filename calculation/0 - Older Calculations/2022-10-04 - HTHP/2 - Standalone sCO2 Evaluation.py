@@ -11,7 +11,6 @@ import os
 
 
 # %%------------   INITIALIZATION AND FIRST TESTS         -----------------------------------------------------------> #
-
 hthp = StandaloneCO2HeatPump(
 
     BHE_depth=2500,
@@ -24,10 +23,10 @@ hthp = StandaloneCO2HeatPump(
 hthp.thermo_analysis()
 print(hthp)
 
-# %%------------   CALCULATIONS                           -----------------------------------------------------------> #
 
+# %%------------   CALCULATIONS                           -----------------------------------------------------------> #
 T_SG_perc_list = get_np_array(0.2, 1, 5)
-rho_in_list = get_np_array(500, 800, 20)
+rho_in_list = get_np_array(500, 650, 20)
 
 hthp_list = list()
 pbar = tqdm(desc="calculation", total=len(T_SG_perc_list) * len(rho_in_list))
@@ -69,8 +68,8 @@ for T_SG_perc in T_SG_perc_list:
 
 pbar.close()
 
-# %%------------   DATA PLOT                              -----------------------------------------------------------> #
 
+# %%------------   DATA PLOT                              -----------------------------------------------------------> #
 # Figure initialization
 fig, (ax_1, ax_2) = plt.subplots(1, 2, dpi=150)
 fig.set_size_inches(12, 5)
@@ -163,6 +162,7 @@ for ax in [ax_1, ax_2]:
     ax.grid(which='minor', linewidth=0.2, alpha=0.75)
 
 plt.show()
+
 
 # %%------------   SAVE IMAGE                             -----------------------------------------------------------> #
 current_folder = os.path.join(
