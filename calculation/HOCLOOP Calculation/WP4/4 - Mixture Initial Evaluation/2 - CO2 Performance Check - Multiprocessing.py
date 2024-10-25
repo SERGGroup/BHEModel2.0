@@ -44,7 +44,7 @@ rho_rock = 2600     # [kg/m^3]
 # Well design parameters
 cas_id = 0.1617     # [m]
 l_horiz = 3600      # [m]
-depth = 3000        # [m]
+depth = 500         # [m]
 l_tot = l_horiz + depth
 
 # Economic Parameter
