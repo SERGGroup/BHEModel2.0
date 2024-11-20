@@ -63,10 +63,11 @@ def evaluate_params(sheet, sep_perc: np.ndarray, use_rel_ratio: bool = True):
 
 
 # %%------------   EVALUATE RESULTS                       -----------------------------------------------------------> #
+n_geo = 15
 
 # 1. CALCULATION RANGES -------------------------------------------------- >
-depth_list = np.round(np.linspace(1000, 5000, 15), 1)
-grad_list = np.round(np.linspace(30, 100, 15), 1)
+depth_list = np.round(np.linspace(1000, 5000, n_geo), 1)
+grad_list = np.round(np.linspace(20, 100, n_geo), 1)
 X, Y = np.meshgrid(depth_list, grad_list, indexing='ij')
 
 t_sg_min = 0.001
