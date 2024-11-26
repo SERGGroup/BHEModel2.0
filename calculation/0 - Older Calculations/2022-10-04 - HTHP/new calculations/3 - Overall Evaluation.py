@@ -25,7 +25,7 @@ rel_power_cells = {
     "comp":         "H11",
     "pump":         "H12",
     "q_steam":      "H17",
-    "ihx_power":    "C23",
+    "ihx_power":    "D23",
 
 }
 
@@ -63,7 +63,7 @@ def evaluate_params(sheet, sep_perc: np.ndarray, use_rel_ratio: bool = True):
 
 
 # %%------------   EVALUATE RESULTS                       -----------------------------------------------------------> #
-n_geo = 15
+n_geo = 25
 
 # 1. CALCULATION RANGES -------------------------------------------------- >
 depth_list = np.round(np.linspace(1000, 5000, n_geo), 1)
@@ -159,7 +159,7 @@ with (UNISIMConnector(unisim_path, close_on_completion=False) as unisim):
 
                     try:
 
-                        w_rel_list[i, j, n, :], m_ratio_list[i, j, n, :], t_ihx_list[i, j, n, :] = evaluate_params(
+                        w_rel_list[i, j, n, :], m_ratio_list[i, j, n, :], ihx_power_list[i, j, n, :] = evaluate_params(
 
                             sheet=spreadsheet, sep_perc=sep_perc_list, use_rel_ratio=True
 

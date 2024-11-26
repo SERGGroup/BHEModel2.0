@@ -1,5 +1,6 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
 from scipy.ndimage import gaussian_filter, uniform_filter
+from main_code.constants import CALCULATION_FOLDER
 from matplotlib.animation import FuncAnimation
 from scipy.ndimage import gaussian_laplace
 from scipy.interpolate import griddata
@@ -12,7 +13,7 @@ import os
 
 
 # %%------------   IMPORT RESULTS                         -----------------------------------------------------------> #
-CALCULATION_FOLDER = "/Users/PietroUngar/PycharmProjects/BHEModel2.0/calculation"
+# CALCULATION_FOLDER = "/Users/PietroUngar/PycharmProjects/BHEModel2.0/calculation"
 base_folder = os.path.join(CALCULATION_FOLDER, "0 - Older Calculations", "2022-10-04 - HTHP", "new calculations")
 output_folder = os.path.join(base_folder, "00 - Output", "3 - Overall Optimization Results")
 gif_folder = os.path.join(base_folder, "00 - Output", "4 - Control GIFs")
@@ -249,6 +250,8 @@ for i, depth in enumerate(depth_list):
 
             ax.plot(optimal_results[i, j, :, 3], optimal_results[i, j, :, 4], alpha=0.5, linewidth=2, color="tab:orange")
             plt.savefig(os.path.join(gif_folder, f'{depth}m - {grad}C-m.png'), format='png', dpi=300)
+            plt.close(fig)
+
             np.save(os.path.join(output_folder, 'optimization_results.npy'), optimal_results)
 
         pbar.update(1)
