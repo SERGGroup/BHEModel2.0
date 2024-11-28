@@ -26,7 +26,7 @@ error_cell = "C14"
 
 
 # %%------------   EVALUATE RESULTS                       -----------------------------------------------------------> #
-n_geo = 10
+n_geo = 25
 
 # 1. CALCULATION RANGES -------------------------------------------------- >
 depth_list = np.round(np.linspace(1000, 5000, n_geo), 1)
