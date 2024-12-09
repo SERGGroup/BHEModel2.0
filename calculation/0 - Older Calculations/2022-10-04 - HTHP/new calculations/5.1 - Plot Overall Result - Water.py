@@ -25,9 +25,10 @@ x_fine, y_fine = np.meshgrid(depth_fine, grad_fine, indexing="ij")
 
 
 # %%------------   PLOT OPTIMAL CONTOURS                  -----------------------------------------------------------> #
-plot_optim_params = True
-generate_gif = False
-n_frame = 50
+plot_optim_params = False
+plot_compression = False
+generate_gif = True
+n_frame = 25
 
 mean_in_omega = False
 window_size = 0
@@ -37,9 +38,7 @@ interp_method = "cubic"
 sigma_smoot = 15
 
 plot_optimal_depth = False
-add_w_net_zero_contour = True
-add_ihx_zero_contour = True
-ihx_zero_contour_sp = 0.25
+
 
 def frame_generation(frame):
 
@@ -55,11 +54,17 @@ def frame_generation(frame):
 
     omega = opt_res[0, 0, frame, 2]
 
-    T_max_perc = opt_res[:, :, 0, 3]
-    sep_perc = opt_res[:, :, 0, 4]
-    w_net = opt_res[:, :, 0, 5]
-    m_dot = opt_res[:, :, 0, 6]
-    ihx_power = opt_res[:, :, 0, 9]
+    if plot_compression:
+        n = 0
+
+    else:
+        n = 1
+
+    w_net = opt_res[:, :, frame, 4 + n * 3]
+    m_dot = opt_res[:, :, frame, 5 + n * 3]
+
+    t_sep_perc = opt_res[:, :, frame, 3]
+    t_sep_perc_hthp = opt_res[:, :, frame, 6]
 
     if mean_in_omega:
 
@@ -70,24 +75,23 @@ def frame_generation(frame):
 
         omega_i = frame
 
-
     for i in range(len(x)):
 
         for j in range(len(y)):
 
-            T_max_perc[i, j] = np.nanmean(opt_res[i, j, omega_i, 3])
-            sep_perc[i, j] = np.nanmean(opt_res[i, j, omega_i, 4])
-            w_net[i, j] = np.nanmean(opt_res[i, j, omega_i, 5])
-            m_dot[i, j] = np.nanmean(opt_res[i, j, omega_i, 6])
-            ihx_power[i, j] = np.nanmean(opt_res[i, j, omega_i, 9])
+            w_net[i, j] = np.nanmean(opt_res[i, j, omega_i, 4 + n * 3])
+            m_dot[i, j] = np.nanmean(opt_res[i, j, omega_i, 5 + n * 3])
+
+            t_sep_perc[i, j] = np.nanmean(opt_res[i, j, omega_i, 3])
+            t_sep_perc_hthp[i, j] = np.nanmean(opt_res[i, j, omega_i, 6])
 
     if mean_in_space:
 
-        T_max_perc = gaussian_filter(griddata(points, T_max_perc.ravel(), (x_fine, y_fine), method=interp_method), sigma=sigma_smoot)
-        sep_perc = gaussian_filter(griddata(points, sep_perc.ravel(), (x_fine, y_fine), method=interp_method), sigma=sigma_smoot)
         w_net = gaussian_filter(griddata(points, w_net.ravel(), (x_fine, y_fine), method=interp_method), sigma=sigma_smoot)
         m_dot = gaussian_filter(griddata(points, m_dot.ravel(), (x_fine, y_fine), method=interp_method), sigma=sigma_smoot)
-        ihx_power = gaussian_filter(griddata(points, ihx_power.ravel(), (x_fine, y_fine), method=interp_method), sigma=sigma_smoot)
+
+        t_sep_perc = gaussian_filter(griddata(points, t_sep_perc.ravel(), (x_fine, y_fine), method=interp_method), sigma=sigma_smoot)
+        t_sep_perc_hthp = gaussian_filter(griddata(points, t_sep_perc_hthp.ravel(), (x_fine, y_fine), method=interp_method), sigma=sigma_smoot)
 
         x_plot = x_fine
         y_plot = y_fine
@@ -97,7 +101,6 @@ def frame_generation(frame):
         x_plot = x
         y_plot = y
 
-    ihx_power = (ihx_power - np.nanmin(ihx_power)) / (np.nanmax(ihx_power) - np.nanmin(ihx_power))
     if plot_optimal_depth:
 
         a = np.log(w_net + 1)
@@ -112,9 +115,9 @@ def frame_generation(frame):
             optimal_depth[j] = np.nanmean(x_fine[:, j][i_min])
 
     if plot_optim_params:
-        axs[0].set_title("${T}_{SG\%}$ [-]")
-        axs[1].set_title("${sep}_{\%}$ [-]")
-        plot_elem = [T_max_perc, sep_perc]
+        axs[0].set_title("${T}_{sep\%}$ Compression [-]")
+        axs[1].set_title("${T}_{sep\%}$ HTHP [-]")
+        plot_elem = [t_sep_perc, t_sep_perc_hthp]
 
     else:
         axs[0].set_title("${W}_{net\ rel}$ [-]")
@@ -124,7 +127,7 @@ def frame_generation(frame):
     for n in range(2):
 
         if levels[n] is None:
-            contour = axs[n].contourf(y_plot, x_plot, plot_elem[n], extend='both')
+            contour = axs[n].contourf(y_plot, x_plot, plot_elem[n], extend='both', levels=21)
             levels[n] = contour.levels
 
         else:
@@ -134,12 +137,6 @@ def frame_generation(frame):
 
             fig.colorbar(contour, ax=axs[n])
             bar_added[n] = True
-
-        if add_w_net_zero_contour:
-            axs[n].contour(y_plot, x_plot, w_net, levels=[0], linewidths=3, colors='white')
-
-        if add_ihx_zero_contour:
-            axs[n].contour(y_plot, x_plot, ihx_power, levels=[ihx_zero_contour_sp], linewidths=3, colors='tab:orange')
 
         if plot_optimal_depth:
             axs[n].plot(grad_fine, optimal_depth, lw=3, color='gold')
@@ -151,8 +148,10 @@ def frame_generation(frame):
     except:
         pass
 
+
 fig, axs = plt.subplots(1, 2, figsize=(12, 5))
 bar_added = [False, False]
+levels = [None, None]
 
 if not generate_gif:
 
@@ -163,8 +162,8 @@ if not generate_gif:
 else:
 
     fps = 20
-    remove_n_omega = 50
-    levels = [np.linspace(0, 1, 21), np.linspace(0, 1, 21)]
+    remove_n_omega = 20
+    # levels = [np.linspace(0, 1, 21), np.linspace(0, 1, 21)]
 
     if mean_in_omega:
         n_frames = opt_res.shape[2] - (2 * window_size + 1) - remove_n_omega
@@ -185,80 +184,3 @@ else:
     plt.close(fig)
     pbar.close()
 
-
-# %%------------   PLOT X_min OVER DEPTH                  -----------------------------------------------------------> #
-grad_plot = np.array([20, 40, 60, 80])
-plot_animation = False
-
-mean_in_space = True
-interp_method = "cubic"
-sigma_smoot = 10
-
-def opt_frame_generation(frame):
-
-    global fig, ax, opt_res, window_size, pbar, x_plot, y_plot, legend_added, grad_plot
-
-    omega = opt_res[0, 0, frame, 2]
-
-    w_net = opt_res[:, :, 0, 5]
-    m_dot = opt_res[:, :, 0, 6]
-
-    for i in range(len(x)):
-
-        for j in range(len(y)):
-
-            w_net[i, j] = np.nanmean(opt_res[i, j, frame, 5])
-            m_dot[i, j] = np.nanmean(opt_res[i, j, frame, 6])
-
-    w_net = gaussian_filter(griddata(points, w_net.ravel(), (x_plot, y_plot), method=interp_method), sigma=sigma_smoot)
-    m_dot = gaussian_filter(griddata(points, m_dot.ravel(), (x_plot, y_plot), method=interp_method), sigma=sigma_smoot)
-
-    a = np.log(w_net + 1)
-    b = np.log(1 / m_dot)
-    x_min = (1 - omega) * a - omega * b
-
-    ax.clear()
-
-    for k in range(len(grad_plot)):
-
-        j_curr = np.where(y_plot == grad_plot[k])
-        ax.plot(x_plot[j_curr]/1e3, x_min[j_curr], label="{}".format(grad_plot[k]))
-
-    if not legend_added:
-       ax.legend()
-       legend_added = True
-
-    ax.set_ylabel("x_min [-]")
-    ax.set_xlabel("Depth [km]")
-    fig.suptitle("Omega = {:.2f}".format(omega))
-
-    try:
-        pbar.update(1)
-    except:
-        pass
-
-fig, ax = plt.subplots(1, 1, figsize=(12, 5))
-legend_added = False
-
-grad_plot_final = np.concatenate((grad_fine, grad_plot))
-grad_plot_final = np.sort(np.unique(grad_plot_final))
-x_plot, y_plot = np.meshgrid(depth_fine, grad_plot_final, indexing="ij")
-
-if plot_animation:
-
-    fps = 20
-    remove_n_omega = 50
-    n_frames = opt_res.shape[2] - 1 - remove_n_omega
-
-    pbar = tqdm(total=n_frames+1)
-
-    ani = FuncAnimation(fig, opt_frame_generation, frames=n_frames, repeat=True)
-    ani.save(os.path.join(output_folder, f'x_min over grad results.gif'), writer='pillow', fps=fps)
-
-    plt.close(fig)
-    pbar.close()
-
-else:
-
-    opt_frame_generation(68)
-    plt.show()
