@@ -1,7 +1,6 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
 from matplotlib.colors import Normalize, LinearSegmentedColormap
 from scipy.ndimage import gaussian_filter, uniform_filter
-from main_code.constants import CALCULATION_FOLDER
 from matplotlib.ticker import FormatStrFormatter
 from UNISIMConnect import UNISIMConnector
 from scipy.interpolate import griddata
@@ -13,6 +12,12 @@ from tqdm import tqdm
 import pandas as pd
 import numpy as np
 import os
+
+if os.name == "nt":
+    from main_code.constants import CALCULATION_FOLDER
+
+else:
+    CALCULATION_FOLDER = "/Users/PietroUngar/PycharmProjects/BHEModel2.0/calculation"
 
 
 # %%------------   INIT CALCULATIONS                      -----------------------------------------------------------> #

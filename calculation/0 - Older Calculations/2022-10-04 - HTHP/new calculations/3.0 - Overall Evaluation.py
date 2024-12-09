@@ -1,9 +1,15 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
-from main_code.constants import CALCULATION_FOLDER
 from UNISIMConnect import UNISIMConnector
 from tqdm import tqdm
 import numpy as np
 import os
+
+if os.name == "nt":
+    from main_code.constants import CALCULATION_FOLDER
+
+else:
+    CALCULATION_FOLDER = "/Users/PietroUngar/PycharmProjects/BHEModel2.0/calculation"
+
 
 
 # %%------------   INIT CALCULATIONS                      -----------------------------------------------------------> #

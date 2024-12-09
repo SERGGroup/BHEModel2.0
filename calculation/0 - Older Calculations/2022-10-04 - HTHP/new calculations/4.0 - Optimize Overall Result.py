@@ -1,6 +1,5 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
 from scipy.ndimage import gaussian_filter, uniform_filter
-from main_code.constants import CALCULATION_FOLDER
 from matplotlib.animation import FuncAnimation
 from scipy.ndimage import gaussian_laplace
 from scipy.interpolate import griddata
@@ -10,6 +9,13 @@ from tqdm import tqdm
 import numpy as np
 import warnings
 import os
+
+if os.name == "nt":
+    from main_code.constants import CALCULATION_FOLDER
+
+else:
+    CALCULATION_FOLDER = "/Users/PietroUngar/PycharmProjects/BHEModel2.0/calculation"
+
 
 
 # %%------------   IMPORT RESULTS                         -----------------------------------------------------------> #
