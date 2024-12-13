@@ -1,5 +1,4 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
-# from main_code.constants import CALCULATION_FOLDER
 from matplotlib.animation import FuncAnimation
 from scipy.ndimage import gaussian_filter
 from scipy.interpolate import griddata
@@ -13,6 +12,7 @@ if os.name == "nt":
 
 else:
     CALCULATION_FOLDER = "/Users/PietroUngar/PycharmProjects/BHEModel2.0/calculation"
+
 
 # %%------------   IMPORT RESULTS                         -----------------------------------------------------------> #
 base_folder = os.path.join(CALCULATION_FOLDER, "0 - Older Calculations", "2022-10-04 - HTHP", "new calculations")
@@ -186,4 +186,5 @@ else:
 
     plt.close(fig)
     pbar.close()
+
 
