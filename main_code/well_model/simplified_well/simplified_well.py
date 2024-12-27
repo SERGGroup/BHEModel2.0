@@ -428,11 +428,7 @@ class SimplifiedWell(ABC):
         dp_loss = self.__evaluate_pressure_losses(self.new_point)
         dp = rho_curr * g / 1e6 + dp_loss
 
-        if self.is_upward:
-            c0_curr = self.calculate_C0(self.new_point, depth=self.dz_well - z, dp_dl=dp)
-
-        else:
-            c0_curr = self.calculate_C0(self.new_point, depth=z, dp_dl=dp)
+        c0_curr = self.calculate_C0(self.new_point, depth=z, dp_dl=dp)
 
         d_rho = c0_curr * dp
 
