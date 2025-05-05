@@ -288,6 +288,15 @@ def export_profiles_to_excel(
 
     }
 
+    derivative_data = {
+
+        "time_list": time_list,
+        "profile_positions": profile_positions[:-1],
+        "profiles_names": [],
+        "profiles_list": [],
+
+    }
+
     for key in data_input.keys():
 
         if "profile_list" in key:
@@ -295,7 +304,13 @@ def export_profiles_to_excel(
             profile_data["profiles_list"].append(data_input[key])
             profile_data["profiles_names"].append('{} Profiles'.format(key.replace("_profile_list", "")))
 
+        elif "derivative_list" in key:
+
+            derivative_data["profiles_list"].append(data_input[key])
+            derivative_data["profiles_names"].append('{} Derivatives'.format(key.replace("_derivative_list", "")))
+
     __write_profiles(file_path, profile_data, reverse_time_position=reverse_time_position)
+    __write_profiles(file_path, derivative_data, reverse_time_position=reverse_time_position)
 
 
 def __write_profiles(file_path, profile_data, reverse_time_position=False):
@@ -303,7 +318,6 @@ def __write_profiles(file_path, profile_data, reverse_time_position=False):
     time_list = profile_data["time_list"]
     profile_positions = profile_data["profile_positions"]
     n_days = len(time_list)
-    n_pos = len(profile_positions)
 
     for i in range(len(profile_data["profiles_list"])):
 
@@ -314,7 +328,7 @@ def __write_profiles(file_path, profile_data, reverse_time_position=False):
 
             data ={'Position': {"unit": ["m"], "values": [profile_positions]}}
 
-            for i in range(len(time_list)):
+            for i in range(n_days):
 
                 data.update({
 
