@@ -123,7 +123,7 @@ rel_error = (t_sat_approx - t_sat_arr) / t_sat_arr
 # %%-------------------------------------   PLOT RESULTS                        -------------------------------------> #
 fig, ax = plt.subplots(1, 1, dpi=300)
 fig.set_size_inches(10, 5)
-i = 2
+i = 0
 logy = False
 
 ax.plot(dz, grad_t_lim[i, :]*10000)

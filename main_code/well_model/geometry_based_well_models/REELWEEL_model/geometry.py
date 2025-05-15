@@ -149,7 +149,7 @@ class REELWELLGeometry:
             tub_id=0.085, tub_od=0.16,
             cas_id=0.224, cas_od=0.244,
             k_insulation=0.15, ra_pipe=None,
-            max_back_time=5, alpha_old = 0.5,
+            max_back_time=5, alpha_old = 0.5, k_smoother = 0.,
             rocks_info=None, hot_in_tubing=False, neglect_internal_heat_transfer=True,
             ignore_tubing_pressure_losses=False,
             ignore_annulus_pressure_losses=False
@@ -178,6 +178,7 @@ class REELWELLGeometry:
                 1) Internal heat transfer calculation options
                 max_back_time -> maximum number of previous profiles conserved in memory
                 alpha_old -> exponential impact of old profiles on the calculation
+                k_smoother -> gently increase the value of k over the iteration to increase convergence stability
 
                 2) Nusselt modification options
                 nu_modifier -> modifier which increase or decrease the nusselt
@@ -233,6 +234,7 @@ class REELWELLGeometry:
         self.hot_in_tubing = hot_in_tubing
         self.max_back_time = max_back_time
         self.alpha_old = alpha_old
+        self.k_smoother = k_smoother
 
         if rocks_info is None:
             self.rocks_info = REELWELLRocksInfo()
@@ -276,7 +278,7 @@ class REELWELLGeometry:
 
         return 0.
 
-    def q_int(self, point_annulus=None, point_tubing=None):
+    def q_int(self, point_annulus=None, point_tubing=None, k_corrector=1):
 
         """
 
@@ -307,7 +309,7 @@ class REELWELLGeometry:
             h_ann = self.nu(point_annulus, is_annulus=True) * (point_annulus.get_variable("k") / 1e3) / self.d_hyd_ann
             h_tub = self.nu(point_tubing, is_annulus=False) * (point_tubing.get_variable("k") / 1e3) / self.d_tub
 
-            r = (1 / (self.d_tub * h_tub) + 1 / (self.d_ann_int * h_ann)) / np.pi + self.r_ins
+            r = (1 / (self.d_tub * h_tub) + 1 / (self.d_ann_int * h_ann)) / np.pi + self.r_ins * k_corrector
 
             return dt / r / 1e3
 
@@ -454,9 +456,10 @@ class REELWELLGeometry:
 
             q_int = 0.
             sum_mean = 0.
+            n_old = len(old_profiles)
             for i in range(self.max_back_time):
 
-                if i < len(old_profiles):
+                if i < n_old:
 
                     var_1, var_2 = old_profiles[-(i+1)][self.i_annulus].get_iteration_value(depth)
                     self.__tmp_point_ann.set_variable(first_var, var_1)
@@ -469,7 +472,8 @@ class REELWELLGeometry:
                     q_int_curr = self.q_int(
 
                         point_annulus=self.__tmp_point_ann,
-                        point_tubing=self.__tmp_point_tub
+                        point_tubing=self.__tmp_point_tub,
+                        k_corrector=np.power(10, self.k_smoother * max(self.max_back_time - n_old + 1, 0))
 
                     )
 

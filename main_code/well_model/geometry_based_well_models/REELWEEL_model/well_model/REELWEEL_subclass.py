@@ -63,7 +63,6 @@ class REELWEELBHE(SimplifiedBHE):
                 super().evaluate_points()
 
                 if self.convergence_reached:
-
                     break
 
         self.__old_profiles.append(deepcopy(self.integrators_profiler))

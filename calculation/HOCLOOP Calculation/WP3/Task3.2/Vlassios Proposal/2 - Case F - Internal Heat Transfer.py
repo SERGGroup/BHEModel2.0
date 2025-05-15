@@ -31,7 +31,7 @@ BASE_FOLDER = os.path.join(
 #
 
 t_in = 10           # [C]
-p_in = 5.5          # [MPa]
+p_in = 5            # [MPa]
 mass_flow = 5       # [kg/s]
 
 depth = 4500        # [m]
@@ -61,6 +61,7 @@ hs_geometry = REELWELLGeometry(
     ignore_annulus_pressure_losses=False
 
 )
+hs_geometry.ra = 0.000045
 
 
 # %%------------   INITIALIZE WELL                        -----------------------------------------------------------> #
