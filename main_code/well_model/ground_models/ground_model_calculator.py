@@ -1,6 +1,17 @@
 import numpy as np
+from scipy.special import kn
 
-def evaluate_ground_f(td, use_old_correlation=True):
+__corr = np.array([
+
+    [0.6085, 0.2760, 0.2165],
+    [1.3465, 0.4151, 0.7052],
+    [0.3777, 0.2792, 0.2195],
+    [0.3324, 2.8015, 2.6310],
+    [0.2082, 0.0962, 0.5448]
+
+])
+
+def evaluate_ground_f(td, pe=0., use_old_correlation=False):
 
     if use_old_correlation:
         """
@@ -25,13 +36,13 @@ def evaluate_ground_f(td, use_old_correlation=True):
     else:
         """
             This function implements a correlation from FEM results as evaluated 
-            in the excel file that can be found in:
-
-                \\calculation\\Pietro PhD Thesis\\3 - Model Description\\FreeFEM Calculation
-                \\2 - Calculations\\res\\results\\1 - base comparison.xlsx
-
+            by Edoardo Falchini in his PhD thesis (2023).
+            
         """
-        log_t = np.log(td)
-        f = np.exp(0.017749736 * log_t ** 2 -0.316844708 * log_t)
+        params = __corr[:, 1] * np.power(pe, __corr[:, 0]) + __corr[:, 2]
+
+        f = params[0]
+        for i in range(int(np.floor((len(params) - 1) / 2))):
+            f += kn(i, params[1 + i * 2] * np.power(td, params[2 + i * 2]))
 
     return f

@@ -1,10 +1,17 @@
 from main_code.well_model.simplified_well.heating_sections.abstract_class import AbstractHeatingSection
+from typing_extensions import deprecated
 from scipy.optimize import Bounds
 import matplotlib.pyplot as plt
 import numpy as np
 import warnings
 
 
+@deprecated(
+    "BHEHeatingSection is deprecated as it contains not updated corrlations, "
+    "can be used as superclass for new heating sections, but all correlations "
+    "should be updated.\n REELWEELHeatingSection is the new heating "
+    "section to be used for BHEs."
+)
 class BHEHeatingSection(AbstractHeatingSection):
 
     def __init__(

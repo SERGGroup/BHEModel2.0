@@ -21,7 +21,8 @@ class REELWELLRocksInfo:
             self, t_rocks = None,
             k_rocks = None, alpha_rocks = None,
             c_rocks = None, rho_rocks = None,
-            geo_gradient = None, thermal_profile = None
+            geo_gradient = None, thermal_profile = None,
+            pe = 0.
 
     ):
 
@@ -40,6 +41,7 @@ class REELWELLRocksInfo:
 
         self.__geo_gradient = geo_gradient
         self.__thermal_profile = thermal_profile
+        self.pe = pe
 
         self.main_class = None
 
@@ -150,9 +152,11 @@ class REELWELLGeometry:
             cas_id=0.224, cas_od=0.244,
             k_insulation=0.15, ra_pipe=None,
             max_back_time=5, alpha_old = 0.5, k_smoother = 0.,
-            rocks_info=None, hot_in_tubing=False, neglect_internal_heat_transfer=True,
+            rocks_info=None, hot_in_tubing=False,
+            neglect_internal_heat_transfer=True,
             ignore_tubing_pressure_losses=False,
-            ignore_annulus_pressure_losses=False
+            ignore_annulus_pressure_losses=False,
+            use_old_rock_heat_transfer_correlation=False
 
     ):
 
@@ -245,6 +249,7 @@ class REELWELLGeometry:
         self.neglect_internal_heat_transfer = neglect_internal_heat_transfer
         self.ignore_tubing_pressure_losses = ignore_tubing_pressure_losses
         self.ignore_annulus_pressure_losses = ignore_annulus_pressure_losses
+        self.use_old_rock_correlation = use_old_rock_heat_transfer_correlation
 
         self.parent_class = None
         self.__tmp_point_ann = None
@@ -261,7 +266,12 @@ class REELWELLGeometry:
             r0 = self.cas_od / 2
             td = alpha * time /  r0 ** 2
 
-            f = evaluate_ground_f(td)
+            f = evaluate_ground_f(
+
+                td, pe=self.rocks_info.pe,
+                use_old_correlation=self.use_old_rock_correlation
+
+            )
 
             r_rocks = r0 / (k * f)
 

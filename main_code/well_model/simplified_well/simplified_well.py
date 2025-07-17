@@ -1,18 +1,14 @@
 from main_code.well_model.simplified_well.heating_sections import DefaultHeatingSection, AbstractHeatingSection
 from main_code.support.other.integration_profiler import IntegrationProfiler
-from EEETools.Tools.API.ExcelAPI.modules_importer import calculate_excel
 from main_code.support.other.simple_integrator import SimpleIntegrator
-from EEETools.Tools.API.Tools.main_tools import get_result_data_frames
+from main_code.well_model.ground_models import evaluate_ground_f
 from main_code.support import PlantThermoPoint, retrieve_PPI
 from abc import ABC, abstractmethod
 from scipy.integrate import RK45
 from scipy.optimize import Bounds
-from main_code import constants
 from scipy.constants import g
 import numpy as np
 from sty import ef
-import warnings
-import os
 
 
 class SimplifiedWell(ABC):
@@ -165,6 +161,12 @@ class SimplifiedWell(ABC):
     def m_dot(self):
 
         return self.points[0].m_dot
+
+    @m_dot.setter
+    def m_dot(self, input_m_dot):
+
+        self.points[0].m_dot = input_m_dot
+        self.__heating_section_changed = True
 
     @property
     def l_tot(self):
