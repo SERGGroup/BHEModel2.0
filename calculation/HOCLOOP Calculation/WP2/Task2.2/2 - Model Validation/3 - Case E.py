@@ -47,6 +47,7 @@ hs_geometry = REELWELLGeometry(
 bhe_in = PlantThermoPoint(["Water"], [1])
 bhe_in.set_variable("T", t_in)
 bhe_in.set_variable("P", 1)
+bhe_in.m_dot = mass_flow
 
 well = REELWEELBHE(
 
@@ -79,7 +80,6 @@ w_out_list = list()
 t_profile_list = list()
 p_profile_list = list()
 
-bhe_in.m_dot = mass_flow
 pbar = tqdm(desc="Calculation Ongoing", total=len(time_points))
 for time in time_points:
 
