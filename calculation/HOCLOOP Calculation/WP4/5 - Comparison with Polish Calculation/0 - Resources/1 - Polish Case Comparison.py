@@ -83,7 +83,7 @@ well.heating_section = heating_section
 
 # %%------------   CALCULATIONS                           -----------------------------------------------------------> #
 n_points = 30
-main_time_points = [1, 2, 4, 8, 20]
+main_time_points = np.linspace(1, 20, n_points)
 time_points = np.array(main_time_points) * 365
 
 step = 50
@@ -149,6 +149,6 @@ export_profiles_to_excel(file_path, data_exporter, reverse_time_position=False)
 fig, ax = plt.subplots()
 time_array = np.array(time_list) / 365
 
-ax.plot(time_array, p_out_list)
+# ax.plot(time_array, t_profile_list[])
 plt.xscale("log")
 plt.show()
